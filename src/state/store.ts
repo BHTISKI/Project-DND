@@ -173,6 +173,10 @@ export const useGameStore = create<GameState>((set) => ({
 
   endTurn: () => {
     set((state) => {
+      if (state.gamePhase !== 'combat' || !state.isPlayerTurn) {
+        return state;
+      }
+
       // 1. Move hand to discard pile
       const newDiscard = [...state.discardPile, ...state.hand];
       // 2. Draw new hand
@@ -272,6 +276,15 @@ export const useGameStore = create<GameState>((set) => ({
           // Transition to game over
           return {
             ...state,
+            deck,
+            hand,
+            discardPile,
+            currentEnergy,
+            isPlayerTurn,
+            player,
+            enemy,
+            playerBlock,
+            enemySkipNextTurn,
             battleLogs: [...battleLogs, `Oyuncu ölü! Oyun bitti.`],
             gamePhase: 'gameOver',
           };
@@ -292,6 +305,7 @@ export const useGameStore = create<GameState>((set) => ({
           enemy,
           battleLogs,
           gamePhase: 'victory',
+          victoryCount: state.victoryCount + 1,
           rewardOptions: rewards,
         };
       }
@@ -468,6 +482,23 @@ export const useGameStore = create<GameState>((set) => ({
       // For saldırmı, we updated enemy in the case block.
 
       // Return updated state
+      if (state.enemy.mevcutCan > 0 && updatedEnemy.mevcutCan <= 0) {
+        return {
+          ...state,
+          hand: newHand,
+          discardPile: newDiscard,
+          currentEnergy: newEnergy,
+          player: updatedPlayer,
+          enemy: updatedEnemy,
+          playerBlock: updatedPlayerBlock,
+          enemySkipNextTurn: updatedEnemySkipNextTurn,
+          battleLogs: [...state.battleLogs, log],
+          gamePhase: 'victory',
+          victoryCount: state.victoryCount + 1,
+          rewardOptions: getRandomRewards(),
+        };
+      }
+
       return {
         ...state,
         hand: newHand,

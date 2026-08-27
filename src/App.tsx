@@ -23,7 +23,7 @@ function App() {
     initializeGame();
   }, [initializeGame]);
 
-  const combatTitle = gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'victory' ? 'Zafer!' : 'Mola';
+  const combatTitle = gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'victory' ? 'Zafer!' : gamePhase === 'gameOver' ? 'Oyun Bitti' : 'Mola';
 
   return (
     <main className="game-shell">
@@ -56,6 +56,7 @@ function App() {
         </div>
 
         {gamePhase === 'combat' && <p className="panel-hint">Kart oyna, enerjini yönet ve düşmanı alt et.</p>}
+        {gamePhase === 'gameOver' && <p className="panel-hint">Oyuncu ölü. Oyun sona erdi.</p>}
         {gamePhase === 'shop' && <ShopPanel />}
         {gamePhase === 'victory' && (
           <>
