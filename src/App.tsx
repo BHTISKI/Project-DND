@@ -1,7 +1,7 @@
 import { useGameStore } from './state/store';
 import { Hand } from './components/Hand';
-import { CardComponent } from './components/Card';
 import { useEffect } from 'react';
+import { BattleStats } from "./components/BattleStats";
 
 function App() {
   const {
@@ -37,23 +37,16 @@ function App() {
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h1>DND Oyunu</h1>
 
-      <div>
-        <h2>Oyuncu</h2>
-        <p>Can: {player.mevcutCan} / {player.maksimumCan}</p>
-        <p>Zırh Sınıfı (AC): {player.zirhSinifi}</p>
-        <p>Güç Çarpanı: {player.gucCarpani}</p>
-        <p>Enerji: {currentEnergy} / {maxEnergy}</p>
-        <p>Altın: {gold}</p>
-        <p>Destek: {deck.length} | El: {hand.length} | Mezarlık: {discardPile.length}</p>
-      </div>
-
-      <div>
-        <h2>Düşman</h2>
-        <p>Can: {enemy.mevcutCan} / {enemy.maksimumCan}</p>
-        <p>Zırh Sınıfı (AC): {enemy.zirhSinifi}</p>
-        <p>Güç Çarpanı: {enemy.gucCarpani}</p>
-      </div>
-
+       <BattleStats
+         player={player}
+         enemy={enemy}
+         currentEnergy={currentEnergy}
+         maxEnergy={maxEnergy}
+         gold={gold}
+         deck={deck}
+         hand={hand}
+         discardPile={discardPile}
+       />
       <p>Şu anki tur: {isPlayerTurn ? 'Oyuncu Turu' : 'Düşman Turu'}</p>
       <p>Oyun Phase: {gamePhase}</p>
 

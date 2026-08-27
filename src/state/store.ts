@@ -102,7 +102,7 @@ function getRandomRewards(): Card[] {
   }));
 }
 
-export const useGameStore = create<GameState>((set, get) => ({
+export const useGameStore = create<GameState>((set) => ({
   player: defaultPlayer,
   enemy: defaultEnemy,
   isPlayerTurn: true,
