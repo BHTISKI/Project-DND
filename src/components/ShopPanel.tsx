@@ -1,5 +1,4 @@
 import React from 'react';
-import type { Card } from '../types/game';
 import { useGameStore } from '../state/store';
 
 export const ShopPanel: React.FC = () => {

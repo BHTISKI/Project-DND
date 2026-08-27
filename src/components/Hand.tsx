@@ -7,6 +7,7 @@ export const Hand: React.FC = () => {
   const playCard = useGameStore((s) => s.playCard);
   const isPlayerTurn = useGameStore((s) => s.isPlayerTurn);
   const gamePhase = useGameStore((s) => s.gamePhase);
+  const currentEnergy = useGameStore((s) => s.currentEnergy);
 
   const handlePlay = (card: Card) => {
     // Only allow playing in combat phase and player turn
@@ -17,9 +18,14 @@ export const Hand: React.FC = () => {
   };
 
   return (
-    <div className="hand-grid">
+    <div className={`hand-grid${isPlayerTurn && gamePhase === 'combat' ? '' : ' hand-grid--inactive'}`} aria-label="Kart eli">
       {hand.map((card) => (
-        <CardComponent key={card.id} card={card} onPlay={handlePlay} />
+        <CardComponent
+          key={card.id}
+          card={card}
+          onPlay={handlePlay}
+          isPlayable={isPlayerTurn && gamePhase === 'combat' && currentEnergy >= card.manaBedeli}
+        />
       ))}
       {hand.length === 0 && (
         <div className="empty-state">
