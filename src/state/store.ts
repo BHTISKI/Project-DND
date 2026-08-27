@@ -32,10 +32,15 @@ interface GameState {
   // Game initialization flag
   initialized: boolean;
   // Game phase
-  gamePhase: 'combat' | 'shop' | 'victory';
+  gamePhase: 'combat' | 'shop' | 'victory' | 'gameOver';
   // Reward options (shown in victory phase)
   rewardOptions: Card[];
-
+  // Temporary block for player (absorbs damage from enemy attack)
+  playerBlock: number;
+  // Whether enemy will skip their next turn
+  enemySkipNextTurn: boolean;
+  // Number of victories
+  victoryCount: number;
   // Actions
   initializeGame: () => void;
   drawCards: (n: number) => void;
@@ -52,6 +57,7 @@ interface GameState {
   startNextCombat: () => void;
 }
 
+  
 const defaultPlayer: Character = {
   id: 'player-1',
   isim: 'Ero',
@@ -115,6 +121,9 @@ export const useGameStore = create<GameState>((set) => ({
   gold: 50, // starting gold
   battleLogs: [],
   initialized: false,
+  playerBlock: 0,
+  enemySkipNextTurn: false,
+  victoryCount: 0,
   gamePhase: 'combat',
   rewardOptions: [],
 
@@ -133,6 +142,9 @@ export const useGameStore = create<GameState>((set) => ({
         initialized: true,
         gamePhase: 'combat',
         battleLogs: ['Oyun başlatıldı. Destek hazırlanıyor...'],
+        playerBlock: 0,
+        enemySkipNextTurn: false,
+        victoryCount: 0,
       };
     });
   },
@@ -185,24 +197,75 @@ export const useGameStore = create<GameState>((set) => ({
       let battleLogs = [...state.battleLogs];
       let player = state.player;
       let enemy = state.enemy;
+      let playerBlock = state.playerBlock;
+      let enemySkipNextTurn = state.enemySkipNextTurn;
 
-      if (enemy.mevcutCan > 0 && state.gamePhase === 'combat') {
+      // Check if enemy should skip this turn
+      if (enemySkipNextTurn) {
+        enemySkipNextTurn = false;
+        battleLogs = [...battleLogs, `Düşman etkili bir etkiden kaynaklanarak turunu atladı!`];
+      } else if (enemy.mevcutCan > 0 && state.gamePhase === 'combat') {
         // Enemy AI: roll d20 + enemy.gucCarpani vs player AC
         const enemyRoll = Math.floor(Math.random() * 20) + 1;
+        const isCritHit = enemyRoll === 20;
+        const isCritFail = enemyRoll === 1;
         const enemyTotal = enemyRoll + enemy.gucCarpani;
         const playerAC = player.zirhSinifi;
+        let damage = 0;
+        let hit = false;
+
+        if (isCritFail) {
+          // Critical failure: automatic miss
+          hit = false;
+        } else if (isCritHit) {
+          // Critical hit: automatic hit
+          hit = true;
+        } else {
+          // Normal hit check
+          hit = enemyTotal >= playerAC;
+        }
+
+        let blockUsed = 0;
         let log = '';
-        if (enemyTotal >= playerAC) {
-          // Enemy hits: roll damage die (d6 for simplicity) + enemy.gucCarpani
+
+        if (hit) {
+          // Enemy hits: roll damage die (d6 for simplicity)
           const dmgRoll = Math.floor(Math.random() * 6) + 1; // d6
-          const damage = dmgRoll + enemy.gucCarpani;
+          let baseDamage = dmgRoll; // enemy's base damage from die
+          if (isCritHit) {
+            // Double the die on critical hit
+            baseDamage = dmgRoll * 2;
+          }
+          // Add enemy's damage modifier
+          damage = baseDamage + enemy.gucCarpani;
+          // Apply player's block to reduce damage
+          if (playerBlock > 0) {
+            if (playerBlock >= damage) {
+              // Block absorbs all damage
+              blockUsed = damage;
+              damage = 0;
+              playerBlock = 0; // block is used up
+            } else {
+              // Block absorbs part of the damage
+              blockUsed = playerBlock;
+              damage -= playerBlock;
+              playerBlock = 0; // block is used up
+            }
+          }
           // Apply damage to player
           const newHp = Math.max(0, player.mevcutCan - damage);
           player = { ...player, mevcutCan: newHp };
-          log = `Düşman Zar: ${enemyRoll}. Başarılı saldırı, ${damage} hasar vuruldu!`;
+          // Build log message
+          let hitText = isCritHit ? 'KRİTİK VURUŞ!' : 'Başarılı saldırı';
+          log = `Düşman Zar: ${enemyRoll}. ${hitText} ${damage} hasar vuruldu!`;
+          if (blockUsed > 0) {
+            log += ` (Blok ${blockUsed} hasarını absorbed)`;
+          }
         } else {
-          log = `Düşman Zar: ${enemyRoll}. Saldırısı kansırdi!`;
+          let hitText = isCritFail ? 'KRİTİK BAŞARISIZLIK! Saldırı tamamen başarısız oldu.' : 'Saldırısı kansırdi!';
+          log = `Düşman Zar: ${enemyRoll}. ${hitText}`;
         }
+
         battleLogs = [...battleLogs, log];
         // Check if player died after enemy attack
         if (player.mevcutCan <= 0) {
@@ -276,43 +339,146 @@ export const useGameStore = create<GameState>((set) => ({
       // Spend energy
       const newEnergy = state.currentEnergy - card.manaBedeli;
 
-      // Determine hit: d20 + player.gucCarpani vs enemy AC
-      const attackRoll = Math.floor(Math.random() * 20) + 1;
-      const totalAttack = attackRoll + state.player.gucCarpani;
-      const enemyAC = state.enemy.zirhSinifi;
-      let damage = 0;
       let log = '';
+      let updatedPlayer = state.player;
+      let updatedEnemy = state.enemy;
+      let updatedPlayerBlock = state.playerBlock;
+      let updatedEnemySkipNextTurn = state.enemySkipNextTurn;
 
-      if (totalAttack >= enemyAC) {
-        // Hit: roll damage die based on card.zarTuru
-        const sides = parseInt(card.zarTuru.substring(1)); // e.g., 'd6' -> 6
-        const damageRoll = Math.floor(Math.random() * sides) + 1;
-        // Damage = die roll + card.baseHasar + player.gucCarpani
-        damage = damageRoll + card.baseHasar + state.player.gucCarpani;
-        // Apply damage to enemy
-        const targetChar = state.enemy;
-        const newHp = Math.max(0, targetChar.mevcutCan - damage);
-        const newEnemy = { ...targetChar, mevcutCan: newHp };
-        log = `Zar: ${attackRoll}. Başarılı saldırı, ${damage} hasar vuruldu!`;
-        // Update enemy in state
-        return {
-          ...state,
-          hand: newHand,
-          discardPile: newDiscard,
-          currentEnergy: newEnergy,
-          enemy: newEnemy,
-          battleLogs: [...state.battleLogs, log],
-        };
-      } else {
-        log = `Zar: ${attackRoll}. Düşmanın zırhı aşılamadı!`;
-        return {
-          ...state,
-          hand: newHand,
-          discardPile: newDiscard,
-          currentEnergy: newEnergy,
-          battleLogs: [...state.battleLogs, log],
-        };
+      switch (card.tip) {
+        case 'saldırı': {
+          // Determine hit with critical rules
+          const attackRoll = Math.floor(Math.random() * 20) + 1;
+          const isCritHit = attackRoll === 20;
+          const isCritFail = attackRoll === 1;
+          const totalAttack = attackRoll + state.player.gucCarpani;
+          const enemyAC = state.enemy.zirhSinifi;
+          let damage = 0;
+          let hit = false;
+
+          if (isCritFail) {
+            // Critical failure: automatic miss
+            hit = false;
+          } else if (isCritHit) {
+            // Critical hit: automatic hit
+            hit = true;
+          } else {
+            // Normal hit check
+            hit = totalAttack >= enemyAC;
+          }
+
+          if (hit) {
+            // Roll damage die
+            const sides = parseInt(card.zarTuru.substring(1)); // e.g., 'd6' -> 6
+            const damageRoll = Math.floor(Math.random() * sides) + 1;
+            // Base damage from die and card baseHasar
+            let baseDamage = damageRoll + card.baseHasar;
+            if (isCritHit) {
+              // Double the die and baseHasar on critical hit
+              baseDamage = damageRoll * 2 + card.baseHasar * 2;
+            }
+            // Add player's damage modifier
+            damage = baseDamage + state.player.gucCarpani;
+            // Apply damage to enemy
+            const targetChar = state.enemy;
+            const newHp = Math.max(0, targetChar.mevcutCan - damage);
+            updatedEnemy = { ...targetChar, mevcutCan: newHp };
+            if (isCritHit) {
+              log = `Zar: ${attackRoll}. KRİTİK VURUŞ! ${damage} hasar vuruldu!`;
+            } else {
+              log = `Zar: ${attackRoll}. Başarılı saldırı, ${damage} hasar vuruldu!`;
+            }
+          } else {
+            if (isCritFail) {
+              log = `Zar: ${attackRoll}. KRİTİK BAŞARISIZLIK! Saldırı tamamen başarısız oldu.`;
+            } else {
+              log = `Zar: ${attackRoll}. Düşmanın zırhı aşılamadı!`;
+            }
+          }
+          break;
+        }
+        case 'savunma': {
+          // Roll the die for block amount
+          const sides = parseInt(card.zarTuru.substring(1)); // e.g., 'd4' -> 4
+          const blockRoll = Math.floor(Math.random() * sides) + 1;
+          updatedPlayerBlock = blockRoll; // set block to this amount (does not stack)
+          log = `${card.isim} oynandı! ${blockRoll} blok elde edildi.`;
+          break;
+        }
+        case 'yetenek': {
+          // Unique effect based on card name
+          switch (card.isim) {
+            case 'Ateş Topu': {
+              // Deal damage ignoring enemy AC (like a magic missile)
+              const sides = parseInt(card.zarTuru.substring(1)); // d6 -> 6
+              const damageRoll = Math.floor(Math.random() * sides) + 1;
+              const damage = damageRoll + 2; // fixed bonus
+              const targetChar = state.enemy;
+              const newHp = Math.max(0, targetChar.mevcutCan - damage);
+              updatedEnemy = { ...targetChar, mevcutCan: newHp };
+              log = `${card.isim} oynandı! ${damage} hasar vuruldu (zırhı yok sayarak)!`;
+              break;
+            }
+            case 'Buhar Nefesi': {
+              // Heal player
+              const sides = parseInt(card.zarTuru.substring(1)); // d8 -> 8
+              const healRoll = Math.floor(Math.random() * sides) + 1;
+              const healAmount = healRoll; // heal for the roll amount
+              const newHp = Math.min(state.player.maksimumCan, state.player.mevcutCan + healAmount);
+              updatedPlayer = { ...state.player, mevcutCan: newHp };
+              log = `${card.isim} oynandı! Oyuncu ${healAmount} can yeledi.`;
+              break;
+            }
+            case 'Büyüleyici Çukur': {
+              // Enemy skips next turn
+              updatedEnemySkipNextTurn = true;
+              log = `${card.isim} oynandı! Düşman sonraki turunu atlayacak.`;
+              break;
+            }
+            default: {
+              // Fallback: treat as attack (should not happen with current sample cards)
+              const attackRoll = Math.floor(Math.random() * 20) + 1;
+              const totalAttack = attackRoll + state.player.gucCarpani;
+              const enemyAC = state.enemy.zirhSinifi;
+              let damage = 0;
+              if (totalAttack >= enemyAC) {
+                const sides = parseInt(card.zarTuru.substring(1));
+                const damageRoll = Math.floor(Math.random() * sides) + 1;
+                damage = damageRoll + card.baseHasar + state.player.gucCarpani;
+                const targetChar = state.enemy;
+                const newHp = Math.max(0, targetChar.mevcutCan - damage);
+                updatedEnemy = { ...targetChar, mevcutCan: newHp };
+                log = `Zar: ${attackRoll}. Başarılı saldırı, ${damage} hasar vuruldu!`;
+              } else {
+                log = `Zar: ${attackRoll}. Düşmanın zırhı aşılamadı!`;
+              }
+              break;
+            }
+          }
+          break;
+        }
+        default:
+          // Should not happen
+          log = `Bilinmeyen kart tipi: ${card.tip}`;
+          break;
       }
+
+      // Apply damage to enemy if any (from saldırmı or yetenek that dealt damage)
+      // Note: For yetenek that dealt damage, we already updated the enemy above.
+      // For saldırmı, we updated enemy in the case block.
+
+      // Return updated state
+      return {
+        ...state,
+        hand: newHand,
+        discardPile: newDiscard,
+        currentEnergy: newEnergy,
+        player: updatedPlayer,
+        enemy: updatedEnemy,
+        playerBlock: updatedPlayerBlock,
+        enemySkipNextTurn: updatedEnemySkipNextTurn,
+        battleLogs: [...state.battleLogs, log],
+      };
     });
   },
 
@@ -424,15 +590,21 @@ export const useGameStore = create<GameState>((set) => ({
   startNextCombat: () => {
     set((state) => {
       if (state.gamePhase !== 'shop') return state;
-      // Reset enemy to default (could be scaled based on player level, but we keep simple)
-      const enemy = defaultEnemy;
+      const victoryFactor = state.victoryCount;
+      const scaledEnemy = {
+        ...defaultEnemy,
+        mevcutCan: defaultEnemy.mevcutCan + victoryFactor * 2,
+        maksimumCan: defaultEnemy.maksimumCan + victoryFactor * 2,
+        zirhSinifi: defaultEnemy.zirhSinifi + victoryFactor,
+        gucCarpani: defaultEnemy.gucCarpani + Math.floor(victoryFactor * 0.5)
+      };
       return {
         ...state,
-        enemy,
+        enemy: scaledEnemy,
         gamePhase: 'combat',
         isPlayerTurn: true, // player starts combat
         // Optionally clear battle logs? Keep them.
       };
     });
-  },
+  }
 }));
