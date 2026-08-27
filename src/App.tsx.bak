@@ -2,7 +2,6 @@ import { useGameStore } from './state/store';
 import { Hand } from './components/Hand';
 import { useEffect } from 'react';
 import { BattleStats } from "./components/BattleStats";
-import { CombatControls } from "./components/CombatControls";
 
 function App() {
   const {
@@ -53,7 +52,11 @@ function App() {
 
       <div style={{ marginTop: '20px' }}>
         {gamePhase === 'combat' && (
-          <CombatControls endTurn={endTurn} />
+          <>
+            <button onClick={endTurn} style={{ marginLeft: '10px', padding: '8px 16px', fontSize: '1rem', cursor: 'pointer' }}>
+              Turu Bitir
+            </button>
+          </>
         )}
         {gamePhase === 'shop' && (
           <>
@@ -115,7 +118,7 @@ function App() {
               </div>
             )}
             <button onClick={skipReward} style={{ padding: '8px 16px', fontSize: '1rem', cursor: 'pointer' }}>
-              Awards Pas Geç
+              Ödülü Pas Geç
             </button>
           </>
         )}
