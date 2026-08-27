@@ -3,6 +3,8 @@ import { Hand } from './components/Hand';
 import { useEffect } from 'react';
 import { BattleStats } from "./components/BattleStats";
 import { CombatControls } from "./components/CombatControls";
+import { ShopPanel } from "./components/ShopPanel";
+import './App.css';
 
 function App() {
   const {
@@ -35,104 +37,112 @@ function App() {
   }, [initializeGame]);
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>DND Oyunu</h1>
+    <main className="game-shell">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Kader Günlüğü · Bölüm I</p>
+          <h1>DND Oyunu</h1>
+        </div>
+        <div className="topbar-meta">
+          <div className={`turn-badge ${isPlayerTurn ? 'turn-badge--player' : 'turn-badge--enemy'}`}>
+            <span className="turn-dot" />
+            {isPlayerTurn ? 'Oyuncu Turu' : 'Düşman Turu'}
+          </div>
+          <div className="gold-display"><span aria-hidden="true">◆</span> {gold} altın</div>
+        </div>
+      </header>
 
-       <BattleStats
-         player={player}
-         enemy={enemy}
-         currentEnergy={currentEnergy}
-         maxEnergy={maxEnergy}
-         gold={gold}
-         deck={deck}
-         hand={hand}
-         discardPile={discardPile}
-       />
-      <p>Şu anki tur: {isPlayerTurn ? 'Oyuncu Turu' : 'Düşman Turu'}</p>
-      <p>Oyun Phase: {gamePhase}</p>
+      <section className="battle-stage" aria-label="Savaş alanı">
+        <BattleStats
+          player={player}
+          enemy={enemy}
+          currentEnergy={currentEnergy}
+          maxEnergy={maxEnergy}
+          gold={gold}
+          deck={deck}
+          hand={hand}
+          discardPile={discardPile}
+        />
+        <div className="battle-divider" aria-hidden="true"><span>VS</span></div>
+      </section>
 
-      <div style={{ marginTop: '20px' }}>
+      <section className="combat-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Savaş alanı</p>
+            <h2>{gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'victory' ? 'Zafer!' : 'Mola'}</h2>
+          </div>
+          {gamePhase === 'combat' && <CombatControls endTurn={endTurn} />}
+        </div>
+
         {gamePhase === 'combat' && (
-          <CombatControls endTurn={endTurn} />
+          <p className="panel-hint">Kart oyna, enerjini yönet ve düşmanı alt et.</p>
         )}
         {gamePhase === 'shop' && (
-          <>
-            <div style={{ marginBottom: '10px' }}>
-              <button onClick={healPlayer} style={{ padding: '8px 16px', fontSize: '1rem', marginRight: '10px', cursor: 'pointer' }}>
-                Can Yenile (+4) - 25 Altın
-              </button>
-            </div>
-            <div>
-              <h3>Destekleriniz</h3>
-              {deck.length === 0 ? (
-                <p>Destek boş</p>
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {deck.map((card) => (
-                    <div key={card.id} style={{ border: '1px solid #ccc', padding: '8px', borderRadius: '4px', width: '120px', textAlign: 'center' }}>
-                      <h4>{card.isim}</h4>
-                      <p>Mana: {card.manaBedeli}</p>
-                      <button
-                        onClick={() => removeCardFromDeck(card.id)}
-                        style={{ marginTop: '8px', padding: '4px 8px', fontSize: '0.9rem', cursor: 'pointer' }}
-                        disabled={gold < 50}
-                      >
-                        Kartı Sil - 50 Altın
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div style={{ marginTop: '15px' }}>
-              <button onClick={startNextCombat} style={{ padding: '8px 16px', fontSize: '1rem', cursor: 'pointer' }}>
-                Savaşmaya Başla
-              </button>
-            </div>
-          </>
+          <ShopPanel
+            deck={deck}
+            gold={gold}
+            healPlayer={healPlayer}
+            removeCardFromDeck={removeCardFromDeck}
+            startNextCombat={startNextCombat}
+          />
         )}
         {gamePhase === 'victory' && (
           <>
-            <h2>Tebrikler! Düşmanı Yenildiniz!</h2>
-            <p>Bir ödül kartı seçin veya ödülü geçin.</p>
+            <p className="panel-hint">Tebrikler! Bir ödül kartı seçin veya ödülü geçin.</p>
             {rewardOptions.length === 0 ? (
-              <p>Ödül kartları yükleniyor...</p>
+              <p className="empty-state">Ödül kartları yükleniyor...</p>
             ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
+              <div className="reward-grid">
                 {rewardOptions.map((card) => (
-                  <div key={card.id} style={{ border: '2px solid #daa520', padding: '12px', borderRadius: '6px', width: '180px', textAlign: 'center' }}>
+                  <div key={card.id} className="reward-card">
                     <h3>{card.isim}</h3>
+                    <p>{card.tip} · {card.zarTuru}</p>
                     <p>Mana: {card.manaBedeli}</p>
-                    <p>Zar: {card.zarTuru}</p>
                     <button
                       onClick={() => addRewardCardToDeck(card.id)}
-                      style={{ marginTop: '10px', padding: '6px 12px', fontSize: '0.9rem', cursor: 'pointer', backgroundColor: '#32cd32', color: 'white', border: 'none', borderRadius: '4px' }}
+                      className="button button--reward"
                     >
-                      Destete Ekle
+                      Desteye Ekle
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <button onClick={skipReward} style={{ padding: '8px 16px', fontSize: '1rem', cursor: 'pointer' }}>
-              Awards Pas Geç
+            <button onClick={skipReward} className="button button--quiet">
+              Ödülü Pas Geç
             </button>
           </>
         )}
-      </div>
+      </section>
 
-      <Hand />
+      <section className="hand-section">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Cephanelik</p>
+            <h2>Elindeki kartlar <span>{hand.length}</span></h2>
+          </div>
+          <p className="deck-count">Deste {deck.length} · Mezarlık {discardPile.length}</p>
+        </div>
+        <Hand />
+      </section>
 
-      {/* Savaş Günlüğü */}
-      <div style={{ marginTop: '20px', padding: '12px', border: '1px solid #555', borderRadius: '4px', backgroundColor: '#fafafa', maxHeight: '150px', overflowY: 'auto' }}>
-        <strong>Savaş Günlüğü:</strong>
+      <section className="battle-log">
+        <div className="section-heading section-heading--compact">
+          <div>
+            <p className="eyebrow">Kayıt</p>
+            <h2>Savaş Günlüğü</h2>
+          </div>
+          <span className="log-status">Canlı</span>
+        </div>
         {battleLogs.slice(-5).map((msg, idx) => (
-          <div key={idx} style={{ marginTop: '4px', fontSize: '0.9rem' }}>
+          <div key={idx} className="log-entry">
+            <span className="log-marker" />
             {msg}
           </div>
         ))}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 

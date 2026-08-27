@@ -6,7 +6,7 @@ interface CombatControlsProps {
 
 export const CombatControls: React.FC<CombatControlsProps> = ({ endTurn }) => {
   return (
-    <button onClick={endTurn} style={{ marginLeft: '10px', padding: '8px 16px', fontSize: '1rem', cursor: 'pointer' }}>
+    <button onClick={endTurn} className="button button--turn">
       Turu Bitir
     </button>
   );

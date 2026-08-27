@@ -7,28 +7,16 @@ interface CardProps {
 
 export const CardComponent: React.FC<CardProps> = ({ card, onPlay }) => {
   return (
-    <div
+    <button
+      type="button"
+      className={`game-card game-card--${card.tip}`}
       onClick={() => onPlay(card)}
-      style={{
-        border: '2px solid #333',
-        borderRadius: '8px',
-        padding: '16px',
-        width: '200px',
-        backgroundColor: '#f9f9f9',
-        cursor: 'pointer',
-        transition: 'transform 0.2s',
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = 'scale(1.05)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
-      }}
     >
-      <h3>{card.isim}</h3>
-      <p><strong>Mana:</strong> {card.manaBedeli}</p>
-      <p><strong>Zar Türü:</strong> {card.zarTuru}</p>
-      <p><strong>Temel Hasar:</strong> {card.baseHasar}</p>
-    </div>
+      <span className="card-topline"><span>{card.tip}</span><strong>{card.manaBedeli}</strong></span>
+      <span className="card-glyph" aria-hidden="true">✦</span>
+      <span className="card-name">{card.isim}</span>
+      <span className="card-rule">{card.zarTuru} zar · {card.baseHasar} temel hasar</span>
+      <span className="card-action">Oyna</span>
+    </button>
   );
 };

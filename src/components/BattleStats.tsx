@@ -24,22 +24,29 @@ export const BattleStats: React.FC<BattleStatsProps> = ({
 }) => {
   return (
     <>
-      <div>
-        <h2>Oyuncu</h2>
-        <p>Can: {player.mevcutCan} / {player.maksimumCan}</p>
-        <p>Zırh Sınıfı (AC): {player.zirhSinifi}</p>
-        <p>Güç Çarpanı: {player.gucCarpani}</p>
-        <p>Enerji: {currentEnergy} / {maxEnergy}</p>
-        <p>Altın: {gold}</p>
-        <p>Destek: {deck.length} | El: {hand.length} | Mezarlık: {discardPile.length}</p>
-      </div>
+      <article className="fighter fighter--player">
+        <div className="fighter-icon">E</div>
+        <div className="fighter-copy">
+          <p className="fighter-kicker">Oyuncu</p>
+          <h2>{player.isim}</h2>
+          <div className="health-row"><span>Can</span><strong>{player.mevcutCan} / {player.maksimumCan}</strong></div>
+          <div className="health-bar"><span style={{ width: `${Math.max(0, (player.mevcutCan / player.maksimumCan) * 100)}%` }} /></div>
+          <div className="fighter-stats"><span>AC <b>{player.zirhSinifi}</b></span><span>Güç <b>+{player.gucCarpani}</b></span></div>
+        </div>
+        <div className="energy-display"><span>{currentEnergy}</span><small>/ {maxEnergy} enerji</small></div>
+      </article>
 
-      <div>
-        <h2>Düşman</h2>
-        <p>Can: {enemy.mevcutCan} / {enemy.maksimumCan}</p>
-        <p>Zırh Sınıfı (AC): {enemy.zirhSinifi}</p>
-        <p>Güç Çarpanı: {enemy.gucCarpani}</p>
-      </div>
+      <article className="fighter fighter--enemy">
+        <div className="fighter-icon">G</div>
+        <div className="fighter-copy">
+          <p className="fighter-kicker">Düşman</p>
+          <h2>{enemy.isim}</h2>
+          <div className="health-row"><span>Can</span><strong>{enemy.mevcutCan} / {enemy.maksimumCan}</strong></div>
+          <div className="health-bar"><span style={{ width: `${Math.max(0, (enemy.mevcutCan / enemy.maksimumCan) * 100)}%` }} /></div>
+          <div className="fighter-stats"><span>AC <b>{enemy.zirhSinifi}</b></span><span>Güç <b>+{enemy.gucCarpani}</b></span></div>
+        </div>
+      </article>
+      <span className="sr-only">Altın: {gold}. Deste: {deck.length}, El: {hand.length}, Mezarlık: {discardPile.length}.</span>
     </>
   );
 };

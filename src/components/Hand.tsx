@@ -17,19 +17,12 @@ export const Hand: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '20px' }}>
+    <div className="hand-grid">
       {hand.map((card) => (
         <CardComponent key={card.id} card={card} onPlay={handlePlay} />
       ))}
       {hand.length === 0 && (
-        <div style={{
-          minWidth: '200px',
-          padding: '16px',
-          backgroundColor: '#f9f9f9',
-          border: '2px dashed #ccc',
-          borderRadius: '8px',
-          textAlign: 'center'
-        }}>
+        <div className="empty-state">
           <i>Elinizde kart yok</i>
         </div>
       )}
