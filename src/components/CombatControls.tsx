@@ -1,12 +1,11 @@
 import React from 'react';
+import { useGameStore } from '../state/store';
 
-interface CombatControlsProps {
-  endTurn: () => void;
-}
+export const CombatControls: React.FC = () => {
+  const endTurn = useGameStore(s => s.endTurn);
 
-export const CombatControls: React.FC<CombatControlsProps> = ({ endTurn }) => {
   return (
-    <button onClick={endTurn} className="button button--turn">
+    <button onClick={endTurn} className="button button--turn" type="button">
       Turu Bitir
     </button>
   );

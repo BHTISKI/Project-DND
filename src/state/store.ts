@@ -204,6 +204,15 @@ export const useGameStore = create<GameState>((set) => ({
           log = `Düşman Zar: ${enemyRoll}. Saldırısı kansırdi!`;
         }
         battleLogs = [...battleLogs, log];
+        // Check if player died after enemy attack
+        if (player.mevcutCan <= 0) {
+          // Transition to game over
+          return {
+            ...state,
+            battleLogs: [...battleLogs, `Oyuncu ölü! Oyun bitti.`],
+            gamePhase: 'gameOver',
+          };
+        }
       }
       // If enemy died after potential attack (or was already dead), transition to victory
       if (enemy.mevcutCan <= 0 && state.gamePhase === 'combat') {
@@ -406,7 +415,7 @@ export const useGameStore = create<GameState>((set) => ({
         ...state,
         deck: newDeck,
         gold: state.gold - removeCost,
-        battleLogs: [...state.battleLogs, `Kart desteから silindi! (${removeCost} altın)`],
+        battleLogs: [...state.battleLogs, `Kart deste silindi! (${removeCost} altın)`],
       };
     });
   },

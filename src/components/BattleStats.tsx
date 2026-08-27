@@ -1,27 +1,19 @@
 import type { Character, Card } from '../types/game';
 import React from 'react';
+import { useGameStore } from '../state/store';
 
-interface BattleStatsProps {
-  player: Character;
-  enemy: Character;
-  currentEnergy: number;
-  maxEnergy: number;
-  gold: number;
-  deck: Card[];
-  hand: Card[];
-  discardPile: Card[];
-}
+export const BattleStats: React.FC = () => {
+  const {
+    player,
+    enemy,
+    currentEnergy,
+    maxEnergy,
+    gold,
+    deck,
+    hand,
+    discardPile,
+  } = useGameStore();
 
-export const BattleStats: React.FC<BattleStatsProps> = ({
-  player,
-  enemy,
-  currentEnergy,
-  maxEnergy,
-  gold,
-  deck,
-  hand,
-  discardPile,
-}) => {
   return (
     <>
       <article className="fighter fighter--player">

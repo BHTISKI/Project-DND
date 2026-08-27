@@ -7,29 +7,8 @@ import { ShopPanel } from "./components/ShopPanel";
 import './App.css';
 
 function App() {
-  const {
-    player,
-    enemy,
-    isPlayerTurn,
-    endTurn,
-    battleLogs,
-    gamePhase,
-    healPlayer,
-    removeCardFromDeck,
-    addRewardCardToDeck,
-    skipReward,
-    startNextCombat,
-    // Energy and deck info
-    currentEnergy,
-    maxEnergy,
-    deck,
-    hand,
-    discardPile,
-    gold,
-    rewardOptions,
-    // Actions
-    initializeGame,
-  } = useGameStore();
+  // Only initialize game; all other state accessed inside components
+  const initializeGame = useGameStore(s => s.initializeGame);
 
   useEffect(() => {
     // Initialize the game (creates deck, draws initial hand, etc.)
@@ -44,25 +23,16 @@ function App() {
           <h1>DND Oyunu</h1>
         </div>
         <div className="topbar-meta">
-          <div className={`turn-badge ${isPlayerTurn ? 'turn-badge--player' : 'turn-badge--enemy'}`}>
-            <span className="turn-dot" />
-            {isPlayerTurn ? 'Oyuncu Turu' : 'Düşman Turu'}
+          <div className={`turn-badge ${useGameStore(s => s.isPlayerTurn) ? 'turn-badge--player' : 'turn-badge--enemy'}`}>
+            <span className="turn-dot" aria-hidden="true" />
+            {useGameStore(s => s.isPlayerTurn) ? 'Oyuncu Turu' : 'Düşman Turu'}
           </div>
-          <div className="gold-display"><span aria-hidden="true">◆</span> {gold} altın</div>
+          <div className="gold-display"><span aria-hidden="true">◆</span> {useGameStore(s => s.gold)} altın</div>
         </div>
       </header>
 
       <section className="battle-stage" aria-label="Savaş alanı">
-        <BattleStats
-          player={player}
-          enemy={enemy}
-          currentEnergy={currentEnergy}
-          maxEnergy={maxEnergy}
-          gold={gold}
-          deck={deck}
-          hand={hand}
-          discardPile={discardPile}
-        />
+        <BattleStats />
         <div className="battle-divider" aria-hidden="true"><span>VS</span></div>
       </section>
 
@@ -70,37 +40,38 @@ function App() {
         <div className="panel-heading">
           <div>
             <p className="eyebrow">Savaş alanı</p>
-            <h2>{gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'victory' ? 'Zafer!' : 'Mola'}</h2>
+            <h2>
+              {(() => {
+                const phase = useGameStore(s => s.gamePhase);
+                if (phase === 'combat') return 'Hamleni seç';
+                if (phase === 'victory') return 'Zafer!';
+                return 'Mola';
+              })()}
+            </h2>
           </div>
-          {gamePhase === 'combat' && <CombatControls endTurn={endTurn} />}
+          {useGameStore(s => s.gamePhase) === 'combat' && <CombatControls endTurn={useGameStore(s => s.endTurn)} />}
         </div>
 
-        {gamePhase === 'combat' && (
+        {useGameStore(s => s.gamePhase) === 'combat' && (
           <p className="panel-hint">Kart oyna, enerjini yönet ve düşmanı alt et.</p>
         )}
-        {gamePhase === 'shop' && (
-          <ShopPanel
-            deck={deck}
-            gold={gold}
-            healPlayer={healPlayer}
-            removeCardFromDeck={removeCardFromDeck}
-            startNextCombat={startNextCombat}
-          />
+        {useGameStore(s => s.gamePhase) === 'shop' && (
+          <ShopPanel />
         )}
-        {gamePhase === 'victory' && (
+        {useGameStore(s => s.gamePhase) === 'victory' && (
           <>
             <p className="panel-hint">Tebrikler! Bir ödül kartı seçin veya ödülü geçin.</p>
-            {rewardOptions.length === 0 ? (
+            {useGameStore(s => s.rewardOptions).length === 0 ? (
               <p className="empty-state">Ödül kartları yükleniyor...</p>
             ) : (
               <div className="reward-grid">
-                {rewardOptions.map((card) => (
+                {useGameStore(s => s.rewardOptions).map((card) => (
                   <div key={card.id} className="reward-card">
                     <h3>{card.isim}</h3>
                     <p>{card.tip} · {card.zarTuru}</p>
                     <p>Mana: {card.manaBedeli}</p>
                     <button
-                      onClick={() => addRewardCardToDeck(card.id)}
+                      onClick={() => useGameStore(s => s.addRewardCardToDeck)(card.id)}
                       className="button button--reward"
                     >
                       Desteye Ekle
@@ -109,8 +80,8 @@ function App() {
                 ))}
               </div>
             )}
-            <button onClick={skipReward} className="button button--quiet">
-              Ödülü Pas Geç
+            <button onClick={useGameStore(s => s.skipReward)} className="button button--quiet">
+              Awardı Pas Geç
             </button>
           </>
         )}
@@ -120,9 +91,11 @@ function App() {
         <div className="section-heading">
           <div>
             <p className="eyebrow">Cephanelik</p>
-            <h2>Elindeki kartlar <span>{hand.length}</span></h2>
+            <h2>Elindeki kartlar <span>{useGameStore(s => s.hand).length}</span></h2>
           </div>
-          <p className="deck-count">Deste {deck.length} · Mezarlık {discardPile.length}</p>
+          <p className="deck-count">
+            Deste {useGameStore(s => s.deck).length} · Mezarlık {useGameStore(s => s.discardPile).length}
+          </p>
         </div>
         <Hand />
       </section>
@@ -135,7 +108,7 @@ function App() {
           </div>
           <span className="log-status">Canlı</span>
         </div>
-        {battleLogs.slice(-5).map((msg, idx) => (
+        {useGameStore(s => s.battleLogs).slice(-5).map((msg, idx) => (
           <div key={idx} className="log-entry">
             <span className="log-marker" />
             {msg}
