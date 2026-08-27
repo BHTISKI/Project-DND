@@ -1,0 +1,3 @@
+- [Updated store.ts with energy system, deck/hand/discard management, game phase (combat, shop, victory), gold, reward options, and shop actions (heal, remove card, start next combat)](./src/state/store.ts)
+- [Updated Hand.tsx to use new store structure and simplify card play logic (calls playCard which handles discarding, energy, attack, damage, logging)](./src/components/Hand.tsx)
+- [Updated App.tsx to show gold, victory phase with reward card selection, shop phase with heal, remove card, and start combat actions, and dynamic UI based on game phase. Fixed import for CardComponent. Added useEffect to call initializeGame on mount to ensure initial hand is drawn.](./src/App.tsx)
