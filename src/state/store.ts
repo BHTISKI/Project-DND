@@ -770,6 +770,13 @@ export const useGameStore = create<GameState>((set) => ({
       const scaledEnemy = createEnemy(enemyArchetype, victoryFactor);
       // Generate initial enemy intent for the new combat
       const { intent, value, block: enemyBlock } = generateEnemyIntent(scaledEnemy, enemyArchetype);
+
+      // Combine deck, hand, and discard pile, shuffle, then draw initial hand
+      const combined = [...state.deck, ...state.hand, ...state.discardPile];
+      const shuffledDeck = shuffle(combined);
+      const newHand = shuffledDeck.slice(0, state.drawCount);
+      const newDeck = shuffledDeck.slice(state.drawCount);
+
       return {
         ...state,
         enemy: scaledEnemy,
@@ -783,7 +790,8 @@ export const useGameStore = create<GameState>((set) => ({
         enemyArchetype,
         // Reset player state for new combat
         currentEnergy: state.maxEnergy, // full energy
-        hand: [], // will be filled by drawing cards at combat start
+        hand: newHand, // draw initial hand
+        deck: newDeck, // remaining cards
         discardPile: [], // clear discard pile
         playerStatuses: [], // clear all temporary status effects
         enemyStatuses: [],

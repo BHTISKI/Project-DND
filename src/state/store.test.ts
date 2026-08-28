@@ -184,16 +184,22 @@ describe('game engine store', () => {
   });
 
   it('resets energy, hand, discard pile and player statuses in startNextCombat', () => {
-    // Set up a state with non-default values
     useGameStore.setState({
       gamePhase: 'shop',
       victoryCount: 2,
       currentEnergy: 1, // not full
+      deck: [card({ id: 'deck-card' }), card({ id: 'deck-card-2' }), card({ id: 'deck-card-3' })],
       hand: [card({ id: 'hand-card' })],
-      discardPile: [card({ id: 'discard-card' })],
+      discardPile: [card({ id: 'discard-card' }), card({ id: 'discard-card-2' }), card({ id: 'discard-card-3' })],
       playerStatuses: [{ id: 'weakened', duration: 2, stacks: 1 }],
+      enemyStatuses: [{ id: 'poisoned', duration: 2, stacks: 1, value: 1 }],
+      playerBlock: 4,
+      enemyBlock: 3,
+      enemySkipNextTurn: true,
+      comboChain: ['skill', 'attack'],
+      comboCount: 2,
+      nextDamageBonus: 4,
       enemy: { ...enemy },
-      // other fields as needed
     });
     vi.spyOn(Math, 'random').mockReturnValue(0);
     useGameStore.getState().startNextCombat();
@@ -201,20 +207,51 @@ describe('game engine store', () => {
 
     // Energy should be reset to maxEnergy (3)
     expect(state.currentEnergy).toBe(3);
-    // Hand should be empty (will be filled by drawing cards at combat start, but startNextCombat itself does not draw)
-    expect(state.hand).toHaveLength(0);
-    // Discard pile should be empty
+    expect(state.hand).toHaveLength(state.drawCount);
     expect(state.discardPile).toHaveLength(0);
-    // Player statuses should be cleared
-    expect(state.playerStatuses).toHaveLength(0);
-    // Game phase should be combat
+    expect(state.deck).toHaveLength(2);
+    expect([...state.deck, ...state.hand].map((item) => item.id).sort()).toEqual([
+      'deck-card', 'deck-card-2', 'deck-card-3', 'discard-card', 'discard-card-2', 'discard-card-3', 'hand-card',
+    ].sort());
+
+    expect(state.playerStatuses).toEqual([]);
+    expect(state.enemyStatuses).toEqual([]);
+    expect(state.playerBlock).toBe(0);
+    expect(state.enemyBlock).toBe(0);
+    expect(state.enemySkipNextTurn).toBe(false);
+    expect(state.comboChain).toEqual([]);
+    expect(state.comboCount).toBe(0);
+    expect(state.nextDamageBonus).toBe(0);
     expect(state.gamePhase).toBe('combat');
+    expect(state.isPlayerTurn).toBe(true);
+    expect(state.enemyIntent).not.toBeNull();
     // Enemy should be scaled based on victoryCount (2)
     expect(state.enemy.isim).toBe('Büyücü'); // archetype rotation: goblin->guardian->mage->goblin...
     // Victory count should be preserved
     expect(state.victoryCount).toBe(2);
     // Gold should be preserved
     expect(state.gold).toBe(50);
+  });
+
+  it('keeps reward cards and excludes cards removed in the shop', () => {
+    const reward = card({ id: 'reward-card' });
+    const removed = card({ id: 'removed-card' });
+    useGameStore.setState({
+      gamePhase: 'victory',
+      deck: [removed],
+      rewardOptions: [reward],
+      gold: 50,
+    });
+
+    useGameStore.getState().addRewardCardToDeck('reward-card');
+    useGameStore.getState().removeCardFromDeck('removed-card');
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    useGameStore.getState().startNextCombat();
+
+    const state = useGameStore.getState();
+    const combatCardIds = [...state.deck, ...state.hand].map((item) => item.id);
+    expect(combatCardIds).toContain('reward-card');
+    expect(combatCardIds).not.toContain('removed-card');
   });
 
   it('restarts the game via initializeGame', () => {
