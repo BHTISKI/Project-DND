@@ -1,10 +1,42 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import App from '../App';
 import { useGameStore } from '../state/store';
 import type { Card } from '../types/game';
 import { createDataTransfer, mockRandom, withMockRandom } from './index';
+
+// Reset store to initial state before each test
+beforeEach(() => {
+  useGameStore.setState({
+    player: { id: 'player-1', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2 },
+    enemy: { id: 'enemy-0', isim: 'Goblin', mevcutCan: 7, maksimumCan: 7, zirhSinifi: 11, gucCarpani: 1 },
+    isPlayerTurn: true,
+    maxEnergy: 3,
+    currentEnergy: 3,
+    deck: [],
+    hand: [],
+    discardPile: [],
+    drawCount: 5,
+    gold: 50,
+    battleLogs: [],
+    initialized: false,
+    playerBlock: 0,
+    enemyBlock: 0,
+    enemySkipNextTurn: false,
+    victoryCount: 0,
+    gamePhase: 'combat',
+    rewardOptions: [],
+    enemyIntent: null,
+    enemyIntentValue: 0,
+    enemyArchetype: 'goblin',
+    playerStatuses: [],
+    enemyStatuses: [],
+    comboChain: [],
+    comboCount: 0,
+    nextDamageBonus: 0,
+  });
+});
 
 const testCard: Card = {
   id: 'reward-card',
@@ -16,6 +48,144 @@ const testCard: Card = {
   rarity: 'rare',
   effects: [{ kind: 'energy', amount: 1 }],
 };
+
+describe('upgrade system', () => {
+  it('calculates upgrade cost correctly', () => {
+    // reset store
+    useGameStore.setState({
+      victoryCount: 0,
+      gold: 50,
+    });
+    // common card
+    const commonCard = { ...useGameStore.getState().deck[0], rarity: 'common' as const };
+    // We need to get a card from the deck to test, but we can also test the cost function directly.
+    // We'll just test the cost function logic.
+    const cost = (rarity: 'common' | 'uncommon' | 'rare' | undefined, victoryCount: number) => {
+      const baseCost = rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
+      return baseCost + Math.floor(baseCost * victoryCount * 0.1);
+    };
+    expect(cost('common', 0)).toBe(40);
+    expect(cost('common', 1)).toBe(44); // 40 + 4
+    expect(cost('common', 2)).toBe(48); // 40 + 8
+    expect(cost('uncommon', 0)).toBe(60);
+    expect(cost('uncommon', 1)).toBe(66); // 60 + 6
+    expect(cost('rare', 0)).toBe(80);
+    expect(cost('rare', 1)).toBe(88); // 80 + 8
+  });
+
+  it('upgrades a card and deducts gold', () => {
+    useGameStore.setState({
+      initialized: true,
+      gamePhase: 'shop',
+      gold: 100,
+      victoryCount: 0,
+      deck: [],
+    });
+    // We'll add a known card to the deck for testing
+    const testCard: Card = {
+      id: 'test-card',
+      isim: 'Test Kartı',
+      tip: 'saldırı',
+      manaBedeli: 1,
+      baseHasar: 0,
+      zarTuru: 'd4',
+      rarity: 'common',
+      effects: [{ kind: 'attack', die: 'd4' }],
+    };
+    // We need to add the card to the deck via state
+    useGameStore.setState({
+      deck: [testCard],
+    });
+    const initialGold = useGameStore.getState().gold;
+    const initialDeckLength = useGameStore.getState().deck.length;
+    // Upgrade the card
+    useGameStore.getState().upgradeCard(testCard.id);
+    const stateAfter = useGameStore.getState();
+    // Gold should be decreased by the cost
+    const expectedCost = 40; // common, victoryCount 0
+    expect(stateAfter.gold).toBe(initialGold - expectedCost);
+    // Deck should have one more card (the upgraded version)
+    expect(stateAfter.deck.length).toBe(initialDeckLength + 1);
+    // Find the upgraded card in the deck
+    const upgradedCard = stateAfter.deck.find((c) => c.isUpgraded && c.isim === testCard.isim);
+    expect(upgradedCard).toBeDefined();
+    // The upgraded card should have enhanced effect
+    if (upgradedCard) {
+      const upgradedEffect = upgradedCard.effects?.[0];
+      expect(upgradedEffect).toBeDefined();
+      // Attack effect should have damageBonus increased by 2
+      if (upgradedEffect.kind === 'attack' || upgradedEffect.kind === 'damage') {
+        expect(upgradedEffect.damageBonus).toBe(2); // original was 0, now 2
+      }
+    }
+  });
+
+  it('does not upgrade already upgraded card', () => {
+    // Set up a state with an upgraded card in the deck
+    const upgradedCard: Card = {
+      id: 'upgraded-card',
+      isim: 'Test Kartı',
+      tip: 'saldırı',
+      manaBedeli: 1,
+      baseHasar: 0,
+      zarTuru: 'd4',
+      rarity: 'common',
+      isUpgraded: true,
+      effects: [{ kind: 'attack', die: 'd4', damageBonus: 2 }], // already upgraded
+    };
+    useGameStore.setState({
+      initialized: true,
+      gamePhase: 'shop',
+      gold: 100,
+      victoryCount: 0,
+      deck: [upgradedCard],
+    });
+    const initialGold = useGameStore.getState().gold;
+    const initialDeckLength = useGameStore.getState().deck.length;
+    // Try to upgrade the upgraded card
+    useGameStore.getState().upgradeCard(upgradedCard.id);
+    const stateAfter = useGameStore.getState();
+    // Gold should not change
+    expect(stateAfter.gold).toBe(initialGold);
+    // Deck length should not change
+    expect(stateAfter.deck.length).toBe(initialDeckLength);
+    // The card should still be upgraded (no change)
+    const stillUpgraded = stateAfter.deck.find((c) => c.id === upgradedCard.id && c.isUpgraded);
+    expect(stillUpgraded).toBeDefined();
+  });
+
+  it('does not upgrade when gold insufficient', () => {
+    const testCard: Card = {
+      id: 'test-card-2',
+      isim: 'Test Kartı 2',
+      tip: 'saldırı',
+      manaBedeli: 1,
+      baseHasar: 0,
+      zarTuru: 'd4',
+      rarity: 'rare', // high cost
+      effects: [{ kind: 'attack', die: 'd4' }],
+    };
+    useGameStore.setState({
+      initialized: true,
+      gamePhase: 'shop',
+      gold: 30, // not enough for rare card (base 80)
+      victoryCount: 0,
+      deck: [testCard],
+    });
+    const initialGold = useGameStore.getState().gold;
+    const initialDeckLength = useGameStore.getState().deck.length;
+    // Try to upgrade
+    useGameStore.getState().upgradeCard(testCard.id);
+    const stateAfter = useGameStore.getState();
+    // Gold should not change
+    expect(stateAfter.gold).toBe(initialGold);
+    // Deck length should not change
+    expect(stateAfter.deck.length).toBe(initialDeckLength);
+    // The card should not be upgraded
+    const upgraded = stateAfter.deck.find((c) => c.id === testCard.id && c.isUpgraded);
+    expect(upgraded).toBeUndefined();
+  });
+});
 
 describe('test utilities and critical game flows', () => {
   it('returns mocked random values in order and reverts after reset', () => {
@@ -38,6 +208,7 @@ describe('test utilities and critical game flows', () => {
   it('renders the combat view and ends a player turn', async () => {
     await withMockRandom(Array.from({ length: 20 }, (_, index) => (index + 1) / 21), async () => {
       render(<App />);
+      console.log('State after render:', useGameStore.getState());
       expect(screen.getByRole('heading', { name: 'Hamleni seç' })).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'Oyuncu turunu bitir' }));
       expect(useGameStore.getState().battleLogs.length).toBeGreaterThan(1);

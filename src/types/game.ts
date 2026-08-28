@@ -6,6 +6,7 @@ export interface Card {
   baseHasar: number
   zarTuru: string
   rarity?: "common" | "uncommon" | "rare"
+  isUpgraded: boolean
   tags?: string[]
   effects?: CardEffect[]
 }

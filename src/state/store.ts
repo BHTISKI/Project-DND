@@ -14,6 +14,86 @@ function shuffle<T>(array: T[]): T[] {
 const rollDie = (die: string) => Math.floor(Math.random() * Number.parseInt(die.slice(1), 10)) + 1;
 const averageDie = (die: string) => (Number.parseInt(die.slice(1), 10) + 1) / 2;
 
+function calculateUpgradeCost(rarity: Card['rarity'] | undefined, victoryCount: number): number {
+  const baseCost = rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
+  return baseCost + Math.floor(baseCost * victoryCount * 0.1);
+}
+
+function enhanceEffect(effect: CardEffect): CardEffect {
+  switch (effect.kind) {
+    case 'attack':
+    case 'damage':
+      return {
+        ...effect,
+        damageBonus: (effect.damageBonus ?? 0) + 2,
+      };
+    case 'block':
+      if (effect.amount !== undefined) {
+        return {
+          ...effect,
+          amount: (effect.amount ?? 0) + 2,
+        };
+      } else if (effect.die) {
+        // Change die to next in sequence
+        const dieMap: Record<string, string> = {
+          'd4': 'd6',
+          'd6': 'd8',
+          'd8': 'd10',
+          'd10': 'd12',
+          'd12': 'd20',
+        };
+        const newDie = dieMap[effect.die] || effect.die;
+        return {
+          ...effect,
+          die: newDie,
+        };
+      }
+      return effect;
+    case 'heal':
+      if (effect.amount !== undefined) {
+        return {
+          ...effect,
+          amount: (effect.amount ?? 0) + 2,
+        };
+      } else if (effect.die) {
+        const dieMap: Record<string, string> = {
+          'd4': 'd6',
+          'd6': 'd8',
+          'd8': 'd10',
+          'd10': 'd12',
+          'd12': 'd20',
+        };
+        const newDie = dieMap[effect.die] || effect.die;
+        return {
+          ...effect,
+          die: newDie,
+        };
+      }
+      return effect;
+    case 'status':
+      return {
+        ...effect,
+        duration: (effect.duration ?? 0) + 1,
+        stacks: (effect.stacks ?? 1) + 1,
+      };
+    case 'draw':
+      return {
+        ...effect,
+        amount: (effect.amount ?? 0) + 1,
+      };
+    case 'energy':
+      return {
+        ...effect,
+        amount: (effect.amount ?? 0) + 1,
+      };
+    case 'skip':
+      return effect;
+    default:
+      return effect;
+  }
+}
+
+
 const enemyArchetypes: Record<EnemyArchetypeId, { name: string; hp: number; ac: number; power: number; attackDie: string; blockDie: string; special: 'heal' | 'damage' | 'weakened'; weights: [number, number, number] }> = {
   goblin: { name: 'Goblin', hp: 7, ac: 11, power: 1, attackDie: 'd6', blockDie: 'd4', special: 'weakened', weights: [0.65, 0.2, 0.15] },
   guardian: { name: 'Muhafız', hp: 11, ac: 13, power: 0, attackDie: 'd8', blockDie: 'd6', special: 'heal', weights: [0.3, 0.55, 0.15] },
@@ -762,6 +842,51 @@ export const useGameStore = create<GameState>((set) => ({
   },
 
   // Start next combat after shop (reset enemy to default or scaled?)
+  upgradeCard: (cardId: string) => {
+    set((state) => {
+      // Find the card in the deck (since we can only upgrade cards in the deck)
+      const cardIndex = state.deck.findIndex((c) => c.id === cardId);
+      if (cardIndex === -1) {
+        // Card not found in deck
+        console.warn('Card not found in deck for upgrade');
+        return state;
+      }
+      const card = state.deck[cardIndex];
+      // Check if already upgraded
+      if (card.isUpgraded) {
+        console.warn('Card is already upgraded');
+        return state;
+      }
+      // Calculate cost
+      const cost = calculateUpgradeCost(card.rarity, state.victoryCount);
+      if (state.gold < cost) {
+        // Not enough gold
+        console.warn(`Not enough gold. Need ${cost} gold.`);
+        return state;
+      }
+      // Create upgraded card
+      const upgradedCard = {
+        ...card,
+        id: Math.random().toString(36).substr(2, 9), // new id
+        isUpgraded: true,
+        // Enhance effects
+        effects: card.effects?.map(enhanceEffect) || [],
+      };
+      // Add the upgraded card to the deck
+      const newDeck = [...state.deck, upgradedCard];
+      // Deduct gold
+      const newGold = state.gold - cost;
+      // We can add a log
+      const newLogs = [...state.battleLogs, `Kart ${card.isim} ${cost} altınla yükseltildi.`];
+      return {
+        ...state,
+        deck: newDeck,
+        gold: newGold,
+        battleLogs: newLogs,
+      };
+    });
+  },
+
   startNextCombat: () => {
     set((state) => {
       if (state.gamePhase !== 'shop') return state;

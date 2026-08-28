@@ -31,7 +31,10 @@ export const CardComponent: React.FC<CardProps> = ({ card, onPlay, isPlayable = 
     >
       <span className="card-topline"><span className="card-type"><span aria-hidden="true">{cardGlyph}</span>{cardTypeLabel}</span><strong aria-label={`${card.manaBedeli} mana`}>{card.manaBedeli}</strong></span>
       <span className="card-art" aria-hidden="true"><span className="card-glyph">{cardGlyph}</span><i /></span>
-      <span className="card-name">{card.isim}</span>
+      <span className="card-name">
+  {card.isim}
+  {card.isUpgraded && <span className="card-upgrade-indicator" aria-hidden="true">⬆</span>}
+</span>
       <span className="card-effect">{effectText}</span>
       <span className="card-details"><span><b>ZAR</b>{card.zarTuru}</span><span><b>ROL</b>{rarityLabel}</span></span>
       <span className="card-action">{isPlayable ? 'Oynamaya hazır' : 'Kullanılamaz'}</span>
