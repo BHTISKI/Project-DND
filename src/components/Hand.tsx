@@ -18,7 +18,7 @@ export const Hand: React.FC = () => {
   };
 
   return (
-    <div className={`hand-grid${isPlayerTurn && gamePhase === 'combat' ? '' : ' hand-grid--inactive'}`} aria-label="Kart eli">
+    <div className={`hand-grid${isPlayerTurn && gamePhase === 'combat' ? '' : ' hand-grid--inactive'}`} aria-label="Kart eli" aria-live="polite">
       {hand.map((card) => (
         <CardComponent
           key={card.id}

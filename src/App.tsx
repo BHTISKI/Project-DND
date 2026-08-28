@@ -19,6 +19,16 @@ function App() {
   const discardPile = useGameStore((s) => s.discardPile);
   const battleLogs = useGameStore((s) => s.battleLogs);
 
+  const getLogClass = (message: string) => {
+    if (message.includes('KRİTİK')) return 'log-entry--critical';
+    if (message.includes('hasar') || message.includes('saldırı') || message.includes('vuruldu')) return 'log-entry--attack';
+    if (message.includes('blok') || message.includes('savun')) return 'log-entry--defense';
+    if (message.includes('iyileş')) return 'log-entry--heal';
+    if (message.includes('zafer') || message.includes('Ödül')) return 'log-entry--victory';
+    if (message.includes('bitti') || message.includes('ölü')) return 'log-entry--gameover';
+    return '';
+  };
+
   useEffect(() => {
     initializeGame();
   }, [initializeGame]);
@@ -26,7 +36,7 @@ function App() {
   const combatTitle = gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'victory' ? 'Zafer!' : gamePhase === 'gameOver' ? 'Oyun Bitti' : 'Mola';
 
   return (
-    <main className="game-shell">
+    <main className={`game-shell game-shell--${gamePhase}`}>
       <header className="topbar">
         <div>
           <p className="eyebrow">Kader Günlüğü · Bölüm I</p>
@@ -46,7 +56,7 @@ function App() {
         <div className="battle-divider" aria-hidden="true"><span>VS</span></div>
       </section>
 
-      <section className="combat-panel">
+      <section className={`combat-panel combat-panel--${gamePhase}`}>
         <div className="panel-heading">
           <div>
             <p className="eyebrow">Savaş alanı</p>
@@ -56,29 +66,29 @@ function App() {
         </div>
 
         {gamePhase === 'combat' && <p className="panel-hint">Kart oyna, enerjini yönet ve düşmanı alt et.</p>}
-        {gamePhase === 'gameOver' && <p className="panel-hint">Oyuncu ölü. Oyun sona erdi.</p>}
+        {gamePhase === 'gameOver' && <div className="terminal-message terminal-message--loss"><span className="terminal-icon" aria-hidden="true">×</span><div><strong>Run sona erdi</strong><p>Bu savaşta yenildin. Bir sonraki macera için burada duruyor.</p></div></div>}
         {gamePhase === 'shop' && <ShopPanel />}
         {gamePhase === 'victory' && (
-          <>
-            <p className="panel-hint">Tebrikler! Bir ödül kartı seçin veya ödülü geçin.</p>
+          <div className="victory-content">
+            <div className="terminal-message terminal-message--win"><span className="terminal-icon" aria-hidden="true">✦</span><div><strong>Zafer kazanıldı</strong><p>Düşman yenildi. Destene yeni bir güç kat.</p></div></div>
             {rewardOptions.length === 0 ? (
               <p className="empty-state">Ödül kartları yükleniyor...</p>
             ) : (
               <div className="reward-grid">
                 {rewardOptions.map((card) => (
                   <div key={card.id} className="reward-card">
+                    <div className="reward-card__head"><span className="reward-rarity">{card.rarity ?? 'common'}</span><span>{card.manaBedeli} enerji</span></div>
                     <h3>{card.isim}</h3>
-                    <p>{card.tip} · {card.zarTuru}</p>
-                    <p>Mana: {card.manaBedeli}</p>
-                    <button onClick={() => addRewardCardToDeck(card.id)} className="button button--reward">
-                      Desteye Ekle
+                    <p>{card.tip} · {card.zarTuru} zar</p>
+                    <button onClick={() => addRewardCardToDeck(card.id)} className="button button--reward" type="button">
+                      Bu kartı seç <span aria-hidden="true">→</span>
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <button onClick={skipReward} className="button button--quiet">Awardı Pas Geç</button>
-          </>
+            <button onClick={skipReward} className="button button--quiet" type="button">Ödülü pas geç</button>
+          </div>
         )}
       </section>
 
@@ -102,7 +112,7 @@ function App() {
           <span className="log-status">Canlı</span>
         </div>
         {battleLogs.slice(-5).map((msg, idx) => (
-          <div key={idx} className="log-entry">
+          <div key={idx} className={`log-entry ${getLogClass(msg)}`}>
             <span className="log-marker" />
             {msg}
           </div>

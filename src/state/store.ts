@@ -1,5 +1,4 @@
-import type { Character, EnemyIntent } from '../types/game';
-import type { Card } from '../types/game';
+import type { Card, CardEffect, Character, EnemyArchetypeId, EnemyIntent, StatusEffect, StatusId } from '../types/game';
 import { create } from 'zustand';
 
 // Helper to shuffle array (Fisher-Yates)
@@ -12,27 +11,75 @@ function shuffle<T>(array: T[]): T[] {
   return arr;
 }
 
-// Helper to generate enemy intent and value
-function generateEnemyIntent(enemy: Character): { intent: EnemyIntent; value: number } {
-  const roll = Math.random();
-  let intent: EnemyIntent = { type: 'attack' };
-  let value = 0;
+const rollDie = (die: string) => Math.floor(Math.random() * Number.parseInt(die.slice(1), 10)) + 1;
+const averageDie = (die: string) => (Number.parseInt(die.slice(1), 10) + 1) / 2;
 
-  if (roll < 0.6) {
-    // Keep the preview aligned with the actual d6 damage roll.
-    value = 3.5 + enemy.gucCarpani;
-    intent = { type: 'attack', estimatedDamage: value };
-  } else if (roll < 0.9) {
-    // Defense uses the same d4 range when the intent is created.
-    value = 2.5;
-    intent = { type: 'defend', estimatedBlock: value };
-  } else {
-    // Special currently heals by the same d4 range.
-    value = 2.5;
-    intent = { type: 'special', estimatedHeal: value };
+const enemyArchetypes: Record<EnemyArchetypeId, { name: string; hp: number; ac: number; power: number; attackDie: string; blockDie: string; special: 'heal' | 'damage' | 'weakened'; weights: [number, number, number] }> = {
+  goblin: { name: 'Goblin', hp: 7, ac: 11, power: 1, attackDie: 'd6', blockDie: 'd4', special: 'weakened', weights: [0.65, 0.2, 0.15] },
+  guardian: { name: 'Muhafız', hp: 11, ac: 13, power: 0, attackDie: 'd8', blockDie: 'd6', special: 'heal', weights: [0.3, 0.55, 0.15] },
+  mage: { name: 'Büyücü', hp: 8, ac: 10, power: 2, attackDie: 'd4', blockDie: 'd3', special: 'damage', weights: [0.35, 0.15, 0.5] },
+};
+
+function chooseArchetype(victoryCount: number): EnemyArchetypeId {
+  return (['goblin', 'guardian', 'mage'] as EnemyArchetypeId[])[victoryCount % 3];
+}
+
+function createEnemy(archetypeId: EnemyArchetypeId, tier: number): Character {
+  const archetype = enemyArchetypes[archetypeId];
+  const hp = archetype.hp + tier * (archetypeId === 'guardian' ? 3 : 2);
+  return { id: `enemy-${tier}`, isim: archetype.name, mevcutCan: hp, maksimumCan: hp, zirhSinifi: archetype.ac + Math.floor(tier / 2), gucCarpani: archetype.power + Math.floor(tier / 3) };
+}
+
+function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, previous?: EnemyIntent | null): { intent: EnemyIntent; value: number; block: number } {
+  const archetype = enemyArchetypes[archetypeId];
+  const weights = [...archetype.weights];
+  if (previous?.type === 'attack') weights[0] *= 0.7;
+  if (previous?.type === 'defend') weights[1] *= 0.7;
+  const roll = Math.random() * (weights[0] + weights[1] + weights[2]);
+  if (roll < weights[0]) {
+    const value = averageDie(archetype.attackDie) + enemy.gucCarpani;
+    return { intent: { type: 'attack', estimatedDamage: value, effectKey: 'archetype-attack' }, value, block: 0 };
   }
+  if (roll < weights[0] + weights[1]) {
+    const block = rollDie(archetype.blockDie);
+    return { intent: { type: 'defend', estimatedBlock: block, effectKey: 'archetype-defend' }, value: block, block };
+  }
+  if (archetype.special === 'heal') {
+    const value = averageDie('d4');
+    return { intent: { type: 'special', estimatedHeal: value, effectKey: 'heal' }, value, block: 0 };
+  }
+  if (archetype.special === 'damage') {
+    const value = averageDie('d6') + enemy.gucCarpani;
+    return { intent: { type: 'special', estimatedDamage: value, effectKey: 'arcane-blast' }, value, block: 0 };
+  }
+  return { intent: { type: 'special', effectKey: 'weakened' }, value: 0, block: 0 };
+}
 
-  return { intent, value };
+function addStatus(statuses: StatusEffect[], effect: StatusEffect): StatusEffect[] {
+  const existing = statuses.find((status) => status.id === effect.id);
+  if (!existing) return [...statuses, effect];
+  return statuses.map((status) => status.id === effect.id
+    ? { ...status, duration: Math.max(status.duration, effect.duration), stacks: Math.min(3, status.stacks + effect.stacks), value: effect.value ?? status.value }
+    : status);
+}
+
+function statusValue(statuses: StatusEffect[], id: StatusId): number {
+  return statuses.find((status) => status.id === id)?.value ?? 0;
+}
+
+function tickStatuses(statuses: StatusEffect[], target: 'player' | 'enemy', character: Character): { statuses: StatusEffect[]; character: Character; log: string[] } {
+  let updatedCharacter = character;
+  const log: string[] = [];
+  const remaining = statuses.flatMap((status) => {
+    if (status.id === 'poisoned') {
+      const damage = Math.max(1, status.value ?? 1) * status.stacks;
+      updatedCharacter = { ...updatedCharacter, mevcutCan: Math.max(0, updatedCharacter.mevcutCan - damage) };
+      log.push(`${target === 'player' ? 'Oyuncu' : 'Düşman'} zehirden ${damage} hasar aldı.`);
+    }
+    const nextDuration = status.duration - 1;
+    return nextDuration > 0 ? [{ ...status, duration: nextDuration }] : [];
+  });
+  return { statuses: remaining, character: updatedCharacter, log };
 }
 
 interface GameState {
@@ -70,6 +117,12 @@ interface GameState {
   enemyIntent: EnemyIntent | null;
   // Value associated with the intent (e.g., estimated damage for attack, block for defend, heal for special)
   enemyIntentValue: number;
+  enemyArchetype: EnemyArchetypeId;
+  playerStatuses: StatusEffect[];
+  enemyStatuses: StatusEffect[];
+  comboChain: string[];
+  comboCount: number;
+  nextDamageBonus: number;
   // Actions
   initializeGame: () => void;
   drawCards: (n: number) => void;
@@ -96,36 +149,25 @@ const defaultPlayer: Character = {
   gucCarpani: 2,
 };
 
-const defaultEnemy: Character = {
-  id: 'enemy-1',
-  isim: 'Goblin',
-  mevcutCan: 7,
-  maksimumCan: 7,
-  zirhSinifi: 11,
-  gucCarpani: 1,
-};
+const defaultEnemy = createEnemy('goblin', 0);
 
 // Sample card definitions (baseHasar 0, mana cost as given)
 const sampleCardDefs: Omit<Card, 'id'>[] = [
-  { isim: 'Ateş Topu', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd6' },
-  { isim: 'Hızlı Saldırı', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4' },
-  { isim: 'Buhar Nefesi', tip: 'yetenek', manaBedeli: 3, baseHasar: 0, zarTuru: 'd8' },
-  { isim: 'Kalkan Sihri', tip: 'savunma', manaBedeli: 2, baseHasar: 0, zarTuru: 'd4' },
-  { isim: 'Büyüleyici Çukur', tip: 'yetenek', manaBedeli: 4, baseHasar: 0, zarTuru: 'd10' },
+  { isim: 'Hızlı Saldırı', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'common', tags: ['attack'], effects: [{ kind: 'attack', die: 'd4' }] },
+  { isim: 'Kalkan Sihri', tip: 'savunma', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'common', tags: ['defend'], effects: [{ kind: 'block', die: 'd4' }] },
+  { isim: 'Ateş Topu', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd6', rarity: 'common', tags: ['skill', 'attack'], effects: [{ kind: 'damage', die: 'd6', ignoresArmor: true, damageBonus: 2 }] },
+  { isim: 'Buhar Nefesi', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd8', rarity: 'uncommon', tags: ['skill', 'heal'], effects: [{ kind: 'heal', die: 'd8' }] },
+  { isim: 'Zayıflatıcı Lanet', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['skill', 'control'], effects: [{ kind: 'status', status: 'weakened', duration: 2, value: 1, target: 'enemy' }] },
+  { isim: 'Zehirli Bıçak', tip: 'saldırı', manaBedeli: 2, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['attack', 'poison'], effects: [{ kind: 'attack', die: 'd4' }, { kind: 'status', status: 'poisoned', duration: 3, value: 1, target: 'enemy' }] },
+  { isim: 'Savaş İlhamı', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['skill', 'combo'], effects: [{ kind: 'status', status: 'empowered', duration: 2, value: 2 }, { kind: 'energy', amount: 1 }] },
+  { isim: 'Büyüleyici Çukur', tip: 'yetenek', manaBedeli: 3, baseHasar: 0, zarTuru: 'd10', rarity: 'rare', tags: ['skill', 'control'], effects: [{ kind: 'skip', target: 'enemy' }] },
+  { isim: 'Kırılgan Zafer', tip: 'saldırı', manaBedeli: 2, baseHasar: 0, zarTuru: 'd8', rarity: 'rare', tags: ['attack', 'risk'], effects: [{ kind: 'attack', die: 'd8', damageBonus: 3 }, { kind: 'status', status: 'vulnerable', duration: 2, value: 1, target: 'player' }] },
+  { isim: 'Taktik Hazırlık', tip: 'yetenek', manaBedeli: 0, baseHasar: 0, zarTuru: 'd1', rarity: 'rare', tags: ['skill', 'setup'], effects: [{ kind: 'draw', amount: 1 }, { kind: 'status', status: 'empowered', duration: 1, value: 1 }] },
 ];
 
 // Function to create initial deck (e.g., 5 copies of each)
 function createInitialDeck(): Card[] {
-  const deck: Card[] = [];
-  sampleCardDefs.forEach((def) => {
-    for (let i = 0; i < 5; i++) {
-      deck.push({
-        ...def,
-        id: Math.random().toString(36).substr(2, 9),
-      });
-    }
-  });
-  return shuffle(deck);
+  return shuffle(sampleCardDefs.slice(0, 7).map((def) => ({ ...def, id: Math.random().toString(36).substr(2, 9) })));
 }
 
 // Get 3 random unique cards from sampleCardDefs
@@ -158,6 +200,12 @@ export const useGameStore = create<GameState>((set) => ({
   rewardOptions: [],
   enemyIntent: null,
   enemyIntentValue: 0,
+  enemyArchetype: 'goblin',
+  playerStatuses: [],
+  enemyStatuses: [],
+  comboChain: [],
+  comboCount: 0,
+  nextDamageBonus: 0,
 
   initializeGame: () => {
     set((state) => {
@@ -166,11 +214,7 @@ export const useGameStore = create<GameState>((set) => ({
       // draw initial hand
       const hand = deck.slice(0, state.drawCount);
       const remainingDeck = deck.slice(state.drawCount);
-      const { intent, value } = generateEnemyIntent(state.enemy);
-      let enemyBlock = 0;
-      if (intent.type === 'defend') {
-        enemyBlock = Math.floor(Math.random() * 4) + 1; // d4
-      }
+      const { intent, value, block: enemyBlock } = generateEnemyIntent(state.enemy, 'goblin');
       return {
         ...state,
         deck: remainingDeck,
@@ -185,6 +229,12 @@ export const useGameStore = create<GameState>((set) => ({
         victoryCount: 0,
         enemyIntent: intent,
         enemyIntentValue: value,
+        enemyArchetype: 'goblin',
+        playerStatuses: [],
+        enemyStatuses: [],
+        comboChain: [],
+        comboCount: 0,
+        nextDamageBonus: 0,
       };
     });
   },
@@ -243,6 +293,13 @@ export const useGameStore = create<GameState>((set) => ({
       let enemy = state.enemy;
       let playerBlock = state.playerBlock;
       let enemySkipNextTurn = state.enemySkipNextTurn;
+      let enemyStatuses = state.enemyStatuses;
+      let playerStatuses = state.playerStatuses;
+
+      const enemyTick = tickStatuses(enemyStatuses, 'enemy', enemy);
+      enemyStatuses = enemyTick.statuses;
+      enemy = enemyTick.character;
+      battleLogs = [...battleLogs, ...enemyTick.log];
 
       // Check if enemy should skip this turn
       if (enemySkipNextTurn) {
@@ -285,6 +342,8 @@ export const useGameStore = create<GameState>((set) => ({
               }
               // Add enemy's damage modifier
               damage = baseDamage + enemy.gucCarpani;
+              if (statusValue(enemyStatuses, 'weakened') > 0) damage = Math.max(0, damage - statusValue(enemyStatuses, 'weakened'));
+              if (statusValue(playerStatuses, 'vulnerable') > 0) damage = Math.ceil(damage * 1.25);
               // Apply player's block to reduce damage
               if (playerBlock > 0) {
                 if (playerBlock >= damage) {
@@ -346,15 +405,25 @@ export const useGameStore = create<GameState>((set) => ({
             break;
 
           case 'special':
-            // Enemy does a special action: heal itself
-            // Roll a d4 for the heal amount
-            const healRoll = Math.floor(Math.random() * 4) + 1; // d4
-            const newEnemyHp = Math.min(enemy.maksimumCan, enemy.mevcutCan + healRoll);
-            enemy = { ...enemy, mevcutCan: newEnemyHp };
-            battleLogs = [...battleLogs, `Düşman özel hareket yapıyor! ${healRoll} can iyileşti.`];
+            if (state.enemyArchetype === 'mage') {
+              const damage = rollDie('d6') + enemy.gucCarpani;
+              player = { ...player, mevcutCan: Math.max(0, player.mevcutCan - damage) };
+              battleLogs = [...battleLogs, `Büyücü gizemli bir patlamayla ${damage} hasar verdi.`];
+            } else if (state.enemyArchetype === 'goblin') {
+              playerStatuses = addStatus(playerStatuses, { id: 'weakened', duration: 2, stacks: 1, value: 1 });
+              battleLogs = [...battleLogs, `Goblin hileli hamleyle oyuncuyu güçsüzleştirdi.`];
+            } else {
+              const healRoll = rollDie('d4');
+              enemy = { ...enemy, mevcutCan: Math.min(enemy.maksimumCan, enemy.mevcutCan + healRoll) };
+              battleLogs = [...battleLogs, `Muhafız ${healRoll} can iyileştirdi.`];
+            }
             break;
         }
       }
+      const playerTick = tickStatuses(playerStatuses, 'player', player);
+      playerStatuses = playerTick.statuses;
+      player = playerTick.character;
+      battleLogs = [...battleLogs, ...playerTick.log];
       // If enemy died after potential action (or was already dead), transition to victory
       if (enemy.mevcutCan <= 0 && state.gamePhase === 'combat') {
         // Transition to victory with 3 random reward cards
@@ -377,15 +446,13 @@ export const useGameStore = create<GameState>((set) => ({
           enemySkipNextTurn: false,
           enemyIntent: null,
           enemyIntentValue: 0,
+          playerStatuses,
+          enemyStatuses,
         };
       }
 
       // After enemy turn, generate new intent for the next player turn
-      const { intent, value } = generateEnemyIntent(enemy);
-      let newEnemyBlock = 0;
-      if (intent.type === 'defend') {
-        newEnemyBlock = Math.floor(Math.random() * 4) + 1; // d4
-      }
+      const { intent, value, block: newEnemyBlock } = generateEnemyIntent(enemy, state.enemyArchetype, state.enemyIntent);
 
       return {
         ...state,
@@ -402,6 +469,11 @@ export const useGameStore = create<GameState>((set) => ({
         enemySkipNextTurn,
         enemyIntent: intent,
         enemyIntentValue: value,
+        playerStatuses,
+        enemyStatuses,
+        comboChain: [],
+        comboCount: 0,
+        nextDamageBonus: 0,
       };
     });
   },
@@ -431,9 +503,10 @@ export const useGameStore = create<GameState>((set) => ({
       const newHand = [...state.hand];
       newHand.splice(cardIndex, 1);
       const newDiscard = [...state.discardPile, card];
+      let deck = state.deck;
 
       // Spend energy
-      const newEnergy = state.currentEnergy - card.manaBedeli;
+      let newEnergy = state.currentEnergy - card.manaBedeli;
 
       let log = '';
       let updatedPlayer = state.player;
@@ -441,8 +514,78 @@ export const useGameStore = create<GameState>((set) => ({
       let updatedPlayerBlock = state.playerBlock;
       let updatedEnemyBlock = state.enemyBlock; // current enemy block (from defend intent)
       let updatedEnemySkipNextTurn = state.enemySkipNextTurn;
+      let updatedPlayerStatuses = state.playerStatuses;
+      let updatedEnemyStatuses = state.enemyStatuses;
+      let updatedComboChain = [...state.comboChain, ...(card.tags ?? [card.tip])];
+      let updatedComboCount = state.comboCount;
+      let updatedNextDamageBonus = state.nextDamageBonus;
 
-      switch (card.tip) {
+      if (card.effects) {
+        const previousTag = state.comboChain[state.comboChain.length - 1];
+        const currentTag = card.tags?.[0] ?? card.tip;
+        if (previousTag && previousTag !== currentTag) {
+          updatedComboCount += 1;
+          updatedNextDamageBonus += previousTag === 'skill' && currentTag === 'attack' ? 2 : previousTag === 'defend' && currentTag === 'attack' ? 1 : 0;
+        }
+        updatedComboChain = [currentTag].slice(-2);
+        const effectLogs: string[] = [];
+        for (const effect of card.effects as CardEffect[]) {
+          if (effect.kind === 'attack' || effect.kind === 'damage') {
+            let hit = true;
+            let attackRoll = 0;
+            if (effect.kind === 'attack' && !effect.ignoresArmor) {
+              attackRoll = rollDie('d20');
+              hit = attackRoll !== 1 && (attackRoll === 20 || attackRoll + state.player.gucCarpani >= updatedEnemy.zirhSinifi);
+            }
+            if (!hit) {
+              effectLogs.push(`Zar: ${attackRoll}. Saldırı başarısız oldu.`);
+              updatedComboChain = [];
+              continue;
+            }
+            const die = effect.die ?? card.zarTuru;
+            let damage = rollDie(die) + card.baseHasar + (effect.damageBonus ?? 0) + state.player.gucCarpani + updatedNextDamageBonus;
+            if (statusValue(updatedPlayerStatuses, 'empowered') > 0) damage += statusValue(updatedPlayerStatuses, 'empowered');
+            if (statusValue(updatedEnemyStatuses, 'vulnerable') > 0) damage = Math.ceil(damage * 1.25);
+            if (updatedEnemyBlock > 0) {
+              damage = Math.max(0, damage - updatedEnemyBlock);
+              updatedEnemyBlock = 0;
+            }
+            updatedEnemy = { ...updatedEnemy, mevcutCan: Math.max(0, updatedEnemy.mevcutCan - damage) };
+            effectLogs.push(`${card.isim} ${damage} hasar verdi${updatedComboCount > state.comboCount ? ` (Kombo ${updatedComboCount})` : ''}.`);
+            updatedNextDamageBonus = 0;
+          } else if (effect.kind === 'block') {
+            updatedPlayerBlock = effect.amount ?? (effect.die ? rollDie(effect.die) : 0);
+            effectLogs.push(`${card.isim} ${updatedPlayerBlock} blok kazandırdı.`);
+          } else if (effect.kind === 'heal') {
+            const target = effect.target === 'enemy' ? updatedEnemy : updatedPlayer;
+            const amount = effect.amount ?? (effect.die ? rollDie(effect.die) : 0);
+            const healed = Math.min(target.maksimumCan, target.mevcutCan + amount);
+            if (effect.target === 'enemy') updatedEnemy = { ...target, mevcutCan: healed };
+            else updatedPlayer = { ...target, mevcutCan: healed };
+            effectLogs.push(`${card.isim} ${amount} can iyileştirdi.`);
+          } else if (effect.kind === 'status') {
+            const target = effect.target === 'enemy' ? updatedEnemyStatuses : updatedPlayerStatuses;
+            const status = { id: effect.status, duration: effect.duration, stacks: effect.stacks ?? 1, value: effect.value };
+            if (effect.target === 'enemy') updatedEnemyStatuses = addStatus(target, status);
+            else updatedPlayerStatuses = addStatus(target, status);
+            effectLogs.push(`${card.isim} ${effect.status} etkisi uyguladı.`);
+          } else if (effect.kind === 'draw') {
+            const available = deck.slice(0, effect.amount);
+            deck = deck.slice(effect.amount);
+            newHand.push(...available);
+            effectLogs.push(`${effect.amount} kart çekildi.`);
+          } else if (effect.kind === 'energy') {
+            newEnergy = Math.min(state.maxEnergy, newEnergy + effect.amount);
+            effectLogs.push(`${effect.amount} enerji kazanıldı.`);
+          } else if (effect.kind === 'skip') {
+            updatedEnemySkipNextTurn = true;
+            effectLogs.push('Düşman sonraki turunu atlayacak.');
+          }
+        }
+        log = effectLogs.join(' ');
+      }
+
+      if (!card.effects) switch (card.tip) {
         case 'saldırı': {
           // Determine hit with critical rules
           const attackRoll = Math.floor(Math.random() * 20) + 1;
@@ -585,6 +728,7 @@ export const useGameStore = create<GameState>((set) => ({
         return {
           ...state,
           hand: newHand,
+          deck,
           discardPile: newDiscard,
           currentEnergy: newEnergy,
           player: updatedPlayer,
@@ -594,8 +738,14 @@ export const useGameStore = create<GameState>((set) => ({
           enemySkipNextTurn: false,
           enemyIntent: null,
           enemyIntentValue: 0,
+          playerStatuses: updatedPlayerStatuses,
+          enemyStatuses: updatedEnemyStatuses,
+          comboChain: updatedComboChain,
+          comboCount: updatedComboCount,
+          nextDamageBonus: updatedNextDamageBonus,
           battleLogs: [...state.battleLogs, log],
           gamePhase: 'victory',
+          gold: state.gold + 20 + state.victoryCount * 5,
           victoryCount: state.victoryCount + 1,
           rewardOptions: getRandomRewards(),
         };
@@ -604,6 +754,7 @@ export const useGameStore = create<GameState>((set) => ({
       return {
         ...state,
         hand: newHand,
+        deck,
         discardPile: newDiscard,
         currentEnergy: newEnergy,
         player: updatedPlayer,
@@ -611,6 +762,11 @@ export const useGameStore = create<GameState>((set) => ({
         playerBlock: updatedPlayerBlock,
         enemyBlock: updatedEnemyBlock,
         enemySkipNextTurn: updatedEnemySkipNextTurn,
+        playerStatuses: updatedPlayerStatuses,
+        enemyStatuses: updatedEnemyStatuses,
+        comboChain: updatedComboChain,
+        comboCount: updatedComboCount,
+        nextDamageBonus: updatedNextDamageBonus,
         battleLogs: [...state.battleLogs, log],
       };
     });
@@ -726,19 +882,10 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => {
       if (state.gamePhase !== 'shop') return state;
       const victoryFactor = state.victoryCount;
-      const scaledEnemy = {
-        ...defaultEnemy,
-        mevcutCan: defaultEnemy.mevcutCan + victoryFactor * 2,
-        maksimumCan: defaultEnemy.maksimumCan + victoryFactor * 2,
-        zirhSinifi: defaultEnemy.zirhSinifi + victoryFactor,
-        gucCarpani: defaultEnemy.gucCarpani + Math.floor(victoryFactor * 0.5)
-      };
+      const enemyArchetype = chooseArchetype(victoryFactor);
+      const scaledEnemy = createEnemy(enemyArchetype, victoryFactor);
       // Generate initial enemy intent for the new combat
-      const { intent, value } = generateEnemyIntent(scaledEnemy);
-      let enemyBlock = 0;
-      if (intent.type === 'defend') {
-        enemyBlock = Math.floor(Math.random() * 4) + 1; // d4
-      }
+      const { intent, value, block: enemyBlock } = generateEnemyIntent(scaledEnemy, enemyArchetype);
       return {
         ...state,
         enemy: scaledEnemy,
@@ -749,6 +896,12 @@ export const useGameStore = create<GameState>((set) => ({
         enemySkipNextTurn: false,
         enemyIntent: intent,
         enemyIntentValue: value,
+        enemyArchetype,
+        playerStatuses: state.playerStatuses,
+        enemyStatuses: [],
+        comboChain: [],
+        comboCount: 0,
+        nextDamageBonus: 0,
         // Optionally clear battle logs? Keep them.
       };
     });
