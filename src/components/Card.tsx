@@ -23,6 +23,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, onPlay, isPlayable = 
   const primaryEffect = card.effects?.find((effect) => effect.kind === 'attack' || effect.kind === 'damage' || effect.kind === 'block' || effect.kind === 'heal');
   const primaryValue = primaryEffect && ('die' in primaryEffect ? primaryEffect.die : 'amount' in primaryEffect ? primaryEffect.amount : undefined);
   const primaryLabel = card.tip === 'saldırı' ? 'HASAR' : card.tip === 'savunma' ? 'BLOK' : 'ETKİ';
+  const availabilityLabel = isPlayable ? `${card.isim} oynanabilir` : `${card.isim} için yeterli enerji yok`;
 
   return (
     <button
@@ -30,7 +31,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, onPlay, isPlayable = 
       className={`game-card game-card--${card.tip} game-card--${card.rarity ?? 'common'}${isPlayable ? '' : ' game-card--disabled'}`}
       onClick={() => onPlay(card)}
       disabled={!isPlayable}
-      aria-label={`${card.isim}, ${cardTypeLabel}, ${card.manaBedeli} mana, ${card.zarTuru} zar, ${card.baseHasar} temel hasar${isPlayable ? '' : ', kullanılamaz'}`}
+      aria-label={`${card.isim}, ${cardTypeLabel}, ${card.manaBedeli} mana, ${card.zarTuru} zar, ${card.baseHasar} temel hasar, ${availabilityLabel}`}
     >
       <span className="card-topline"><strong className="card-mana" aria-label={`${card.manaBedeli} mana`}>{card.manaBedeli}<small>MP</small></strong><span className="card-type"><span aria-hidden="true">{cardGlyph}</span>{cardTypeLabel}</span><span className="card-rarity">{rarityLabel}</span></span>
       <span className="card-art" aria-hidden="true"><span className="card-glyph">{cardGlyph}</span><i /></span>

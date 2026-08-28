@@ -5,9 +5,8 @@ import type { EnemyIntent } from '../types/game';
 function getIntentDetails(value: EnemyIntent | null | undefined) {
   if (!value) return { type: '', valueText: '' };
 
-  const damage = value.estimatedDamage ?? 0;
-  const valueText = typeof damage === 'number'
-    ? `${damage} tahmini hasar`
+  const valueText = value.estimatedDamage !== undefined
+    ? `${value.estimatedDamage} tahmini hasar`
     : value.estimatedBlock !== undefined
       ? `${value.estimatedBlock} blok`
       : value.estimatedHeal !== undefined
@@ -43,7 +42,10 @@ export const BattleStats: React.FC = () => {
   const displayedIntentValue = valueText || (intentIsDefend && enemyBlock > 0 ? `${enemyBlock} blok` : intentType === 'special' && enemyIntentValue > 0 ? `${enemyIntentValue} tahmini iyileşme` : '');
   const playerHealthPercent = Math.max(0, (player.mevcutCan / player.maksimumCan) * 100);
   const enemyHealthPercent = Math.max(0, (enemy.mevcutCan / enemy.maksimumCan) * 100);
-  const statusLabel = (status: { id: string; stacks: number; duration: number }) => `${status.id} ${status.stacks}x · ${status.duration} tur`;
+  const statusLabel = (status: { id: string; stacks: number; duration: number }) => {
+    const labels: Record<string, string> = { poisoned: 'Zehirli', vulnerable: 'Savunmasız', weakened: 'Güçsüz', empowered: 'Güçlü', fortified: 'Tahkimli' };
+    return `${labels[status.id] ?? status.id} · ${status.stacks} stack · ${status.duration} tur`;
+  };
 
   return (
     <>
@@ -55,7 +57,7 @@ export const BattleStats: React.FC = () => {
           <div className="health-row"><span>Can <small>{playerHealthPercent <= 30 ? 'Kritik' : 'Güvende'}</small></span><strong>{player.mevcutCan} / {player.maksimumCan}</strong></div>
           <div className="health-bar" role="progressbar" aria-label="Oyuncu canı" aria-valuenow={player.mevcutCan} aria-valuemin={0} aria-valuemax={player.maksimumCan}><span style={{ width: `${playerHealthPercent}%` }} /></div>
           <div className="fighter-stats"><span><b>{player.zirhSinifi}</b><small>AC</small></span><span><b>+{player.gucCarpani}</b><small>GÜÇ</small></span><span className="block-value"><b>{playerBlock}</b><small>BLOK</small></span></div>
-          {gameState.playerStatuses.length > 0 && <div className="status-row" aria-label="Oyuncu etkileri">{gameState.playerStatuses.map((status) => <span key={status.id} className="status-chip">{statusLabel(status)}</span>)}</div>}
+          {gameState.playerStatuses.length > 0 && <div className="status-row" aria-label="Oyuncu etkileri">{gameState.playerStatuses.map((status) => <span key={status.id} className="status-chip" title={statusLabel(status)}>{statusLabel(status)}</span>)}</div>}
         </div>
         <div className="energy-display" aria-label={`${currentEnergy} / ${maxEnergy} enerji`}>
           <small>ENERJİ</small>
@@ -72,7 +74,7 @@ export const BattleStats: React.FC = () => {
           <div className="health-row"><span>Can <small>{enemyHealthPercent <= 30 ? 'Kritik' : 'Aktif'}</small></span><strong>{enemy.mevcutCan} / {enemy.maksimumCan}</strong></div>
           <div className="health-bar" role="progressbar" aria-label="Düşman canı" aria-valuenow={enemy.mevcutCan} aria-valuemin={0} aria-valuemax={enemy.maksimumCan}><span style={{ width: `${enemyHealthPercent}%` }} /></div>
           <div className="fighter-stats"><span><b>{enemy.zirhSinifi}</b><small>AC</small></span><span><b>+{enemy.gucCarpani}</b><small>GÜÇ</small></span><span className="block-value"><b>{enemyBlock}</b><small>BLOK</small></span></div>
-          {gameState.enemyStatuses.length > 0 && <div className="status-row" aria-label="Düşman etkileri">{gameState.enemyStatuses.map((status) => <span key={status.id} className="status-chip status-chip--enemy">{statusLabel(status)}</span>)}</div>}
+          {gameState.enemyStatuses.length > 0 && <div className="status-row" aria-label="Düşman etkileri">{gameState.enemyStatuses.map((status) => <span key={status.id} className="status-chip status-chip--enemy" title={statusLabel(status)}>{statusLabel(status)}</span>)}</div>}
           <div key={`${intentType}-${displayedIntentValue}`} className={`enemy-intent enemy-intent--${intentClass}`} aria-live="polite">
             <span className="enemy-intent__icon" aria-hidden="true">{intentIsAttack ? '⚔' : intentIsDefend ? '◈' : '✦'}</span>
             <span><b>Düşman niyeti</b><strong>{intentLabel}</strong></span>
