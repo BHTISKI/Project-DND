@@ -125,6 +125,7 @@ interface GameState {
   nextDamageBonus: number;
   // Actions
   initializeGame: () => void;
+  restartGame: () => void;
   drawCards: (n: number) => void;
   endTurn: () => void;
   playCard: (cardId: string) => void;
@@ -211,14 +212,20 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => {
       if (state.initialized) return state;
       const deck = createInitialDeck();
+      const player = { ...defaultPlayer };
+      const enemy = { ...defaultEnemy };
       // draw initial hand
       const hand = deck.slice(0, state.drawCount);
       const remainingDeck = deck.slice(state.drawCount);
-      const { intent, value, block: enemyBlock } = generateEnemyIntent(state.enemy, 'goblin');
+      const { intent, value, block: enemyBlock } = generateEnemyIntent(enemy, 'goblin');
       return {
         ...state,
+        player,
+        enemy,
         deck: remainingDeck,
         hand,
+        discardPile: [],
+        gold: 50,
         currentEnergy: state.maxEnergy,
         initialized: true,
         gamePhase: 'combat',
@@ -237,6 +244,17 @@ export const useGameStore = create<GameState>((set) => ({
         nextDamageBonus: 0,
       };
     });
+  },
+
+  restartGame: () => {
+    set((state) => {
+      if (state.gamePhase !== 'gameOver') return state;
+      return {
+        ...state,
+        initialized: false,
+      };
+    });
+    useGameStore.getState().initializeGame();
   },
 
   drawCards: (n: number) => {
@@ -365,10 +383,10 @@ export const useGameStore = create<GameState>((set) => ({
               let hitText = isCritHit ? 'KRİTİK VURUŞ!' : 'Başarılı saldırı';
               log = `Düşman Zar: ${enemyRoll}. ${hitText} ${damage} hasar vuruldu!`;
               if (blockUsed > 0) {
-                log += ` (Blok ${blockUsed} hasarını absorbed)`;
+                log += ` (Blok ${blockUsed} hasarını engelledi)`;
               }
             } else {
-              let hitText = isCritFail ? 'KRİTİK BAŞARISIZLIK! Saldırı tamamen başarısız oldu.' : 'Saldırısı kansırdi!';
+              let hitText = isCritFail ? 'KRİTİK BAŞARISIZLIK! Saldırı tamamen başarısız oldu.' : 'Saldırısı kansızdı!';
               log = `Düşman Zar: ${enemyRoll}. ${hitText}`;
             }
 
@@ -585,143 +603,9 @@ export const useGameStore = create<GameState>((set) => ({
         log = effectLogs.join(' ');
       }
 
-      if (!card.effects) switch (card.tip) {
-        case 'saldırı': {
-          // Determine hit with critical rules
-          const attackRoll = Math.floor(Math.random() * 20) + 1;
-          const isCritHit = attackRoll === 20;
-          const isCritFail = attackRoll === 1;
-          const totalAttack = attackRoll + state.player.gucCarpani;
-          const enemyAC = state.enemy.zirhSinifi;
-          let damage = 0;
-          let hit = false;
-
-          if (isCritFail) {
-            // Critical failure: automatic miss
-            hit = false;
-          } else if (isCritHit) {
-              // Critical hit: automatic hit
-              hit = true;
-          } else {
-              // Normal hit check
-              hit = totalAttack >= enemyAC;
-          }
-
-          if (hit) {
-            // Roll damage die
-            const sides = parseInt(card.zarTuru.substring(1)); // e.g., 'd6' -> 6
-            const damageRoll = Math.floor(Math.random() * sides) + 1;
-            // Base damage from die and card baseAsar
-            let baseDamage = damageRoll + card.baseHasar;
-            if (isCritHit) {
-              // Double the die and baseHasar on critical hit
-              baseDamage = damageRoll * 2 + card.baseHasar * 2;
-            }
-            // Add player's damage modifier
-            damage = baseDamage + state.player.gucCarpani;
-            // Apply enemy's block to reduce damage (if any)
-            if (updatedEnemyBlock > 0) {
-              if (updatedEnemyBlock >= damage) {
-                // Enemy block absorbs all damage
-                damage = 0;
-                updatedEnemyBlock = 0; // block is used up
-              } else {
-                // Enemy block absorbs part of the damage
-                damage -= updatedEnemyBlock;
-                updatedEnemyBlock = 0; // block is used up
-              }
-            }
-            // Apply damage to enemy
-            const targetChar = state.enemy;
-            const newHp = Math.max(0, targetChar.mevcutCan - damage);
-            updatedEnemy = { ...targetChar, mevcutCan: newHp };
-            if (isCritHit) {
-              log = `Zar: ${attackRoll}. KRİTİK VURUŞ! ${damage} hasar vuruldu!`;
-            } else {
-              log = `Zar: ${attackRoll}. Başarılı saldırı, ${damage} hasar vuruldu!`;
-            }
-          } else {
-            if (isCritFail) {
-              log = `Zar: ${attackRoll}. KRİTİK BAŞARISIZLIK! Saldırı tamamen başarısız oldu.`;
-            } else {
-              log = `Zar: ${attackRoll}. Düşmanın zırhı aşılamadı!`;
-            }
-          }
-          break;
-        }
-        case 'savunma': {
-          // Roll the die for block amount
-          const sides = parseInt(card.zarTuru.substring(1)); // e.g., 'd4' -> 4
-          const blockRoll = Math.floor(Math.random() * sides) + 1;
-          updatedPlayerBlock = blockRoll; // set block to this amount (does not stack)
-          log = `${card.isim} oynandı! ${blockRoll} blok elde edildi.`;
-          break;
-        }
-        case 'yetenek': {
-          // Unique effect based on card name
-          switch (card.isim) {
-            case 'Ateş Topu': {
-              // Deal damage ignoring enemy AC (like a magic missile)
-              const sides = parseInt(card.zarTuru.substring(1)); // d6 -> 6
-              const damageRoll = Math.floor(Math.random() * sides) + 1;
-              let damage = damageRoll + 2; // fixed bonus
-              if (updatedEnemyBlock > 0) {
-                damage = Math.max(0, damage - updatedEnemyBlock);
-                updatedEnemyBlock = 0;
-              }
-              const targetChar = state.enemy;
-              const newHp = Math.max(0, targetChar.mevcutCan - damage);
-              updatedEnemy = { ...targetChar, mevcutCan: newHp };
-              log = `${card.isim} oynandı! ${damage} hasar vuruldu (zırhı yok sayarak)!`;
-              break;
-            }
-            case 'Buhar Nefesi': {
-              // Heal player
-              const sides = parseInt(card.zarTuru.substring(1)); // d8 -> 8
-              const healRoll = Math.floor(Math.random() * sides) + 1;
-              const healAmount = healRoll; // heal for the roll amount
-              const newHp = Math.min(state.player.maksimumCan, state.player.mevcutCan + healAmount);
-              updatedPlayer = { ...state.player, mevcutCan: newHp };
-              log = `${card.isim} oynandı! Oyuncu ${healAmount} can yeledi.`;
-              break;
-            }
-            case 'Büyüleyici Çukur': {
-              // Enemy skips next turn
-              updatedEnemySkipNextTurn = true;
-              log = `${card.isim} oynandı! Düşman sonraki turunu atlayacak.`;
-              break;
-            }
-            default: {
-              // Fallback: treat as attack (should not happen with current sample cards)
-              const attackRoll = Math.floor(Math.random() * 20) + 1;
-              const totalAttack = attackRoll + state.player.gucCarpani;
-              const enemyAC = state.enemy.zirhSinifi;
-              let damage = 0;
-              if (totalAttack >= enemyAC) {
-                const sides = parseInt(card.zarTuru.substring(1));
-                const damageRoll = Math.floor(Math.random() * sides) + 1;
-                damage = damageRoll + card.baseHasar + state.player.gucCarpani;
-                const targetChar = state.enemy;
-                const newHp = Math.max(0, targetChar.mevcutCan - damage);
-                updatedEnemy = { ...targetChar, mevcutCan: newHp };
-                log = `Zar: ${attackRoll}. Başarılı saldırı, ${damage} hasar vuruldu!`;
-              } else {
-                log = `Zar: ${attackRoll}. Düşmanın zırhı aşılamadı!`;
-              }
-              break;
-            }
-          }
-          break;
-        }
-        default:
-          // Should not happen
-          log = `Bilinmeyen kart tipi: ${card.tip}`;
-          break;
-      }
-
-      // Apply damage to enemy if any (from saldırmı or yetenek that dealt damage)
+      // Apply damage to enemy if any (from attack or yetenek that dealt damage)
       // Note: For yetenek that dealt damage, we already updated the enemy above.
-      // For saldırmı, we updated enemy in the case block.
+      // For attack, we updated enemy in the case block.
 
       // Return updated state
       if (state.enemy.mevcutCan > 0 && updatedEnemy.mevcutCan <= 0) {
@@ -897,7 +781,11 @@ export const useGameStore = create<GameState>((set) => ({
         enemyIntent: intent,
         enemyIntentValue: value,
         enemyArchetype,
-        playerStatuses: state.playerStatuses,
+        // Reset player state for new combat
+        currentEnergy: state.maxEnergy, // full energy
+        hand: [], // will be filled by drawing cards at combat start
+        discardPile: [], // clear discard pile
+        playerStatuses: [], // clear all temporary status effects
         enemyStatuses: [],
         comboChain: [],
         comboCount: 0,

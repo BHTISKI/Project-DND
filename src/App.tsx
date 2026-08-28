@@ -8,6 +8,7 @@ import './App.css';
 
 function App() {
   const initializeGame = useGameStore((s) => s.initializeGame);
+  const restartGame = useGameStore((s) => s.restartGame);
   const isPlayerTurn = useGameStore((s) => s.isPlayerTurn);
   const gold = useGameStore((s) => s.gold);
   const gamePhase = useGameStore((s) => s.gamePhase);
@@ -66,7 +67,18 @@ function App() {
         </div>
 
         {gamePhase === 'combat' && <p className="panel-hint">Kart oyna, enerjini yönet ve düşmanı alt et.</p>}
-        {gamePhase === 'gameOver' && <div className="terminal-message terminal-message--loss"><span className="terminal-icon" aria-hidden="true">×</span><div><strong>Run sona erdi</strong><p>Bu savaşta yenildin. Bir sonraki macera için burada duruyor.</p></div></div>}
+        {gamePhase === 'gameOver' && (
+  <div className="terminal-message terminal-message--loss">
+    <span className="terminal-icon" aria-hidden="true">×</span>
+    <div>
+      <strong>Run sona erdi</strong>
+      <p>Bu savaşta yenildin. Bir sonraki macera için burada duruyor.</p>
+      <button onClick={restartGame} className="button button--primary" type="button">
+        Yeni Oyun Başlat
+      </button>
+    </div>
+  </div>
+)}
         {gamePhase === 'shop' && <ShopPanel />}
         {gamePhase === 'victory' && (
           <div className="victory-content">

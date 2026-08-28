@@ -1,32 +1,47 @@
-# React + TypeScript + Vite
+# D&D Oyunu
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Bu proje, tavsiye rolü oyununa (TRO) ispirasyon almış tek oynanışlı bir kart oyunudur. Oyuncu, farklı yeteneklere sahip kartları kullanarak rastgele oluşturulan düşmanlarla savaşır.
 
-Currently, two official plugins are available:
+## Oyun Nasıl Oynanır?
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Oyunu başlattığınızda, başlangıç desteği hazırlanır ve 5 kart çekersiniz.
+2. Her turun başında, 3 enerji verirsiniz (maksimum enerji).
+3. Elinizdeki kartları oynayarak düşmana hasar verebilir, kendinizi iyileştirebilir, blok kazandırabilir veya özel efektler uygulayabilirsiniz.
+4. Kartları oynadıktan sonra enerjinizi harcarlı ve kullanılan kartlar discarde (mezarlık) gider.
+5. Turunuzu bitirdiğinizde (`End Turn` butonu), düşman hareket eder ve sizi saldırıya çalışır.
+6. Düşmanı yendiğinizde, zafer kazanır ve 3 ödül kartından birini destenize ekleyebilir veya pas geçebilirsiniz. Mağazada altın ile can yenileyebilir veya kartlar desteden çıkarabilirsiniz.
+7. Mağazadan sonra, sonraki savaşa geçiş yaparsınız. Düşmanın gücü kazanmış zafer sayınıza göre artar.
+8. Oyun, canınız 0'a düştüğünde biter. "Yeni Oyun Başlat" butonu ile tekrar başlayabilirsiniz.
 
-## React Compiler
+## Kart Tipleri
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Saldırı**: Düşmana hasar verir. Kritik vuruş ve başarısızlık kuralları uygulanır.
+- **Savunma**: Blok kazanarak gelen hasarı azaltır.
+- **Yetenek**: Hasar, iyileşme, kart çekme, enerji kazanma, durum etkisi (zehir, güçsüz, güçlü, vb.) veya düşmanı tur atlatma gibi özel efektler sağlar.
 
-## Expanding the Oxlint configuration
+## Durum Etkileri
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- **Zehirli**: Her tur başı hasar verir.
+- **Güçsüz**: Saldırı hasarını azaltır.
+- **Güçlü**: Saldırı hasarını artırır.
+- **Zayıflatıcı**: Sıradaki saldırıyı kaçırır (blok)
+- **Fortifiye**: Blok verir
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Teknik Detaylar
+
+- React ve TypeScript kullanılarak geliştirilmiştir.
+- State yönetimi için Zustand kullanılmıştır.
+- Kart etkileri effect tabanlı bir sistemle çözülür, bu da yeni kart eklemeyi ve mevcut etkileri değiştirmeyi kolaylaştırır.
+
+## Geliştirme
+
+```bash
+# Bağımlılıkları yükle
+npm install
+
+# Geliştirme sunucusunu başlat
+npm run dev
+
+# Üretim derlemesi
+npm run build
 ```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.

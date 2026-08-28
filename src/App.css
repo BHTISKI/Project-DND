@@ -53,7 +53,6 @@
 .fighter-stats b { color: var(--ink); }
 .block-value { color: var(--teal); }
 .enemy-intent { display: flex; align-items: center; gap: 9px; min-height: 46px; margin-top: 18px; padding: 8px 10px; border: 1px solid #e3b6ac; border-radius: 3px; background: var(--red-soft); color: var(--red); animation: intent-change 0.24s ease-out; }
-.enemy-intent { display: flex; align-items: center; gap: 9px; min-height: 46px; margin-top: 18px; padding: 8px 10px; border: 1px solid #e3b6ac; border-radius: 3px; background: var(--red-soft); color: var(--red); animation: intent-breathe 2.4s ease-in-out infinite; }
 .enemy-intent__icon { display: grid; flex: 0 0 26px; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--red); color: #fff8e9; font-size: 0.78rem; }
 .enemy-intent span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
 .enemy-intent b { font: 700 0.57rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }

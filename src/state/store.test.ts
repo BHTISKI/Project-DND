@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import type { Card, EnemyIntent } from '../types/game';
 import { useGameStore } from './store';
+import { setupMockRandom, resetMockRandom } from '../testUtils';
 
 const player = { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2 };
 const enemy = { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1 };
@@ -32,10 +33,13 @@ function setCombat(overrides: Partial<ReturnType<typeof useGameStore.getState>> 
 
 describe('game engine store', () => {
   beforeEach(resetStore);
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+  vi.restoreAllMocks();
+  resetMockRandom();
+});
 
   it('creates the expected opening deck, hand and energy', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0);
+    setupMockRandom([0]);
     useGameStore.getState().initializeGame();
     const state = useGameStore.getState();
     expect(state.initialized).toBe(true);
@@ -177,5 +181,84 @@ describe('game engine store', () => {
     useGameStore.setState({ gamePhase: 'gameOver', hand: [card()], currentEnergy: 3 });
     useGameStore.getState().playCard('card-1');
     expect(useGameStore.getState().hand).toHaveLength(1);
+  });
+
+  it('resets energy, hand, discard pile and player statuses in startNextCombat', () => {
+    // Set up a state with non-default values
+    useGameStore.setState({
+      gamePhase: 'shop',
+      victoryCount: 2,
+      currentEnergy: 1, // not full
+      hand: [card({ id: 'hand-card' })],
+      discardPile: [card({ id: 'discard-card' })],
+      playerStatuses: [{ id: 'weakened', duration: 2, stacks: 1 }],
+      enemy: { ...enemy },
+      // other fields as needed
+    });
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    useGameStore.getState().startNextCombat();
+    const state = useGameStore.getState();
+
+    // Energy should be reset to maxEnergy (3)
+    expect(state.currentEnergy).toBe(3);
+    // Hand should be empty (will be filled by drawing cards at combat start, but startNextCombat itself does not draw)
+    expect(state.hand).toHaveLength(0);
+    // Discard pile should be empty
+    expect(state.discardPile).toHaveLength(0);
+    // Player statuses should be cleared
+    expect(state.playerStatuses).toHaveLength(0);
+    // Game phase should be combat
+    expect(state.gamePhase).toBe('combat');
+    // Enemy should be scaled based on victoryCount (2)
+    expect(state.enemy.isim).toBe('Büyücü'); // archetype rotation: goblin->guardian->mage->goblin...
+    // Victory count should be preserved
+    expect(state.victoryCount).toBe(2);
+    // Gold should be preserved
+    expect(state.gold).toBe(50);
+  });
+
+  it('restarts the game via initializeGame', () => {
+    // First, play a bit to change state from initial
+    useGameStore.getState().initializeGame();
+    let state = useGameStore.getState();
+    expect(state.initialized).toBe(true);
+    // Change some state values
+    useGameStore.setState({
+      gamePhase: 'gameOver',
+      currentEnergy: 0,
+      hand: [card({ id: 'hand-card' })],
+      discardPile: [card({ id: 'discard-card' })],
+      playerStatuses: [{ id: 'poisoned', duration: 3, stacks: 2 }],
+      battleLogs: ['Some log'],
+      gold: 30,
+      victoryCount: 5,
+    });
+    state = useGameStore.getState();
+    expect(state.gamePhase).toBe('gameOver');
+    expect(state.currentEnergy).toBe(0);
+    expect(state.hand).toHaveLength(1);
+    expect(state.discardPile).toHaveLength(1);
+    expect(state.playerStatuses).toHaveLength(1);
+    expect(state.battleLogs).toHaveLength(1);
+    expect(state.gold).toBe(30);
+    expect(state.victoryCount).toBe(5);
+
+    // Reset initialized flag so initializeGame will actually reset the state
+    useGameStore.setState({ ...useGameStore.getState(), initialized: false });
+    // Now call initializeGame to restart
+    useGameStore.getState().initializeGame();
+    const newState = useGameStore.getState();
+
+    // Expect a fresh initialized state
+    expect(newState.initialized).toBe(true);
+    expect(newState.gamePhase).toBe('combat');
+    expect(newState.currentEnergy).toBe(newState.maxEnergy);
+    expect(newState.hand).toHaveLength(newState.drawCount); // initial hand size
+    expect(newState.discardPile).toHaveLength(0);
+    expect(newState.playerStatuses).toHaveLength(0);
+    expect(newState.battleLogs).toHaveLength(1); // initial log
+    expect(newState.gold).toBe(50); // starting gold
+    expect(newState.victoryCount).toBe(0);
+    expect(newState.enemy.isim).toBe('Goblin'); // starting enemy
   });
 });

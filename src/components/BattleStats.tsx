@@ -1,43 +1,21 @@
 import React from 'react';
 import { useGameStore } from '../state/store';
+import type { EnemyIntent } from '../types/game';
 
-interface EnemyIntent {
-  type?: string;
-  kind?: string;
-  action?: string;
-  damage?: number;
-  estimatedDamage?: number;
-  minDamage?: number;
-  maxDamage?: number;
-  estimatedBlock?: number;
-  estimatedHeal?: number;
-}
-
-type StateWithEnemyIntent = ReturnType<typeof useGameStore.getState> & {
-  enemyIntent?: EnemyIntent | string;
-  nextEnemyIntent?: EnemyIntent | string;
-};
-
-function getIntentDetails(value: EnemyIntent | string | undefined) {
+function getIntentDetails(value: EnemyIntent | null | undefined) {
   if (!value) return { type: '', valueText: '' };
 
-  if (typeof value === 'string') {
-    return { type: value.toLowerCase(), valueText: '' };
-  }
-
-  const damage = value.damage ?? value.estimatedDamage;
+  const damage = value.estimatedDamage ?? 0;
   const valueText = typeof damage === 'number'
     ? `${damage} tahmini hasar`
-    : typeof value.minDamage === 'number' && typeof value.maxDamage === 'number'
-      ? `${value.minDamage}-${value.maxDamage} tahmini hasar`
-      : typeof value.estimatedBlock === 'number'
-        ? `${value.estimatedBlock} blok`
-        : typeof value.estimatedHeal === 'number'
-          ? `${value.estimatedHeal} tahmini iyileşme`
-          : '';
+    : value.estimatedBlock !== undefined
+      ? `${value.estimatedBlock} blok`
+      : value.estimatedHeal !== undefined
+        ? `${value.estimatedHeal} tahmini iyileşme`
+        : '';
 
   return {
-    type: (value.type ?? value.kind ?? value.action ?? '').toLowerCase(),
+    type: value.type,
     valueText,
   };
 }
@@ -57,11 +35,7 @@ export const BattleStats: React.FC = () => {
     hand,
     discardPile,
   } = gameState;
-  const stateWithIntent = gameState as StateWithEnemyIntent;
-  const enemyWithIntent = enemy as typeof enemy & { intent?: EnemyIntent | string };
-  const { type: intentType, valueText } = getIntentDetails(
-    enemyWithIntent.intent ?? stateWithIntent.enemyIntent ?? stateWithIntent.nextEnemyIntent,
-  );
+  const { type: intentType, valueText } = getIntentDetails(gameState.enemyIntent);
   const intentIsAttack = ['attack', 'saldırı', 'saldiri'].includes(intentType);
   const intentIsDefend = ['defend', 'defense', 'savunma'].includes(intentType);
   const intentLabel = intentIsAttack ? 'Saldıracak' : intentIsDefend ? 'Savunacak' : intentType ? 'Özel hamle' : 'Hamle bekleniyor';

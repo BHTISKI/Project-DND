@@ -4,7 +4,7 @@
   --mono: 'Courier New', monospace;
   font: 16px/1.45 var(--sans);
   color: #17202a;
-  background: #f5f1e9;
+  background: #000;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
