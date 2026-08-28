@@ -48,13 +48,13 @@ export const BattleStats: React.FC = () => {
   return (
     <>
       <article className={`fighter fighter--player${playerHealthPercent <= 30 ? ' fighter--low-health' : ''}`}>
-        <div className="fighter-icon">E</div>
+        <div className="fighter-icon" aria-hidden="true">E</div>
         <div className="fighter-copy">
           <p className="fighter-kicker">Oyuncu</p>
           <h2>{player.isim}</h2>
           <div className="health-row"><span>Can <small>{playerHealthPercent <= 30 ? 'Kritik' : 'Güvende'}</small></span><strong>{player.mevcutCan} / {player.maksimumCan}</strong></div>
           <div className="health-bar" role="progressbar" aria-label="Oyuncu canı" aria-valuenow={player.mevcutCan} aria-valuemin={0} aria-valuemax={player.maksimumCan}><span style={{ width: `${playerHealthPercent}%` }} /></div>
-          <div className="fighter-stats"><span>AC <b>{player.zirhSinifi}</b></span><span>Güç <b>+{player.gucCarpani}</b></span>{playerBlock > 0 && <span className="block-value">Blok <b>{playerBlock}</b></span>}</div>
+          <div className="fighter-stats"><span><b>{player.zirhSinifi}</b><small>AC</small></span><span><b>+{player.gucCarpani}</b><small>GÜÇ</small></span><span className="block-value"><b>{playerBlock}</b><small>BLOK</small></span></div>
           {gameState.playerStatuses.length > 0 && <div className="status-row" aria-label="Oyuncu etkileri">{gameState.playerStatuses.map((status) => <span key={status.id} className="status-chip">{statusLabel(status)}</span>)}</div>}
         </div>
         <div className="energy-display" aria-label={`${currentEnergy} / ${maxEnergy} enerji`}>
@@ -65,13 +65,13 @@ export const BattleStats: React.FC = () => {
       </article>
 
       <article className={`fighter fighter--enemy${enemyHealthPercent <= 30 ? ' fighter--low-health' : ''}`}>
-        <div className="fighter-icon">G</div>
+        <div className="fighter-icon" aria-hidden="true">G</div>
         <div className="fighter-copy">
           <p className="fighter-kicker">Düşman</p>
           <h2>{enemy.isim}</h2>
           <div className="health-row"><span>Can <small>{enemyHealthPercent <= 30 ? 'Kritik' : 'Aktif'}</small></span><strong>{enemy.mevcutCan} / {enemy.maksimumCan}</strong></div>
           <div className="health-bar" role="progressbar" aria-label="Düşman canı" aria-valuenow={enemy.mevcutCan} aria-valuemin={0} aria-valuemax={enemy.maksimumCan}><span style={{ width: `${enemyHealthPercent}%` }} /></div>
-          <div className="fighter-stats"><span>AC <b>{enemy.zirhSinifi}</b></span><span>Güç <b>+{enemy.gucCarpani}</b></span></div>
+          <div className="fighter-stats"><span><b>{enemy.zirhSinifi}</b><small>AC</small></span><span><b>+{enemy.gucCarpani}</b><small>GÜÇ</small></span><span className="block-value"><b>{enemyBlock}</b><small>BLOK</small></span></div>
           {gameState.enemyStatuses.length > 0 && <div className="status-row" aria-label="Düşman etkileri">{gameState.enemyStatuses.map((status) => <span key={status.id} className="status-chip status-chip--enemy">{statusLabel(status)}</span>)}</div>}
           <div key={`${intentType}-${displayedIntentValue}`} className={`enemy-intent enemy-intent--${intentClass}`} aria-live="polite">
             <span className="enemy-intent__icon" aria-hidden="true">{intentIsAttack ? '⚔' : intentIsDefend ? '◈' : '✦'}</span>

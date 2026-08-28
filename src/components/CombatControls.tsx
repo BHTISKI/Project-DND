@@ -6,7 +6,7 @@ export const CombatControls: React.FC = () => {
 
   return (
     <button onClick={endTurn} className="button button--turn" type="button" aria-label="Oyuncu turunu bitir">
-      <span aria-hidden="true">↳</span>
+      <span className="button-icon" aria-hidden="true">↳</span>
       Turu Bitir
     </button>
   );

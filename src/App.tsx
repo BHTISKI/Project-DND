@@ -30,6 +30,16 @@ function App() {
     return '';
   };
 
+  const getLogIcon = (message: string) => {
+    if (message.includes('KRİTİK')) return '✦';
+    if (message.includes('hasar') || message.includes('saldırı') || message.includes('vuruldu')) return '⚔';
+    if (message.includes('blok') || message.includes('savun')) return '◈';
+    if (message.includes('iyileş')) return '✚';
+    if (message.includes('zafer') || message.includes('Ödül')) return '★';
+    if (message.includes('bitti') || message.includes('ölü')) return '×';
+    return '·';
+  };
+
   useEffect(() => {
     initializeGame();
   }, [initializeGame]);
@@ -57,11 +67,11 @@ function App() {
         <div className="battle-divider" aria-hidden="true"><span>VS</span></div>
       </section>
 
-      <section className={`combat-panel combat-panel--${gamePhase}`}>
+      <section className={`combat-panel combat-panel--${gamePhase}`} aria-labelledby="combat-title">
         <div className="panel-heading">
           <div>
             <p className="eyebrow">Savaş alanı</p>
-            <h2>{combatTitle}</h2>
+            <h2 id="combat-title">{combatTitle}</h2>
           </div>
           {gamePhase === 'combat' && <CombatControls />}
         </div>
@@ -82,20 +92,21 @@ function App() {
         {gamePhase === 'shop' && <ShopPanel />}
         {gamePhase === 'victory' && (
           <div className="victory-content">
-            <div className="terminal-message terminal-message--win"><span className="terminal-icon" aria-hidden="true">✦</span><div><strong>Zafer kazanıldı</strong><p>Düşman yenildi. Destene yeni bir güç kat.</p></div></div>
+            <div className="terminal-message terminal-message--win"><span className="terminal-icon" aria-hidden="true">✦</span><div><span className="terminal-kicker">Savaş sona erdi</span><strong>Zafer kazanıldı</strong><p>Düşman yenildi. Destene yeni bir güç kat.</p></div></div>
             {rewardOptions.length === 0 ? (
               <p className="empty-state">Ödül kartları yükleniyor...</p>
             ) : (
               <div className="reward-grid">
                 {rewardOptions.map((card) => (
-                  <div key={card.id} className="reward-card">
-                    <div className="reward-card__head"><span className="reward-rarity">{card.rarity ?? 'common'}</span><span>{card.manaBedeli} enerji</span></div>
+                  <article key={card.id} className={`reward-card reward-card--${card.tip} reward-card--${card.rarity ?? 'common'}`}>
+                    <div className="reward-card__head"><span className="reward-rarity">{card.rarity ?? 'common'}</span><span className="reward-mana">{card.manaBedeli} <small>MP</small></span></div>
+                    <p className="reward-type">{card.tip} · {card.zarTuru} zar</p>
                     <h3>{card.isim}</h3>
-                    <p>{card.tip} · {card.zarTuru} zar</p>
+                    <p>{card.effects?.length ? `${card.effects.length} özel etki` : 'Temel kart etkisi'}</p>
                     <button onClick={() => addRewardCardToDeck(card.id)} className="button button--reward" type="button">
                       Bu kartı seç <span aria-hidden="true">→</span>
                     </button>
-                  </div>
+                  </article>
                 ))}
               </div>
             )}
@@ -125,7 +136,7 @@ function App() {
         </div>
         {battleLogs.slice(-5).map((msg, idx) => (
           <div key={idx} className={`log-entry ${getLogClass(msg)}`}>
-            <span className="log-marker" />
+            <span className="log-marker" aria-hidden="true">{getLogIcon(msg)}</span>
             {msg}
           </div>
         ))}

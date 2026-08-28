@@ -227,3 +227,94 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* Final game-surface pass */
+:root {
+  --paper-deep: #e9e1d4;
+  --panel-dark: #202b2d;
+  --red-deep: #8f3936;
+  --teal-deep: #126361;
+}
+
+body { background: radial-gradient(circle at 50% -20%, #fffdf7 0, var(--paper) 48%, #e7ded0 100%); }
+.game-shell { max-width: 1320px; }
+.topbar { padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.topbar h1 { letter-spacing: 0.01em; }
+.battle-stage { grid-template-rows: 1fr 1fr; min-height: 490px; gap: 22px clamp(28px, 8vw, 130px); }
+.fighter--enemy { grid-column: 2; grid-row: 1; }
+.fighter--player { grid-column: 1; grid-row: 2; }
+.battle-divider { top: 50%; }
+.fighter { align-items: flex-start; border-radius: 7px; background: rgba(255, 253, 248, 0.94); }
+.fighter h2 { letter-spacing: 0.01em; }
+.fighter-stats { align-items: stretch; gap: 8px; }
+.fighter-stats > span { display: flex; min-width: 54px; flex-direction: column; gap: 2px; padding: 7px 9px; border: 1px solid var(--line); background: #fbf8f1; }
+.fighter-stats b { font-size: 0.95rem; }
+.fighter-stats small { color: var(--muted); font-size: 0.53rem; letter-spacing: 0.08em; }
+.fighter-stats .block-value { border-color: #8ac4bd; background: var(--teal-soft); }
+.fighter-stats .block-value b { color: var(--teal-deep); }
+.enemy-intent { min-height: 56px; padding: 10px 12px; }
+.enemy-intent strong { font-size: 0.9rem; }
+.energy-display { min-width: 88px; border-radius: 6px; box-shadow: 0 3px 0 #dfc990; }
+.combat-panel, .hand-section, .battle-log { border-radius: 7px; box-shadow: 0 8px 24px rgba(47, 39, 28, 0.06); }
+.combat-panel { border-top: 3px solid var(--ink); }
+.combat-panel--victory { border-top-color: var(--gold); }
+.combat-panel--gameOver { border-top-color: var(--red); }
+.hand-section { background: rgba(255, 253, 248, 0.76); }
+.hand-grid { display: flex; align-items: flex-end; justify-content: center; gap: clamp(8px, 1.8vw, 22px); margin-top: 26px; padding: 12px 12px 18px; }
+.game-card { flex: 0 1 196px; min-width: 158px; max-width: 215px; border-radius: 7px; }
+.game-card:hover, .game-card:focus-visible { z-index: 2; transform: translateY(-12px) rotate(-1deg); }
+.game-card:nth-child(even):hover, .game-card:nth-child(even):focus-visible { transform: translateY(-12px) rotate(1deg); }
+.card-topline { gap: 8px; justify-content: flex-start; }
+.card-mana { flex: 0 0 35px; display: grid; place-items: center; width: 35px; height: 35px; border: 2px solid currentColor; border-radius: 50%; background: #fbf0c9; color: var(--gold); font: 700 1.05rem var(--mono); }
+.card-mana small { font-size: 0.42rem; letter-spacing: 0.05em; }
+.card-type { flex: 1; }
+.card-rarity { color: var(--muted); font-size: 0.53rem; }
+.card-art { min-height: 92px; border-radius: 3px; }
+.card-name { font-size: 1.17rem; }
+.card-effect { color: #48545a; }
+.card-primary-stat { min-width: 48px; padding-right: 8px; border-right: 1px solid var(--line); }
+.card-primary-stat strong { color: var(--red-deep); font: 700 0.92rem var(--mono); }
+.game-card--savunma .card-primary-stat strong { color: var(--teal-deep); }
+.game-card--yetenek .card-primary-stat strong { color: var(--gold); }
+.card-action { display: flex; align-items: center; justify-content: space-between; min-height: 29px; padding-top: 10px; border-top: 1px solid var(--line); }
+.card-action::after { color: currentColor; content: '→'; font-size: 1rem; }
+.game-card--disabled .card-action::after { content: '×'; }
+.terminal-message { border-radius: 5px; }
+.terminal-kicker, .reward-type { display: block; color: var(--gold); font: 700 0.6rem var(--mono); letter-spacing: 0.12em; text-transform: uppercase; }
+.terminal-message--win { animation: victory-enter 0.4s ease-out both; }
+.terminal-message--loss { animation: gameover-enter 0.35s ease-out both; }
+.reward-grid { align-items: stretch; }
+.reward-card { display: flex; flex-direction: column; border-radius: 6px; transition: transform 0.2s, box-shadow 0.2s; }
+.reward-card:hover, .reward-card:focus-within { transform: translateY(-5px); box-shadow: 0 10px 0 #e4d7b7; }
+.reward-card--saldırı { border-top-color: var(--red); }
+.reward-card--savunma { border-top-color: var(--teal); }
+.reward-card--yetenek { border-top-color: var(--gold); }
+.reward-card--rare { background: #fff8e4; border-top-width: 6px; }
+.reward-card h3 { margin: 4px 0 7px; font: 700 1.35rem var(--heading); }
+.reward-card > p:not(.reward-type) { min-height: 20px; margin: 0; }
+.reward-card .button { margin-top: auto; }
+.reward-mana { color: var(--gold); font: 700 1rem var(--mono); }
+.reward-mana small { font-size: 0.55rem; }
+.log-entry { align-items: center; min-height: 48px; }
+.log-marker { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(246, 217, 140, 0.12); font-size: 0.75rem; }
+.log-entry--attack .log-marker { color: #ffaba3; background: rgba(185, 75, 66, 0.22); }
+.log-entry--defense .log-marker { color: #f6d98c; background: rgba(181, 122, 36, 0.22); }
+.log-entry--heal .log-marker { color: #9ce1d5; background: rgba(156, 225, 213, 0.15); }
+.shop-action { border-radius: 5px; }
+.shop-action--heal { border-top: 3px solid var(--teal); }
+.shop-deck { padding: 18px; border: 1px solid var(--line); background: #fffdf8; }
+.shop-card-row { min-height: 49px; }
+.button-icon { margin-right: 5px; }
+@keyframes victory-enter { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes gameover-enter { from { transform: translateY(-6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@media (max-width: 760px) {
+  .battle-stage { grid-template-rows: auto; min-height: 0; }
+  .fighter--enemy, .fighter--player { grid-column: 1; }
+  .fighter--enemy { grid-row: 1; }
+  .fighter--player { grid-row: 2; }
+  .hand-grid { justify-content: flex-start; gap: 12px; margin-right: -20px; margin-left: -20px; padding-right: 20px; padding-left: 20px; }
+  .game-card { flex: 0 0 190px; max-width: 190px; }
+  .game-card:hover, .game-card:focus-visible, .game-card:nth-child(even):hover, .game-card:nth-child(even):focus-visible { transform: translateY(-8px); }
+  .fighter-stats > span { min-width: 49px; padding: 6px 7px; }
+  .reward-card { min-height: 205px; }
+}
