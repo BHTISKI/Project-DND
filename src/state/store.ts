@@ -856,39 +856,31 @@ export const useGameStore = create<GameState>((set) => ({
   // Start next combat after shop (reset enemy to default or scaled?)
   upgradeCard: (cardId: string) => {
     set((state) => {
-      // Find the card in the deck (since we can only upgrade cards in the deck)
       const cardIndex = state.deck.findIndex((c) => c.id === cardId);
       if (cardIndex === -1) {
-        // Card not found in deck
         console.warn('Card not found in deck for upgrade');
         return state;
       }
       const card = state.deck[cardIndex];
-      // Check if already upgraded
       if (card.isUpgraded) {
         console.warn('Card is already upgraded');
         return state;
       }
-      // Calculate cost
       const cost = calculateUpgradeCost(card.rarity, state.victoryCount);
       if (state.gold < cost) {
-        // Not enough gold
         console.warn(`Not enough gold. Need ${cost} gold.`);
         return state;
       }
-      // Create upgraded card
       const upgradedCard = {
         ...card,
-        id: Math.random().toString(36).substr(2, 9), // new id
+        // keep same id
         isUpgraded: true,
-        // Enhance effects
         effects: card.effects?.map(enhanceEffect) || [],
       };
-      // Add the upgraded card to the deck
-      const newDeck = [...state.deck, upgradedCard];
-      // Deduct gold
+      // replace card at same index
+      const newDeck = [...state.deck];
+      newDeck[cardIndex] = upgradedCard;
       const newGold = state.gold - cost;
-      // We can add a log
       const newLogs = [...state.battleLogs, `Kart ${card.isim} ${cost} altınla yükseltildi.`];
       return {
         ...state,
