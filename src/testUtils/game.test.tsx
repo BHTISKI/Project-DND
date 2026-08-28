@@ -107,10 +107,10 @@ describe('upgrade system', () => {
     // Gold should be decreased by the cost
     const expectedCost = 40; // common, victoryCount 0
     expect(stateAfter.gold).toBe(initialGold - expectedCost);
-    // Deck should have one more card (the upgraded version)
-    expect(stateAfter.deck.length).toBe(initialDeckLength + 1);
-    // Find the upgraded card in the deck
-    const upgradedCard = stateAfter.deck.find((c) => c.isUpgraded && c.isim === testCard.isim);
+    // Deck should have the same number of cards (we replaced the card)
+    expect(stateAfter.deck.length).toBe(initialDeckLength);
+    // Find the upgraded card in the deck by id
+    const upgradedCard = stateAfter.deck.find((c) => c.id === testCard.id && c.isUpgraded);
     expect(upgradedCard).toBeDefined();
     // The upgraded card should have enhanced effect
     if (upgradedCard) {
