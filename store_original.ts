@@ -1,5 +1,4 @@
-import { sampleCardDefs } from '../types/game';
-import type { Card, CardEffect, Character, EnemyArchetypeId, EnemyIntent, NodeType, RunMapState, StatusEffect, StatusId } from '../types/game';
+import type { Card, CardEffect, Character, EnemyArchetypeId, EnemyIntent, StatusEffect, StatusId } from '../types/game';
 import { create } from 'zustand';
 
 // Helper to shuffle array (Fisher-Yates)
@@ -163,7 +162,7 @@ function tickStatuses(statuses: StatusEffect[], target: 'player' | 'enemy', char
   return { statuses: remaining, character: updatedCharacter, log };
 }
 
-export interface GameState extends RunMapState {
+interface GameState {
   player: Character;
   enemy: Character;
   isPlayerTurn: boolean;
@@ -183,7 +182,7 @@ export interface GameState extends RunMapState {
   // Game initialization flag
   initialized: boolean;
   // Game phase
-  gamePhase: 'combat' | 'shop' | 'victory' | 'gameOver' | 'mapSelection' | 'event' | 'rest' | 'boss';
+  gamePhase: 'combat' | 'shop' | 'victory' | 'gameOver';
   // Reward options (shown in victory phase)
   rewardOptions: Card[];
   // Temporary block for player (absorbs damage from enemy attack)
@@ -218,9 +217,7 @@ export interface GameState extends RunMapState {
   // Shop actions
   healPlayer: () => void;
   removeCardFromDeck: (cardId: string) => void;
-  upgradeCard: (cardId: string) => void;
   startNextCombat: () => void;
-  selectNode: (nodeId: string) => void;
 }
 
 
@@ -235,12 +232,19 @@ const defaultPlayer: Character = {
 
 const defaultEnemy = createEnemy('goblin', 0);
 
-function generateAvailableNodes(floor: number): Array<{ type: NodeType; id: string }> {
-  const types: NodeType[] = floor > 0 && floor % 3 === 0
-    ? ['boss', 'elite', 'shop']
-    : ['combat', 'combat', 'shop'];
-  return types.map((type, index) => ({ type, id: `floor-${floor}-${type}-${index}` }));
-}
+// Sample card definitions (baseHasar 0, mana cost as given)
+const sampleCardDefs: Omit<Card, 'id'>[] = [
+  { isim: 'Hızlı Saldırı', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'common', tags: ['attack'], effects: [{ kind: 'attack', die: 'd4' }] },
+  { isim: 'Kalkan Sihri', tip: 'savunma', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'common', tags: ['defend'], effects: [{ kind: 'block', die: 'd4' }] },
+  { isim: 'Ateş Topu', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd6', rarity: 'common', tags: ['skill', 'attack'], effects: [{ kind: 'damage', die: 'd6', ignoresArmor: true, damageBonus: 2 }] },
+  { isim: 'Buhar Nefesi', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd8', rarity: 'uncommon', tags: ['skill', 'heal'], effects: [{ kind: 'heal', die: 'd8' }] },
+  { isim: 'Zayıflatıcı Lanet', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['skill', 'control'], effects: [{ kind: 'status', status: 'weakened', duration: 2, value: 1, target: 'enemy' }] },
+  { isim: 'Zehirli Bıçak', tip: 'saldırı', manaBedeli: 2, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['attack', 'poison'], effects: [{ kind: 'attack', die: 'd4' }, { kind: 'status', status: 'poisoned', duration: 3, value: 1, target: 'enemy' }] },
+  { isim: 'Savaş İlhamı', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['skill', 'combo'], effects: [{ kind: 'status', status: 'empowered', duration: 2, value: 2 }, { kind: 'energy', amount: 1 }] },
+  { isim: 'Büyüleyici Çukur', tip: 'yetenek', manaBedeli: 3, baseHasar: 0, zarTuru: 'd10', rarity: 'rare', tags: ['skill', 'control'], effects: [{ kind: 'skip', target: 'enemy' }] },
+  { isim: 'Kırılgan Zafer', tip: 'saldırı', manaBedeli: 2, baseHasar: 0, zarTuru: 'd8', rarity: 'rare', tags: ['attack', 'risk'], effects: [{ kind: 'attack', die: 'd8', damageBonus: 3 }, { kind: 'status', status: 'vulnerable', duration: 2, value: 1, target: 'player' }] },
+  { isim: 'Taktik Hazırlık', tip: 'yetenek', manaBedeli: 0, baseHasar: 0, zarTuru: 'd1', rarity: 'rare', tags: ['skill', 'setup'], effects: [{ kind: 'draw', amount: 1 }, { kind: 'status', status: 'empowered', duration: 1, value: 1 }] },
+];
 
 // Function to create initial deck (e.g., 5 copies of each)
 function createInitialDeck(): Card[] {
@@ -273,17 +277,13 @@ export const useGameStore = create<GameState>((set) => ({
   enemyBlock: 0,
   enemySkipNextTurn: false,
   victoryCount: 0,
-  gamePhase: 'mapSelection',
+  gamePhase: 'combat',
   rewardOptions: [],
   enemyIntent: null,
   enemyIntentValue: 0,
   enemyArchetype: 'goblin',
   playerStatuses: [],
   enemyStatuses: [],
-  currentNode: null,
-  availableNodes: generateAvailableNodes(0),
-  runFloor: 0,
-  nodeType: null,
   comboChain: [],
   comboCount: 0,
   nextDamageBonus: 0,
@@ -308,11 +308,7 @@ export const useGameStore = create<GameState>((set) => ({
         gold: 50,
         currentEnergy: state.maxEnergy,
         initialized: true,
-        gamePhase: 'mapSelection',
-        currentNode: null,
-        availableNodes: generateAvailableNodes(0),
-        runFloor: 0,
-        nodeType: null,
+        gamePhase: 'combat',
         battleLogs: ['Oyun başlatıldı. Destek hazırlanıyor...'],
         playerBlock: 0,
         enemyBlock,
@@ -540,13 +536,9 @@ export const useGameStore = create<GameState>((set) => ({
           player,
           enemy,
           battleLogs,
-          gamePhase: 'mapSelection',
+          gamePhase: 'victory',
           victoryCount: state.victoryCount + 1,
           rewardOptions: rewards,
-          runFloor: state.runFloor + 1,
-          currentNode: null,
-          availableNodes: generateAvailableNodes(state.runFloor + 1),
-          nodeType: null,
           playerBlock: 0,
           enemyBlock: 0,
           enemySkipNextTurn: false,
@@ -716,14 +708,10 @@ export const useGameStore = create<GameState>((set) => ({
           comboCount: updatedComboCount,
           nextDamageBonus: updatedNextDamageBonus,
           battleLogs: [...state.battleLogs, log],
-          gamePhase: 'mapSelection',
+          gamePhase: 'victory',
           gold: state.gold + 20 + state.victoryCount * 5,
           victoryCount: state.victoryCount + 1,
           rewardOptions: getRandomRewards(),
-          runFloor: state.runFloor + 1,
-          currentNode: null,
-          availableNodes: generateAvailableNodes(state.runFloor + 1),
-          nodeType: null,
         };
       }
 
@@ -769,7 +757,7 @@ export const useGameStore = create<GameState>((set) => ({
   // Victory phase actions
   addRewardCardToDeck: (cardId: string) => {
     set((state) => {
-      if (state.gamePhase !== 'victory' && state.gamePhase !== 'mapSelection') return state;
+      if (state.gamePhase !== 'victory') return state;
       // Find the card in rewardOptions
       const rewardCard = state.rewardOptions.find((c) => c.id === cardId);
       if (!rewardCard) {
@@ -790,7 +778,7 @@ export const useGameStore = create<GameState>((set) => ({
 
   skipReward: () => {
     set((state) => {
-      if (state.gamePhase !== 'victory' && state.gamePhase !== 'mapSelection') return state;
+      if (state.gamePhase !== 'victory') return state;
       // Go to shop without adding a card
       return {
         ...state,
@@ -917,10 +905,7 @@ export const useGameStore = create<GameState>((set) => ({
       return {
         ...state,
         enemy: scaledEnemy,
-        gamePhase: 'mapSelection',
-        currentNode: null,
-        nodeType: null,
-        availableNodes: generateAvailableNodes(state.runFloor),
+        gamePhase: 'combat',
         isPlayerTurn: true, // player starts combat
         playerBlock: 0,
         enemyBlock,
@@ -939,46 +924,6 @@ export const useGameStore = create<GameState>((set) => ({
         comboCount: 0,
         nextDamageBonus: 0,
         // Optionally clear battle logs? Keep them.
-      };
-    });
-  },
-
-  selectNode: (nodeId: string) => {
-    set((state) => {
-      if (state.gamePhase !== 'mapSelection') return state;
-      const selectedNode = state.availableNodes.find((node) => node.id === nodeId);
-      if (!selectedNode) return state;
-
-      if (selectedNode.type === 'shop') {
-        return { ...state, gamePhase: 'shop', currentNode: selectedNode.type, nodeType: selectedNode.type };
-      }
-
-      const enemyArchetype = chooseArchetype(state.victoryCount);
-      const baseEnemy = createEnemy(enemyArchetype, state.runFloor);
-      const enemy = selectedNode.type === 'elite'
-        ? { ...baseEnemy, mevcutCan: baseEnemy.maksimumCan * 1.5, maksimumCan: baseEnemy.maksimumCan * 1.5, zirhSinifi: baseEnemy.zirhSinifi + 1, gucCarpani: baseEnemy.gucCarpani + 0.5 }
-        : baseEnemy;
-      const { intent, value, block: enemyBlock } = generateEnemyIntent(enemy, enemyArchetype);
-      const shuffledDeck = shuffle([...state.deck, ...state.hand, ...state.discardPile]);
-
-      return {
-        ...state,
-        gamePhase: 'combat',
-        currentNode: selectedNode.type,
-        nodeType: selectedNode.type,
-        enemy,
-        enemyArchetype,
-        enemyIntent: intent,
-        enemyIntentValue: value,
-        enemyBlock,
-        currentEnergy: state.maxEnergy,
-        playerBlock: 0,
-        hand: shuffledDeck.slice(0, state.drawCount),
-        deck: shuffledDeck.slice(state.drawCount),
-        discardPile: [],
-        playerStatuses: [],
-        enemyStatuses: [],
-        isPlayerTurn: true,
       };
     });
   }

@@ -1,10 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import App from '../App';
 import { useGameStore } from '../state/store';
 import type { Card } from '../types/game';
 import { createDataTransfer, mockRandom, withMockRandom } from './index';
+import { cleanup } from '@testing-library/react';
 
 // Reset store to initial state before each test
 beforeEach(() => {
@@ -38,6 +39,10 @@ beforeEach(() => {
   });
 });
 
+afterEach(() => {
+  cleanup();
+});
+
 const testCard: Card = {
   id: 'reward-card',
   isim: 'Test Ödülü',
@@ -56,8 +61,6 @@ describe('upgrade system', () => {
       victoryCount: 0,
       gold: 50,
     });
-    // common card
-    const commonCard = { ...useGameStore.getState().deck[0], rarity: 'common' as const };
     // We need to get a card from the deck to test, but we can also test the cost function directly.
     // We'll just test the cost function logic.
     const cost = (rarity: 'common' | 'uncommon' | 'rare' | undefined, victoryCount: number) => {
@@ -114,7 +117,7 @@ describe('upgrade system', () => {
       const upgradedEffect = upgradedCard.effects?.[0];
       expect(upgradedEffect).toBeDefined();
       // Attack effect should have damageBonus increased by 2
-      if (upgradedEffect.kind === 'attack' || upgradedEffect.kind === 'damage') {
+      if (upgradedEffect && (upgradedEffect.kind === 'attack' || upgradedEffect.kind === 'damage')) {
         expect(upgradedEffect.damageBonus).toBe(2); // original was 0, now 2
       }
     }
@@ -209,6 +212,8 @@ describe('test utilities and critical game flows', () => {
     await withMockRandom(Array.from({ length: 20 }, (_, index) => (index + 1) / 21), async () => {
       render(<App />);
       console.log('State after render:', useGameStore.getState());
+      expect(screen.getByRole('heading', { name: 'Yolunu seç' })).toBeInTheDocument();
+      await userEvent.click(screen.getAllByRole('button', { name: /Savaş/ })[0]);
       expect(screen.getByRole('heading', { name: 'Hamleni seç' })).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'Oyuncu turunu bitir' }));
       expect(useGameStore.getState().battleLogs.length).toBeGreaterThan(1);
@@ -240,7 +245,7 @@ describe('test utilities and critical game flows', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Yeni Oyun Başlat' }));
 
     const state = useGameStore.getState();
-    expect(state.gamePhase).toBe('combat');
+    expect(state.gamePhase).toBe('mapSelection');
     expect(state.player.mevcutCan).toBe(state.player.maksimumCan);
     expect(state.hand).toHaveLength(state.drawCount);
   });

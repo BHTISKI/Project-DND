@@ -301,6 +301,24 @@ body { background: radial-gradient(circle at 50% -20%, #fffdf7 0, var(--paper) 4
 .log-entry--defense .log-marker { color: #f6d98c; background: rgba(181, 122, 36, 0.22); }
 .log-entry--heal .log-marker { color: #9ce1d5; background: rgba(156, 225, 213, 0.15); }
 .shop-action { border-radius: 5px; }
+.map-selection { padding-top: 8px; }
+.map-selection__intro { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.map-selection__intro p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.map-floor { color: var(--gold); font: 700 0.68rem var(--mono); letter-spacing: 0.14em; }
+.map-nodes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.map-node { display: flex; align-items: center; gap: 12px; min-height: 88px; padding: 14px; border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: 5px; background: #fbf8f1; color: var(--ink); text-align: left; cursor: pointer; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; }
+.map-node:hover, .map-node:focus-visible { transform: translateY(-3px); border-color: var(--teal); box-shadow: 0 6px 0 var(--paper-deep); outline: none; }
+.map-node:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.map-node--elite, .map-node--boss { border-left-color: var(--red); }
+.map-node--shop { border-left-color: var(--gold); }
+.map-node__icon { display: grid; flex: 0 0 34px; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--teal-soft); color: var(--teal-deep); font-size: 1rem; }
+.map-node--elite .map-node__icon, .map-node--boss .map-node__icon { background: var(--red-soft); color: var(--red-deep); }
+.map-node--shop .map-node__icon { background: #fbf0c9; color: var(--gold); }
+.map-node strong, .map-node small { display: block; }
+.map-node strong { font: 700 0.95rem var(--heading); }
+.map-node small { margin-top: 3px; color: var(--muted); font-size: 0.7rem; }
+.map-node__arrow { margin-left: auto; color: var(--muted); font-size: 1.1rem; }
+.reward-grid--map { margin-top: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .shop-action--heal { border-top: 3px solid var(--teal); }
 .shop-deck { padding: 18px; border: 1px solid var(--line); background: #fffdf8; }
 .shop-card-row { min-height: 49px; }
@@ -317,4 +335,6 @@ body { background: radial-gradient(circle at 50% -20%, #fffdf7 0, var(--paper) 4
   .game-card:hover, .game-card:focus-visible, .game-card:nth-child(even):hover, .game-card:nth-child(even):focus-visible { transform: translateY(-8px); }
   .fighter-stats > span { min-width: 49px; padding: 6px 7px; }
   .reward-card { min-height: 205px; }
+  .map-selection__intro { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .map-nodes, .reward-grid--map { grid-template-columns: 1fr; }
 }

@@ -15,6 +15,9 @@ function App() {
   const rewardOptions = useGameStore((s) => s.rewardOptions);
   const addRewardCardToDeck = useGameStore((s) => s.addRewardCardToDeck);
   const skipReward = useGameStore((s) => s.skipReward);
+  const selectNode = useGameStore((s) => s.selectNode);
+  const availableNodes = useGameStore((s) => s.availableNodes);
+  const runFloor = useGameStore((s) => s.runFloor);
   const hand = useGameStore((s) => s.hand);
   const deck = useGameStore((s) => s.deck);
   const discardPile = useGameStore((s) => s.discardPile);
@@ -44,7 +47,7 @@ function App() {
     initializeGame();
   }, [initializeGame]);
 
-  const combatTitle = gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'victory' ? 'Zafer!' : gamePhase === 'gameOver' ? 'Oyun Bitti' : 'Mola';
+  const combatTitle = gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'mapSelection' ? 'Yolunu seç' : gamePhase === 'victory' ? 'Zafer!' : gamePhase === 'gameOver' ? 'Oyun Bitti' : 'Mola';
 
   return (
     <main className={`game-shell game-shell--${gamePhase}`}>
@@ -77,6 +80,40 @@ function App() {
         </div>
 
         {gamePhase === 'combat' && <p className="panel-hint">Kart oyna, enerjini yönet ve düşmanı alt et.</p>}
+        {gamePhase === 'mapSelection' && (
+          <div className="map-selection">
+            <div className="map-selection__intro"><span className="map-floor">BÖLÜM {runFloor + 1}</span><p>Bir sonraki karşılaşmanın kaderini belirle.</p></div>
+            <div className="map-nodes" aria-label="Mevcut yol seçenekleri">
+              {availableNodes.map((node) => {
+                const nodeInfo = {
+                  combat: { icon: '⚔', label: 'Savaş', detail: 'Düşmanla yüzleş' },
+                  elite: { icon: '✦', label: 'Seçkin savaş', detail: 'Büyük ödül, büyük risk' },
+                  shop: { icon: '◆', label: 'Dükkan', detail: 'Desteni hazırla' },
+                  event: { icon: '?', label: 'Olay', detail: 'Bilinmeyen bir fırsat' },
+                  rest: { icon: '✚', label: 'Dinlenme', detail: 'Nefeslen ve güçlen' },
+                  boss: { icon: '♛', label: 'Boss', detail: 'Son sınav' },
+                }[node.type];
+                return <button key={node.id} type="button" className={`map-node map-node--${node.type}`} onClick={() => selectNode(node.id)}>
+                  <span className="map-node__icon" aria-hidden="true">{nodeInfo.icon}</span>
+                  <span><strong>{nodeInfo.label}</strong><small>{nodeInfo.detail}</small></span>
+                  <span className="map-node__arrow" aria-hidden="true">→</span>
+                </button>;
+              })}
+            </div>
+            {rewardOptions.length > 0 && <p className="panel-hint">Zafer ödülün hazır. Haritaya devam etmeden önce bir kart seçebilirsin.</p>}
+            {rewardOptions.length > 0 && (
+              <div className="reward-grid reward-grid--map">
+                {rewardOptions.map((card) => <article key={card.id} className={`reward-card reward-card--${card.tip} reward-card--${card.rarity ?? 'common'}`}>
+                  <div className="reward-card__head"><span className="reward-rarity">{card.rarity ?? 'common'}</span><span className="reward-mana">{card.manaBedeli} <small>MP</small></span></div>
+                  <p className="reward-type">{card.tip} · {card.zarTuru} zar</p><h3>{card.isim}</h3>
+                  <p>{card.effects?.map((effect) => effect.kind).join(' · ') || 'Temel kart etkisi'}</p>
+                  <button onClick={() => addRewardCardToDeck(card.id)} className="button button--reward" type="button">Bu kartı seç <span aria-hidden="true">→</span></button>
+                </article>)}
+              </div>
+            )}
+            {rewardOptions.length > 0 && <button onClick={skipReward} className="button button--quiet" type="button">Ödülü pas geç</button>}
+          </div>
+        )}
         {gamePhase === 'gameOver' && (
   <div className="terminal-message terminal-message--loss">
     <span className="terminal-icon" aria-hidden="true">×</span>
