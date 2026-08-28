@@ -20,21 +20,21 @@ function getIntentDetails(value: EnemyIntent | null | undefined) {
 }
 
 export const BattleStats: React.FC = () => {
-  const gameState = useGameStore();
-  const {
-    player,
-    enemy,
-    currentEnergy,
-    maxEnergy,
-    playerBlock,
-    enemyBlock,
-    enemyIntentValue,
-    gold,
-    deck,
-    hand,
-    discardPile,
-  } = gameState;
-  const { type: intentType, valueText } = getIntentDetails(gameState.enemyIntent);
+  const player = useGameStore((state) => state.player);
+  const enemy = useGameStore((state) => state.enemy);
+  const currentEnergy = useGameStore((state) => state.currentEnergy);
+  const maxEnergy = useGameStore((state) => state.maxEnergy);
+  const playerBlock = useGameStore((state) => state.playerBlock);
+  const enemyBlock = useGameStore((state) => state.enemyBlock);
+  const enemyIntent = useGameStore((state) => state.enemyIntent);
+  const enemyIntentValue = useGameStore((state) => state.enemyIntentValue);
+  const playerStatuses = useGameStore((state) => state.playerStatuses);
+  const enemyStatuses = useGameStore((state) => state.enemyStatuses);
+  const gold = useGameStore((state) => state.gold);
+  const deckSize = useGameStore((state) => state.deck.length);
+  const handSize = useGameStore((state) => state.hand.length);
+  const discardSize = useGameStore((state) => state.discardPile.length);
+  const { type: intentType, valueText } = getIntentDetails(enemyIntent);
   const intentIsAttack = ['attack', 'saldırı', 'saldiri'].includes(intentType);
   const intentIsDefend = ['defend', 'defense', 'savunma'].includes(intentType);
   const intentLabel = intentIsAttack ? 'Saldıracak' : intentIsDefend ? 'Savunacak' : intentType ? 'Özel hamle' : 'Hamle bekleniyor';
@@ -57,7 +57,7 @@ export const BattleStats: React.FC = () => {
           <div className="health-row"><span>Can <small>{playerHealthPercent <= 30 ? 'Kritik' : 'Güvende'}</small></span><strong>{player.mevcutCan} / {player.maksimumCan}</strong></div>
           <div className="health-bar" role="progressbar" aria-label="Oyuncu canı" aria-valuenow={player.mevcutCan} aria-valuemin={0} aria-valuemax={player.maksimumCan}><span style={{ width: `${playerHealthPercent}%` }} /></div>
           <div className="fighter-stats"><span><b>{player.zirhSinifi}</b><small>AC</small></span><span><b>+{player.gucCarpani}</b><small>GÜÇ</small></span><span className="block-value"><b>{playerBlock}</b><small>BLOK</small></span></div>
-          {gameState.playerStatuses.length > 0 && <div className="status-row" aria-label="Oyuncu etkileri">{gameState.playerStatuses.map((status) => <span key={status.id} className="status-chip" title={statusLabel(status)}>{statusLabel(status)}</span>)}</div>}
+          {playerStatuses.length > 0 && <div className="status-row" aria-label="Oyuncu etkileri">{playerStatuses.map((status) => <span key={status.id} className="status-chip" title={statusLabel(status)}>{statusLabel(status)}</span>)}</div>}
         </div>
         <div className="energy-display" aria-label={`${currentEnergy} / ${maxEnergy} enerji`}>
           <small>ENERJİ</small>
@@ -74,7 +74,7 @@ export const BattleStats: React.FC = () => {
           <div className="health-row"><span>Can <small>{enemyHealthPercent <= 30 ? 'Kritik' : 'Aktif'}</small></span><strong>{enemy.mevcutCan} / {enemy.maksimumCan}</strong></div>
           <div className="health-bar" role="progressbar" aria-label="Düşman canı" aria-valuenow={enemy.mevcutCan} aria-valuemin={0} aria-valuemax={enemy.maksimumCan}><span style={{ width: `${enemyHealthPercent}%` }} /></div>
           <div className="fighter-stats"><span><b>{enemy.zirhSinifi}</b><small>AC</small></span><span><b>+{enemy.gucCarpani}</b><small>GÜÇ</small></span><span className="block-value"><b>{enemyBlock}</b><small>BLOK</small></span></div>
-          {gameState.enemyStatuses.length > 0 && <div className="status-row" aria-label="Düşman etkileri">{gameState.enemyStatuses.map((status) => <span key={status.id} className="status-chip status-chip--enemy" title={statusLabel(status)}>{statusLabel(status)}</span>)}</div>}
+          {enemyStatuses.length > 0 && <div className="status-row" aria-label="Düşman etkileri">{enemyStatuses.map((status) => <span key={status.id} className="status-chip status-chip--enemy" title={statusLabel(status)}>{statusLabel(status)}</span>)}</div>}
           <div key={`${intentType}-${displayedIntentValue}`} className={`enemy-intent enemy-intent--${intentClass}`} aria-live="polite">
             <span className="enemy-intent__icon" aria-hidden="true">{intentIsAttack ? '⚔' : intentIsDefend ? '◈' : '✦'}</span>
             <span><b>Düşman niyeti</b><strong>{intentLabel}</strong></span>
@@ -82,7 +82,7 @@ export const BattleStats: React.FC = () => {
           </div>
         </div>
       </article>
-      <span className="sr-only">Altın: {gold}. Deste: {deck.length}, El: {hand.length}, Mezarlık: {discardPile.length}.</span>
+      <span className="sr-only">Altın: {gold}. Deste: {deckSize}, El: {handSize}, Mezarlık: {discardSize}.</span>
     </>
   );
 };

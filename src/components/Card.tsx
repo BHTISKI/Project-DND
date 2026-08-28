@@ -6,20 +6,22 @@ interface CardProps {
   isPlayable?: boolean;
 }
 
+function formatEffect(effect: NonNullable<Card['effects']>[number]) {
+  if (effect.kind === 'attack') return 'Zırha karşı saldır';
+  if (effect.kind === 'damage') return 'Doğrudan hasar';
+  if (effect.kind === 'block') return `${effect.die ?? effect.amount} blok kazan`;
+  if (effect.kind === 'heal') return `${effect.die ?? effect.amount} can yenile`;
+  if (effect.kind === 'status') return `${effect.status} uygula`;
+  if (effect.kind === 'draw') return `${effect.amount} kart çek`;
+  if (effect.kind === 'energy') return `${effect.amount} enerji kazan`;
+  return 'Düşmanın turunu atlat';
+}
+
 export const CardComponent: React.FC<CardProps> = ({ card, onPlay, isPlayable = true }) => {
   const cardTypeLabel = card.tip === 'saldırı' ? 'Saldırı' : card.tip === 'savunma' ? 'Savunma' : 'Yetenek';
   const cardGlyph = card.tip === 'saldırı' ? '⚔' : card.tip === 'savunma' ? '◈' : '✦';
   const rarityLabel = card.rarity === 'rare' ? 'Nadir' : card.rarity === 'uncommon' ? 'Seçkin' : 'Sıradan';
-  const effectText = card.effects?.map((effect) => {
-    if (effect.kind === 'attack') return 'Zırha karşı saldır';
-    if (effect.kind === 'damage') return 'Doğrudan hasar';
-    if (effect.kind === 'block') return `${effect.die ?? effect.amount} blok kazan`;
-    if (effect.kind === 'heal') return `${effect.die ?? effect.amount} can yenile`;
-    if (effect.kind === 'status') return `${effect.status} uygula`;
-    if (effect.kind === 'draw') return `${effect.amount} kart çek`;
-    if (effect.kind === 'energy') return `${effect.amount} enerji kazan`;
-    return 'Düşmanın turunu atlat';
-  }).join(' · ') || `${card.zarTuru} zar`;
+  const effectText = card.effects?.map(formatEffect).join(' · ') || `${card.zarTuru} zar`;
   const primaryEffect = card.effects?.find((effect) => effect.kind === 'attack' || effect.kind === 'damage' || effect.kind === 'block' || effect.kind === 'heal');
   const primaryValue = primaryEffect && ('die' in primaryEffect ? primaryEffect.die : 'amount' in primaryEffect ? primaryEffect.amount : undefined);
   const primaryLabel = card.tip === 'saldırı' ? 'HASAR' : card.tip === 'savunma' ? 'BLOK' : 'ETKİ';

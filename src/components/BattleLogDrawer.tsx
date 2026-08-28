@@ -10,19 +10,24 @@ interface BattleLogDrawerProps {
 export const BattleLogDrawer: React.FC<BattleLogDrawerProps> = ({ messages, isOpen, onToggle, classify }) => {
   const toggleRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
+  const onToggleRef = useRef(onToggle);
+
+  useEffect(() => {
+    onToggleRef.current = onToggle;
+  }, [onToggle]);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onToggle();
+        onToggleRef.current();
         toggleRef.current?.focus();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     drawerRef.current?.focus();
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onToggle]);
+  }, [isOpen]);
 
   return (
     <>
@@ -34,7 +39,7 @@ export const BattleLogDrawer: React.FC<BattleLogDrawerProps> = ({ messages, isOp
       <aside id="battle-log-drawer" ref={drawerRef} className={`log-drawer${isOpen ? ' log-drawer--open' : ''}`} aria-label="Savaş günlüğü" aria-hidden={!isOpen} tabIndex={-1}>
         <div className="log-drawer__header">
           <div><p className="eyebrow">Kayıt</p><h2>Savaş Günlüğü</h2></div>
-          <button type="button" className="log-drawer__close" onClick={onToggle} aria-label="Savaş günlüğünü kapat">×</button>
+          <button type="button" className="log-drawer__close" onClick={onToggle} tabIndex={isOpen ? 0 : -1} aria-label="Savaş günlüğünü kapat">×</button>
         </div>
         <div className="log-drawer__body" aria-live="polite">
           {messages.length === 0 ? <p className="log-drawer__empty">Henüz bir kayıt yok.</p> : messages.slice().reverse().map((message, index) => {

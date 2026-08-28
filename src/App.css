@@ -1,10 +1,3 @@
-.energy-display { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: flex-start; min-width: 82px; padding: 9px; border: 1px solid #d4b35f; border-radius: 3px; background: #fbf0c9; color: var(--gold); }
-.energy-display > small { font: 700 0.58rem var(--mono); letter-spacing: 0.08em; }
-.energy-display > span { margin-top: 3px; font: 700 1.35rem var(--mono); line-height: 1; }
-.energy-display > span b { font-size: 0.76rem; font-weight: 400; }
-.energy-pips { display: flex; gap: 4px; margin-top: 9px !important; }
-.energy-pip { width: 7px; height: 7px; margin: 0 !important; border: 1px solid var(--gold); border-radius: 50%; background: transparent; }
-.energy-pip--full { background: var(--gold); }
 :root {
   --ink: #17202a;
   --muted: #68727b;
@@ -213,7 +206,7 @@
 .shop-card-mark--savunma { background: var(--gold); }
 .button--remove { min-height: 30px; padding: 5px 8px; background: transparent; color: var(--red); font-size: 0.62rem; }
 .shop-footer { grid-column: 1 / -1; padding-top: 17px; border-top: 1px solid var(--line); }
-.battle-log { position: relative; }
+.battle-log { display: none; position: relative; }
 .battle-log::before { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; background: #f6d98c; content: ''; }
 .log-entry { transition: color 0.2s ease; }
 .log-entry--critical { text-shadow: 0 0 16px rgba(246,217,140,0.25); }
@@ -363,7 +356,6 @@ body { background: radial-gradient(circle at 50% -20%, #fffdf7 0, var(--paper) 4
 .log-drawer .log-entry > span:last-child { display: flex; flex-direction: column; gap: 3px; }
 .log-drawer .log-entry small { color: #9ce1d5; font: 700 0.58rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
 .log-drawer__empty { color: #c6c1b5; font-size: 0.85rem; }
-.battle-log { display: none; }
 .map-reward-note { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 10px 12px; border-left: 3px solid var(--gold); background: #fff9e7; color: var(--muted); font-size: 0.78rem; }
 .map-reward-note span { color: var(--gold); }
 .phase-placeholder { display: grid; max-width: 540px; min-height: 190px; margin: 22px auto 4px; place-items: center; align-content: center; gap: 8px; border: 1px dashed var(--line); background: #fbf8f1; text-align: center; }
