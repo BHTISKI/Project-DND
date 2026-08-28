@@ -15,3 +15,12 @@ export interface Character {
   zirhSinifi: number
   gucCarpani: number
 }
+
+export type EnemyIntentType = "attack" | "defend" | "special"
+
+export interface EnemyIntent {
+  type: EnemyIntentType
+  estimatedDamage?: number
+  estimatedBlock?: number
+  estimatedHeal?: number
+}

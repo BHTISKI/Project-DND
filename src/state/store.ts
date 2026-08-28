@@ -1,4 +1,4 @@
-import type { Character } from '../types/game';
+import type { Character, EnemyIntent } from '../types/game';
 import type { Card } from '../types/game';
 import { create } from 'zustand';
 
@@ -10,6 +10,29 @@ function shuffle<T>(array: T[]): T[] {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+// Helper to generate enemy intent and value
+function generateEnemyIntent(enemy: Character): { intent: EnemyIntent; value: number } {
+  const roll = Math.random();
+  let intent: EnemyIntent = { type: 'attack' };
+  let value = 0;
+
+  if (roll < 0.6) {
+    // Keep the preview aligned with the actual d6 damage roll.
+    value = 3.5 + enemy.gucCarpani;
+    intent = { type: 'attack', estimatedDamage: value };
+  } else if (roll < 0.9) {
+    // Defense uses the same d4 range when the intent is created.
+    value = 2.5;
+    intent = { type: 'defend', estimatedBlock: value };
+  } else {
+    // Special currently heals by the same d4 range.
+    value = 2.5;
+    intent = { type: 'special', estimatedHeal: value };
+  }
+
+  return { intent, value };
 }
 
 interface GameState {
@@ -37,10 +60,16 @@ interface GameState {
   rewardOptions: Card[];
   // Temporary block for player (absorbs damage from enemy attack)
   playerBlock: number;
+  // Temporary block for enemy (absorbs damage from player attack when enemy intends to defend)
+  enemyBlock: number;
   // Whether enemy will skip their next turn
   enemySkipNextTurn: boolean;
   // Number of victories
   victoryCount: number;
+  // Enemy intent for the next enemy turn (set at start of player turn)
+  enemyIntent: EnemyIntent | null;
+  // Value associated with the intent (e.g., estimated damage for attack, block for defend, heal for special)
+  enemyIntentValue: number;
   // Actions
   initializeGame: () => void;
   drawCards: (n: number) => void;
@@ -57,7 +86,7 @@ interface GameState {
   startNextCombat: () => void;
 }
 
-  
+
 const defaultPlayer: Character = {
   id: 'player-1',
   isim: 'Ero',
@@ -122,10 +151,13 @@ export const useGameStore = create<GameState>((set) => ({
   battleLogs: [],
   initialized: false,
   playerBlock: 0,
+  enemyBlock: 0,
   enemySkipNextTurn: false,
   victoryCount: 0,
   gamePhase: 'combat',
   rewardOptions: [],
+  enemyIntent: null,
+  enemyIntentValue: 0,
 
   initializeGame: () => {
     set((state) => {
@@ -134,6 +166,11 @@ export const useGameStore = create<GameState>((set) => ({
       // draw initial hand
       const hand = deck.slice(0, state.drawCount);
       const remainingDeck = deck.slice(state.drawCount);
+      const { intent, value } = generateEnemyIntent(state.enemy);
+      let enemyBlock = 0;
+      if (intent.type === 'defend') {
+        enemyBlock = Math.floor(Math.random() * 4) + 1; // d4
+      }
       return {
         ...state,
         deck: remainingDeck,
@@ -143,8 +180,11 @@ export const useGameStore = create<GameState>((set) => ({
         gamePhase: 'combat',
         battleLogs: ['Oyun başlatıldı. Destek hazırlanıyor...'],
         playerBlock: 0,
+        enemyBlock,
         enemySkipNextTurn: false,
         victoryCount: 0,
+        enemyIntent: intent,
+        enemyIntentValue: value,
       };
     });
   },
@@ -207,90 +247,115 @@ export const useGameStore = create<GameState>((set) => ({
       // Check if enemy should skip this turn
       if (enemySkipNextTurn) {
         enemySkipNextTurn = false;
-        battleLogs = [...battleLogs, `Düşman etkili bir etkiden kaynaklanarak turunu atladı!`];
+        battleLogs = [...battleLogs, `Düşman etkili bir etkiden kaynaklanarak turunu atlandı!`];
       } else if (enemy.mevcutCan > 0 && state.gamePhase === 'combat') {
-        // Enemy AI: roll d20 + enemy.gucCarpani vs player AC
-        const enemyRoll = Math.floor(Math.random() * 20) + 1;
-        const isCritHit = enemyRoll === 20;
-        const isCritFail = enemyRoll === 1;
-        const enemyTotal = enemyRoll + enemy.gucCarpani;
-        const playerAC = player.zirhSinifi;
-        let damage = 0;
-        let hit = false;
+        // Process enemy intent
+        switch (state.enemyIntent?.type) {
+          case 'attack':
+            // Enemy AI: roll d20 + enemy.gucCarpani vs player AC
+            const enemyRoll = Math.floor(Math.random() * 20) + 1;
+            const isCritHit = enemyRoll === 20;
+            const isCritFail = enemyRoll === 1;
+            const enemyTotal = enemyRoll + enemy.gucCarpani;
+            const playerAC = player.zirhSinifi;
+            let damage = 0;
+            let hit = false;
 
-        if (isCritFail) {
-          // Critical failure: automatic miss
-          hit = false;
-        } else if (isCritHit) {
-          // Critical hit: automatic hit
-          hit = true;
-        } else {
-          // Normal hit check
-          hit = enemyTotal >= playerAC;
-        }
-
-        let blockUsed = 0;
-        let log = '';
-
-        if (hit) {
-          // Enemy hits: roll damage die (d6 for simplicity)
-          const dmgRoll = Math.floor(Math.random() * 6) + 1; // d6
-          let baseDamage = dmgRoll; // enemy's base damage from die
-          if (isCritHit) {
-            // Double the die on critical hit
-            baseDamage = dmgRoll * 2;
-          }
-          // Add enemy's damage modifier
-          damage = baseDamage + enemy.gucCarpani;
-          // Apply player's block to reduce damage
-          if (playerBlock > 0) {
-            if (playerBlock >= damage) {
-              // Block absorbs all damage
-              blockUsed = damage;
-              damage = 0;
-              playerBlock = 0; // block is used up
+            if (isCritFail) {
+              // Critical failure: automatic miss
+              hit = false;
+            } else if (isCritHit) {
+              // Critical hit: automatic hit
+              hit = true;
             } else {
-              // Block absorbs part of the damage
-              blockUsed = playerBlock;
-              damage -= playerBlock;
-              playerBlock = 0; // block is used up
+              // Normal hit check
+              hit = enemyTotal >= playerAC;
             }
-          }
-          // Apply damage to player
-          const newHp = Math.max(0, player.mevcutCan - damage);
-          player = { ...player, mevcutCan: newHp };
-          // Build log message
-          let hitText = isCritHit ? 'KRİTİK VURUŞ!' : 'Başarılı saldırı';
-          log = `Düşman Zar: ${enemyRoll}. ${hitText} ${damage} hasar vuruldu!`;
-          if (blockUsed > 0) {
-            log += ` (Blok ${blockUsed} hasarını absorbed)`;
-          }
-        } else {
-          let hitText = isCritFail ? 'KRİTİK BAŞARISIZLIK! Saldırı tamamen başarısız oldu.' : 'Saldırısı kansırdi!';
-          log = `Düşman Zar: ${enemyRoll}. ${hitText}`;
-        }
 
-        battleLogs = [...battleLogs, log];
-        // Check if player died after enemy attack
-        if (player.mevcutCan <= 0) {
-          // Transition to game over
-          return {
-            ...state,
-            deck,
-            hand,
-            discardPile,
-            currentEnergy,
-            isPlayerTurn,
-            player,
-            enemy,
-            playerBlock,
-            enemySkipNextTurn,
-            battleLogs: [...battleLogs, `Oyuncu ölü! Oyun bitti.`],
-            gamePhase: 'gameOver',
-          };
+            let blockUsed = 0;
+            let log = '';
+
+            if (hit) {
+              // Enemy hits: roll damage die (d6 for simplicity)
+              const dmgRoll = Math.floor(Math.random() * 6) + 1; // d6
+              let baseDamage = dmgRoll; // enemy's base damage from die
+              if (isCritHit) {
+                // Double the die on critical hit
+                baseDamage = dmgRoll * 2;
+              }
+              // Add enemy's damage modifier
+              damage = baseDamage + enemy.gucCarpani;
+              // Apply player's block to reduce damage
+              if (playerBlock > 0) {
+                if (playerBlock >= damage) {
+                  // Block absorbs all damage
+                  blockUsed = damage;
+                  damage = 0;
+                  playerBlock = 0; // block is used up
+                } else {
+                  // Block absorbs part of the damage
+                  blockUsed = playerBlock;
+                  damage -= playerBlock;
+                  playerBlock = 0; // block is used up
+                }
+              }
+              // Apply damage to player
+              const newHp = Math.max(0, player.mevcutCan - damage);
+              player = { ...player, mevcutCan: newHp };
+              // Build log message
+              let hitText = isCritHit ? 'KRİTİK VURUŞ!' : 'Başarılı saldırı';
+              log = `Düşman Zar: ${enemyRoll}. ${hitText} ${damage} hasar vuruldu!`;
+              if (blockUsed > 0) {
+                log += ` (Blok ${blockUsed} hasarını absorbed)`;
+              }
+            } else {
+              let hitText = isCritFail ? 'KRİTİK BAŞARISIZLIK! Saldırı tamamen başarısız oldu.' : 'Saldırısı kansırdi!';
+              log = `Düşman Zar: ${enemyRoll}. ${hitText}`;
+            }
+
+            battleLogs = [...battleLogs, log];
+            // Check if player died after enemy attack
+            if (player.mevcutCan <= 0) {
+              // Transition to game over
+              return {
+                ...state,
+                deck,
+                hand,
+                discardPile,
+                currentEnergy,
+                isPlayerTurn,
+                player,
+                enemy,
+                playerBlock: 0, // reset player block
+                enemyBlock: 0, // clear enemy block
+                enemySkipNextTurn,
+                enemyIntent: null,
+                enemyIntentValue: 0,
+                battleLogs: [...battleLogs, `Oyuncu ölü! Oyun bitti.`],
+                gamePhase: 'gameOver',
+              };
+            }
+            break;
+
+          case 'defend':
+            // Enemy defends: set a block value for itself to reduce incoming damage from player's next attack
+            // Note: This block will be used during the player's next attack (in playCard)
+            // We do not change enemyBlock here because it is already set from the previous state
+            // (set at the start of the player turn). We just log that the enemy is defending.
+            battleLogs = [...battleLogs, `Düşman savunma hazırlıyor!`];
+            break;
+
+          case 'special':
+            // Enemy does a special action: heal itself
+            // Roll a d4 for the heal amount
+            const healRoll = Math.floor(Math.random() * 4) + 1; // d4
+            const newEnemyHp = Math.min(enemy.maksimumCan, enemy.mevcutCan + healRoll);
+            enemy = { ...enemy, mevcutCan: newEnemyHp };
+            battleLogs = [...battleLogs, `Düşman özel hareket yapıyor! ${healRoll} can iyileşti.`];
+            break;
         }
       }
-      // If enemy died after potential attack (or was already dead), transition to victory
+      // If enemy died after potential action (or was already dead), transition to victory
       if (enemy.mevcutCan <= 0 && state.gamePhase === 'combat') {
         // Transition to victory with 3 random reward cards
         const rewards = getRandomRewards();
@@ -307,7 +372,19 @@ export const useGameStore = create<GameState>((set) => ({
           gamePhase: 'victory',
           victoryCount: state.victoryCount + 1,
           rewardOptions: rewards,
+          playerBlock: 0,
+          enemyBlock: 0,
+          enemySkipNextTurn: false,
+          enemyIntent: null,
+          enemyIntentValue: 0,
         };
+      }
+
+      // After enemy turn, generate new intent for the next player turn
+      const { intent, value } = generateEnemyIntent(enemy);
+      let newEnemyBlock = 0;
+      if (intent.type === 'defend') {
+        newEnemyBlock = Math.floor(Math.random() * 4) + 1; // d4
       }
 
       return {
@@ -320,6 +397,11 @@ export const useGameStore = create<GameState>((set) => ({
         player,
         enemy,
         battleLogs,
+        playerBlock: 0, // reset player block
+        enemyBlock: newEnemyBlock, // set for next player turn based on new intent
+        enemySkipNextTurn,
+        enemyIntent: intent,
+        enemyIntentValue: value,
       };
     });
   },
@@ -357,6 +439,7 @@ export const useGameStore = create<GameState>((set) => ({
       let updatedPlayer = state.player;
       let updatedEnemy = state.enemy;
       let updatedPlayerBlock = state.playerBlock;
+      let updatedEnemyBlock = state.enemyBlock; // current enemy block (from defend intent)
       let updatedEnemySkipNextTurn = state.enemySkipNextTurn;
 
       switch (card.tip) {
@@ -374,18 +457,18 @@ export const useGameStore = create<GameState>((set) => ({
             // Critical failure: automatic miss
             hit = false;
           } else if (isCritHit) {
-            // Critical hit: automatic hit
-            hit = true;
+              // Critical hit: automatic hit
+              hit = true;
           } else {
-            // Normal hit check
-            hit = totalAttack >= enemyAC;
+              // Normal hit check
+              hit = totalAttack >= enemyAC;
           }
 
           if (hit) {
             // Roll damage die
             const sides = parseInt(card.zarTuru.substring(1)); // e.g., 'd6' -> 6
             const damageRoll = Math.floor(Math.random() * sides) + 1;
-            // Base damage from die and card baseHasar
+            // Base damage from die and card baseAsar
             let baseDamage = damageRoll + card.baseHasar;
             if (isCritHit) {
               // Double the die and baseHasar on critical hit
@@ -393,6 +476,18 @@ export const useGameStore = create<GameState>((set) => ({
             }
             // Add player's damage modifier
             damage = baseDamage + state.player.gucCarpani;
+            // Apply enemy's block to reduce damage (if any)
+            if (updatedEnemyBlock > 0) {
+              if (updatedEnemyBlock >= damage) {
+                // Enemy block absorbs all damage
+                damage = 0;
+                updatedEnemyBlock = 0; // block is used up
+              } else {
+                // Enemy block absorbs part of the damage
+                damage -= updatedEnemyBlock;
+                updatedEnemyBlock = 0; // block is used up
+              }
+            }
             // Apply damage to enemy
             const targetChar = state.enemy;
             const newHp = Math.max(0, targetChar.mevcutCan - damage);
@@ -426,7 +521,11 @@ export const useGameStore = create<GameState>((set) => ({
               // Deal damage ignoring enemy AC (like a magic missile)
               const sides = parseInt(card.zarTuru.substring(1)); // d6 -> 6
               const damageRoll = Math.floor(Math.random() * sides) + 1;
-              const damage = damageRoll + 2; // fixed bonus
+              let damage = damageRoll + 2; // fixed bonus
+              if (updatedEnemyBlock > 0) {
+                damage = Math.max(0, damage - updatedEnemyBlock);
+                updatedEnemyBlock = 0;
+              }
               const targetChar = state.enemy;
               const newHp = Math.max(0, targetChar.mevcutCan - damage);
               updatedEnemy = { ...targetChar, mevcutCan: newHp };
@@ -491,7 +590,10 @@ export const useGameStore = create<GameState>((set) => ({
           player: updatedPlayer,
           enemy: updatedEnemy,
           playerBlock: updatedPlayerBlock,
-          enemySkipNextTurn: updatedEnemySkipNextTurn,
+          enemyBlock: updatedEnemyBlock, // preserve enemy block (if any)
+          enemySkipNextTurn: false,
+          enemyIntent: null,
+          enemyIntentValue: 0,
           battleLogs: [...state.battleLogs, log],
           gamePhase: 'victory',
           victoryCount: state.victoryCount + 1,
@@ -507,6 +609,7 @@ export const useGameStore = create<GameState>((set) => ({
         player: updatedPlayer,
         enemy: updatedEnemy,
         playerBlock: updatedPlayerBlock,
+        enemyBlock: updatedEnemyBlock,
         enemySkipNextTurn: updatedEnemySkipNextTurn,
         battleLogs: [...state.battleLogs, log],
       };
@@ -521,6 +624,7 @@ export const useGameStore = create<GameState>((set) => ({
 
   applyDamage: (target: 'player' | 'enemy', amount: number) => {
     set((state) => {
+      if (state.gamePhase !== 'combat') return state;
       const targetChar = target === 'player' ? state.player : state.enemy;
       const newHp = Math.max(0, targetChar.mevcutCan - amount);
       return {
@@ -629,11 +733,22 @@ export const useGameStore = create<GameState>((set) => ({
         zirhSinifi: defaultEnemy.zirhSinifi + victoryFactor,
         gucCarpani: defaultEnemy.gucCarpani + Math.floor(victoryFactor * 0.5)
       };
+      // Generate initial enemy intent for the new combat
+      const { intent, value } = generateEnemyIntent(scaledEnemy);
+      let enemyBlock = 0;
+      if (intent.type === 'defend') {
+        enemyBlock = Math.floor(Math.random() * 4) + 1; // d4
+      }
       return {
         ...state,
         enemy: scaledEnemy,
         gamePhase: 'combat',
         isPlayerTurn: true, // player starts combat
+        playerBlock: 0,
+        enemyBlock,
+        enemySkipNextTurn: false,
+        enemyIntent: intent,
+        enemyIntentValue: value,
         // Optionally clear battle logs? Keep them.
       };
     });
