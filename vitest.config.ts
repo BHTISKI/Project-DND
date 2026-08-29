@@ -4,5 +4,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/testUtils/setup.ts'],
+    reporter: 'dot',
   },
 });

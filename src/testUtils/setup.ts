@@ -1,9 +1,5 @@
+// Bu dosya src/testUtils/setup.ts için ilgili kodları içerir.
+// Test ortamı kurulumu: jsdom ayarları ve global mocklar
+// Test ortamı kurulumu: jsdom ayarları ve global mocklar
 import '@testing-library/jest-dom/vitest';
-import { afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
-import { resetMockRandom } from './mockRandom';
-
-afterEach(() => {
-  cleanup();
-  resetMockRandom();
-});
+// Global setup for tests

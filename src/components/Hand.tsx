@@ -1,3 +1,6 @@
+// Bu dosya src/components/Hand.tsx için ilgili kodları içerir.
+// Bileşen: eldeki kartları listeler ve etkileşimli kart seçimini sunar
+// Bileşen: eldeki kartları listeler ve etkileşimli kart seçimini sunar
 import type { Card } from '../types/game';
 import { useGameStore } from '../state/store';
 import { CardComponent } from './Card';
@@ -18,7 +21,7 @@ export const Hand: React.FC = () => {
   };
 
   return (
-    <div className={`hand-grid${isPlayerTurn && gamePhase === 'combat' ? '' : ' hand-grid--inactive'}`} aria-label="Kart eli" aria-live="polite">
+    <div className={`hand-grid${isPlayerTurn && gamePhase === 'combat' ? '' : ' hand-grid--inactive'}`} role="list" aria-label="Kart eli" aria-live="polite">
       {hand.map((card) => (
         <CardComponent
           key={card.id}

@@ -1,3 +1,6 @@
+// Bu dosya src/testUtils/random.ts için ilgili kodları içerir.
+// Gerçek rastgele sayı üretimi için küçük sarıcılar
+// Gerçek rastgele sayı üretimi için küçük sarıcılar
 import { vi } from 'vitest';
 
 let randomSpy: ReturnType<typeof vi.spyOn> | undefined;

@@ -1,3 +1,4 @@
+// Bu dosya src/main.tsx için ilgili kodları içerir.
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

@@ -1,26 +1,20 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+// Bu dosya src/state/store.test.ts için ilgili kodları içerir.
+// Zustand store birimi testleri: azioni ve selektorlerin doğruluğu
+// Zustand store birimi testleri: azioni ve selektorlerin doğruluğu
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { Card, EnemyIntent } from '../types/game';
 import { useGameStore } from './store';
 import { setupMockRandom, resetMockRandom } from '../testUtils';
+import { cleanup } from '@testing-library/react';
 
-const player = { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2 };
-const enemy = { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1 };
+const player = { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 };
+const enemy = { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 };
 
 function card(overrides: Partial<Card> = {}): Card {
   return {
     id: 'card-1', isim: 'Test Kartı', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4',
     effects: [{ kind: 'attack', die: 'd4' }], ...overrides,
   };
-}
-
-function resetStore() {
-  useGameStore.setState({
-    player: { ...player }, enemy: { ...enemy }, isPlayerTurn: true, maxEnergy: 3, currentEnergy: 3,
-    deck: [], hand: [], discardPile: [], drawCount: 5, gold: 50, battleLogs: [], initialized: false,
-    gamePhase: 'combat', rewardOptions: [], playerBlock: 0, enemyBlock: 0, enemySkipNextTurn: false,
-    victoryCount: 0, enemyIntent: null, enemyIntentValue: 0, enemyArchetype: 'goblin', playerStatuses: [],
-    enemyStatuses: [], comboChain: [], comboCount: 0, nextDamageBonus: 0,
-  });
 }
 
 function setCombat(overrides: Partial<ReturnType<typeof useGameStore.getState>> = {}) {
@@ -32,11 +26,21 @@ function setCombat(overrides: Partial<ReturnType<typeof useGameStore.getState>> 
 }
 
 describe('game engine store', () => {
-  beforeEach(resetStore);
+  beforeEach(() => {
+    useGameStore.setState({
+      player: { ...player }, enemy: { ...enemy }, isPlayerTurn: true, maxEnergy: 3, currentEnergy: 3,
+      deck: [], hand: [], discardPile: [], drawCount: 5, gold: 50, battleLogs: [], initialized: false,
+      gamePhase: 'combat', rewardOptions: [], playerBlock: 0, enemyBlock: 0, enemySkipNextTurn: false,
+      victoryCount: 0, enemyIntent: null, enemyIntentValue: 0, enemyArchetype: 'goblin', playerStatuses: [],
+      enemyStatuses: [], comboChain: [], comboCount: 0, nextDamageBonus: 0,
+    });
+  });
+
   afterEach(() => {
-  vi.restoreAllMocks();
-  resetMockRandom();
-});
+    cleanup();
+    vi.restoreAllMocks();
+    resetMockRandom();
+  });
 
   it('creates the expected opening deck, hand and energy', () => {
     setupMockRandom([0]);
@@ -149,7 +153,7 @@ describe('game engine store', () => {
     vi.spyOn(Math, 'random').mockReturnValueOnce(0.999).mockReturnValueOnce(0).mockReturnValue(0);
     useGameStore.getState().playCard('card-1');
     let state = useGameStore.getState();
-    expect(state.gamePhase).toBe('victory');
+    expect(state.gamePhase).toBe('mapSelection');
     expect(state.rewardOptions).toHaveLength(3);
     expect(state.victoryCount).toBe(1);
     expect(state.gold).toBe(70);
@@ -174,6 +178,9 @@ describe('game engine store', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     useGameStore.getState().startNextCombat();
     let state = useGameStore.getState();
+    expect(state.gamePhase).toBe('mapSelection');
+    useGameStore.getState().selectNode(state.availableNodes.find((node) => node.type === 'combat')!.id);
+    state = useGameStore.getState();
     expect(state.gamePhase).toBe('combat');
     expect(state.enemy.isim).toBe('Muhafız');
     expect(state.enemy.maksimumCan).toBeGreaterThan(enemy.maksimumCan);
@@ -222,7 +229,7 @@ describe('game engine store', () => {
     expect(state.comboChain).toEqual([]);
     expect(state.comboCount).toBe(0);
     expect(state.nextDamageBonus).toBe(0);
-    expect(state.gamePhase).toBe('combat');
+    expect(state.gamePhase).toBe('mapSelection');
     expect(state.isPlayerTurn).toBe(true);
     expect(state.enemyIntent).not.toBeNull();
     // Enemy should be scaled based on victoryCount (2)
@@ -288,7 +295,7 @@ describe('game engine store', () => {
 
     // Expect a fresh initialized state
     expect(newState.initialized).toBe(true);
-    expect(newState.gamePhase).toBe('combat');
+    expect(newState.gamePhase).toBe('mapSelection');
     expect(newState.currentEnergy).toBe(newState.maxEnergy);
     expect(newState.hand).toHaveLength(newState.drawCount); // initial hand size
     expect(newState.discardPile).toHaveLength(0);
