@@ -32,6 +32,7 @@ export type CardEffect =
   | { kind: "blockIfAttacked"; amount: number }
   | { kind: "strength"; amount: number }
   | { kind: "weak"; amount: number }
+  | { kind: "trash"; amount?: number; target?: "player" | "enemy" }
   | { kind: "advantage"; value?: number; target?: "player" | "enemy" }
   | { kind: "disadvantage"; value?: number; target?: "player" | "enemy" }
 

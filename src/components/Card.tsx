@@ -17,6 +17,11 @@ function formatEffect(effect: NonNullable<Card['effects']>[number]) {
   if (effect.kind === 'status') return `${effect.status} uygula`;
   if (effect.kind === 'draw') return `${effect.amount} kart çek`;
   if (effect.kind === 'energy') return `${effect.amount} enerji kazan`;
+  if (effect.kind === 'trash') {
+    const amount = effect.amount ?? 1;
+    const target = effect.target === 'enemy' ? 'düşmanın' : 'oyuncunun';
+    return `${amount} kartı ${target} desteleden kaldır`;
+  }
   return 'Düşmanın turunu atlat';
 }
 

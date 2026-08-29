@@ -740,6 +740,21 @@ export const useGameStore = create<GameState>((set) => ({
               updatedPlayer = { ...updatedPlayer, disadvantageCounter: updatedPlayer.disadvantageCounter + amount };
               effectLogs.push(`${card.isim} ${amount} dezavantaj verdi.`);
             }
+          } else if (effect.kind === 'trash') {
+            const amount = effect.amount ?? 1;
+            const target = effect.target ?? 'player';
+            if (target === 'player') {
+              const actualAmount = Math.min(amount, deck.length);
+              if (actualAmount > 0) {
+                const trashed = deck.slice(0, actualAmount);
+                deck = deck.slice(actualAmount);
+                effectLogs.push(`${actualAmount} kart ${trashed.map(c => c.isim).join(', ')} desteleden kaldırıldı.`);
+              } else {
+                effectLogs.push(`Deste boş, kart kaldırılamadı.`);
+              }
+            } else {
+              effectLogs.push(`Düşmanın deste aucune kartı kaldıramadı (düşmanın deste yok).`);
+            }
           }
         }
         log = effectLogs.join(' ');
