@@ -1,4 +1,7 @@
+// Bu dosya src/testUtils/gameState.ts için ilgili kodları içerir.
 // Test yardımcıları: oyun durumu ve kart oluşturucu fonksiyonlar
+// Test yardımcıları: oyun durumu ve kart oluşturucu fonksiyonlar (makeGameState, makeCard, makePlayer)
+// Test yardımcıları: oyun durumu ve kart oluşturucu fonksiyonlar (makeGameState, makeCard, makePlayer)
 import type { GameState } from '../state/store';
 import type { Card, Character, NodeType } from '../types/game';
 

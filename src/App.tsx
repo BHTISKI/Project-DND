@@ -1,3 +1,6 @@
+// Bu dosya src/App.tsx için ilgili kodları içerir.
+// Ana uygulama bileşeni: oyun durumu, UI bileşenlerini birleştirir ve oyun döngüsünü yönetir.
+// Ana uygulama bileşeni: oyun durumu, UI bileşenlerini birleştirir ve oyun döngüsünü yönetir.
 import { useEffect, useState } from 'react';
 import { useGameStore } from './state/store';
 import type { Card, NodeType } from './types/game';

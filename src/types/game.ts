@@ -1,3 +1,6 @@
+// Bu dosya src/types/game.ts için ilgili kodları içerir.
+// Oyun tipleri: Character, Card, NodeType, EnemyArchetypeId vb. arayüzleri ve tipleri
+// Oyun tipleri: Character, Card, NodeType, EnemyArchetypeId vb. arayüzleri ve tipleri
 export interface Card {
   id: string
   isim: string

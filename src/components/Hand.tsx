@@ -1,3 +1,6 @@
+// Bu dosya src/components/Hand.tsx için ilgili kodları içerir.
+// Bileşen: eldeki kartları listeler ve etkileşimli kart seçimini sunar
+// Bileşen: eldeki kartları listeler ve etkileşimli kart seçimini sunar
 import type { Card } from '../types/game';
 import { useGameStore } from '../state/store';
 import { CardComponent } from './Card';

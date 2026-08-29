@@ -1,4 +1,7 @@
+// Bu dosya src/state/store.ts için ilgili kodları içerir.
 // Zustand store tanımı ve oyun durumu yönetimi
+// Zustand store tanımı ve oyun durumu yönetimi (state, actions, middleware)
+// Zustand store tanımı ve oyun durumu yönetimi (state, actions, middleware)
 import { sampleCardDefs } from '../types/game';
 import type { Card, CardEffect, Character, EnemyArchetypeId, EnemyIntent, NodeType, RunMapState, StatusEffect, StatusId } from '../types/game';
 import { create } from 'zustand';

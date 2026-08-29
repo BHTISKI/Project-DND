@@ -1,3 +1,6 @@
+// Bu dosya src/testUtils/game.test.tsx için ilgili kodları içerir.
+// Test paketi: oyun akışı ve bileşen etkileşimleri için entegrasyon testleri
+// Test paketi: oyun akışı ve bileşen etkileşimleri için entegrasyon testleri
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';

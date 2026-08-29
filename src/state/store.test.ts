@@ -1,3 +1,6 @@
+// Bu dosya src/state/store.test.ts için ilgili kodları içerir.
+// Zustand store birimi testleri: azioni ve selektorlerin doğruluğu
+// Zustand store birimi testleri: azioni ve selektorlerin doğruluğu
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { Card, EnemyIntent } from '../types/game';
 import { useGameStore } from './store';

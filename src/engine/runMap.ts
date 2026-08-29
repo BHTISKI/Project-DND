@@ -1,4 +1,7 @@
+// Bu dosya src/engine/runMap.ts için ilgili kodları içerir.
 // Run map system for generating node-based progression
+// Mantık: run haritası, düğüm bağlantıları ve ilerleme mantığı
+// Mantık: run haritası, düğüm bağlantıları ve ilerleme mantığı
 import type { NodeType } from '../types/game';
 import { generateRandomId } from '../utils/id';
 

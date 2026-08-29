@@ -1,4 +1,7 @@
+// Bu dosya src/engine/combatResolver.ts için ilgili kodları içerir.
 // Savaş çözümleyici: düşman niyetini belirler ve hasar hesaplar
+// Savaş çözümleyici: düşman niyetini belirler ve hasar/blok hesaplar
+// Savaş çözümleyici: düşman niyetini belirler ve hasar/blok hesaplar
 import type { Character, EnemyArchetypeId, EnemyIntent } from '../types/game';
 import { rollDie } from './dice';
 import { averageDie } from '../utils/math';

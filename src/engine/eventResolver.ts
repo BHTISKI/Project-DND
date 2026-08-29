@@ -1,4 +1,7 @@
+// Bu dosya src/engine/eventResolver.ts için ilgili kodları içerir.
 // Event resolver for handling event nodes
+// Mantık: olay düğümleri (şans, şeye, bağış) sonuçlarını üretir
+// Mantık: olay düğümleri (şans, şeye, bağış) sonuçlarını üretir
 import type { GameState } from '../state/store';
 import type { Card } from '../types/game';
 

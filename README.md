@@ -29,6 +29,12 @@ Bu proje, tavsiye rolü oyununa (TRO) ispirasyon almış tek oynanışlı bir ka
 
 ## Teknik Detaylar
 
+## Türkçe Açıklamalar
+
+
+
+Kodun okunabilirliğini artırmak için tüm kaynak dosyalarına Türkçe açıklama satırları eklenmiştir. Bu açıklamalar, her dosyanın amacını ve içeriğini kısaca açıklar.
+
 - React ve TypeScript kullanılarak geliştirilmiştir.
 - State yönetimi için Zustand kullanılmıştır.
 - Kart etkileri effect tabanlı bir sistemle çözülür, bu da yeni kart eklemeyi ve mevcut etkileri değiştirmeyi kolaylaştırır.

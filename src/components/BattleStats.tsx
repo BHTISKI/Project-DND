@@ -1,3 +1,6 @@
+// Bu dosya src/components/BattleStats.tsx için ilgili kodları içerir.
+// Bileşen: oyunun temel istatistiklerini (can, blok, zirh, vs.) gösterir
+// Bileşen: oyunun temel istatistiklerini (can, blok, zirh, vs.) gösterir
 import React from 'react';
 import { useGameStore } from '../state/store';
 import type { EnemyIntent } from '../types/game';

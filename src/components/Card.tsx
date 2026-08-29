@@ -1,3 +1,6 @@
+// Bu dosya src/components/Card.tsx için ilgili kodları içerir.
+// Bileşen: tek kart görselleştirmesi ve hover etkileri
+// Bileşen: tek kart görselleştirmesi ve hover etkileri
 import type { Card } from '../types/game';
 
 interface CardProps {

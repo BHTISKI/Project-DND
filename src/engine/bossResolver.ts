@@ -1,4 +1,7 @@
+// Bu dosya src/engine/bossResolver.ts için ilgili kodları içerir.
 // Boss resolver for handling boss nodes
+// Mantık: boss düğümleri için ödül ve特殊 davranışları belirler
+// Mantık: boss düğümleri için ödül ve特殊 davranışları belirler
 import type { GameState } from '../state/store';
 import type { Card, Character } from '../types/game';
 import { generateRandomId } from '../utils/id';

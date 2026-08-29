@@ -1,3 +1,6 @@
+// Bu dosya src/components/BattleLogDrawer.tsx için ilgili kodları içerir.
+// Bileşen: savaş loglarını kayan pano olarak gösterir
+// Bileşen: savaş loglarını kayan pano olarak gösterir
 import React, { useEffect, useRef } from 'react';
 
 interface BattleLogDrawerProps {

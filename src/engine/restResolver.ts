@@ -1,4 +1,7 @@
+// Bu dosya src/engine/restResolver.ts için ilgili kodları içerir.
 // Rest resolver for handling rest nodes
+// Mantık: dinlenme düğümleri için HP iyileşmesi ve blok yönetimi
+// Mantık: dinlenme düğümleri için HP iyileşmesi ve blok yönetimi
 import type { GameState } from '../state/store';
 
 export class RestResolver {
