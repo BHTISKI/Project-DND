@@ -1,13 +1,5 @@
-// Bu dosya src/state/store.ts için ilgili kodları içerir.
-// Zustand store tanımı ve oyun durumu yönetimi
-// Zustand store tanımı ve oyun durumu yönetimi (state, actions, middleware)
-// Zustand store tanımı ve oyun durumu yönetimi (state, actions, middleware)
-import { sampleCardDefs } from '../types/game';
-import type { Card, CardEffect, Character, EnemyArchetypeId, EnemyIntent, NodeType, RunMapState, StatusEffect, StatusId } from '../types/game';
+import type { Card, CardEffect, Character, EnemyArchetypeId, EnemyIntent, StatusEffect, StatusId } from '../types/game';
 import { create } from 'zustand';
-import { rollDie } from "../engine/dice";
-import { generateRandomId } from '../utils/id';
-import { averageDie } from '../utils/math';
 
 // Helper to shuffle array (Fisher-Yates)
 function shuffle<T>(array: T[]): T[] {
@@ -19,9 +11,11 @@ function shuffle<T>(array: T[]): T[] {
   return arr;
 }
 
+const rollDie = (die: string) => Math.floor(Math.random() * Number.parseInt(die.slice(1), 10)) + 1;
+const averageDie = (die: string) => (Number.parseInt(die.slice(1), 10) + 1) / 2;
 
 function calculateUpgradeCost(rarity: Card['rarity'] | undefined, victoryCount: number): number {
-  const baseCost = rarity === 'legendary' ? 120 : rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
+  const baseCost = rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
   return baseCost + Math.floor(baseCost * victoryCount * 0.1);
 }
 
@@ -113,7 +107,7 @@ function chooseArchetype(victoryCount: number): EnemyArchetypeId {
 function createEnemy(archetypeId: EnemyArchetypeId, tier: number): Character {
   const archetype = enemyArchetypes[archetypeId];
   const hp = archetype.hp + tier * (archetypeId === 'guardian' ? 3 : 2);
-  return { id: `enemy-${tier}`, isim: archetype.name, mevcutCan: hp, maksimumCan: hp, zirhSinifi: archetype.ac + Math.floor(tier / 2), gucCarpani: archetype.power + Math.floor(tier / 3), advantageCounter: 0, disadvantageCounter: 0 };
+  return { id: `enemy-${tier}`, isim: archetype.name, mevcutCan: hp, maksimumCan: hp, zirhSinifi: archetype.ac + Math.floor(tier / 2), gucCarpani: archetype.power + Math.floor(tier / 3) };
 }
 
 function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, previous?: EnemyIntent | null): { intent: EnemyIntent; value: number; block: number } {
@@ -127,7 +121,7 @@ function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, pr
     return { intent: { type: 'attack', estimatedDamage: value, effectKey: 'archetype-attack' }, value, block: 0 };
   }
   if (roll < weights[0] + weights[1]) {
-    const block = rollDie(parseInt(archetype.blockDie.slice(1), 10));
+    const block = rollDie(archetype.blockDie);
     return { intent: { type: 'defend', estimatedBlock: block, effectKey: 'archetype-defend' }, value: block, block };
   }
   if (archetype.special === 'heal') {
@@ -168,25 +162,7 @@ function tickStatuses(statuses: StatusEffect[], target: 'player' | 'enemy', char
   return { statuses: remaining, character: updatedCharacter, log };
 }
 
-function rollAttackDie(advantage: number, disadvantage: number, rng: () => number = Math.random): number {
-  const net = advantage - disadvantage;
-  if (net > 0) {
-    // advantage: roll two d20s, take higher
-    const roll1 = rollDie(20, rng);
-    const roll2 = rollDie(20, rng);
-    return Math.max(roll1, roll2);
-  } else if (net < 0) {
-    // disadvantage: roll two d20s, take lower
-    const roll1 = rollDie(20, rng);
-    const roll2 = rollDie(20, rng);
-    return Math.min(roll1, roll2);
-  } else {
-    // normal: single d20
-    return rollDie(20, rng);
-  }
-}
-
-export interface GameState extends RunMapState {
+interface GameState {
   player: Character;
   enemy: Character;
   isPlayerTurn: boolean;
@@ -206,7 +182,7 @@ export interface GameState extends RunMapState {
   // Game initialization flag
   initialized: boolean;
   // Game phase
-  gamePhase: 'combat' | 'shop' | 'victory' | 'gameOver' | 'mapSelection' | 'event' | 'rest' | 'boss';
+  gamePhase: 'combat' | 'shop' | 'victory' | 'gameOver';
   // Reward options (shown in victory phase)
   rewardOptions: Card[];
   // Temporary block for player (absorbs damage from enemy attack)
@@ -241,9 +217,7 @@ export interface GameState extends RunMapState {
   // Shop actions
   healPlayer: () => void;
   removeCardFromDeck: (cardId: string) => void;
-  upgradeCard: (cardId: string) => void;
   startNextCombat: () => void;
-  selectNode: (nodeId: string) => void;
 }
 
 
@@ -254,22 +228,27 @@ const defaultPlayer: Character = {
   maksimumCan: 10,
   zirhSinifi: 12,
   gucCarpani: 2,
-  advantageCounter: 0,
-  disadvantageCounter: 0,
 };
 
 const defaultEnemy = createEnemy('goblin', 0);
 
-function generateAvailableNodes(floor: number): Array<{ type: NodeType; id: string }> {
-  const types: NodeType[] = floor > 0 && floor % 3 === 0
-    ? ['boss', 'elite', 'shop']
-    : ['combat', 'combat', 'shop'];
-  return types.map((type, index) => ({ type, id: `floor-${floor}-${type}-${index}` }));
-}
+// Sample card definitions (baseHasar 0, mana cost as given)
+const sampleCardDefs: Omit<Card, 'id'>[] = [
+  { isim: 'Hızlı Saldırı', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'common', tags: ['attack'], effects: [{ kind: 'attack', die: 'd4' }] },
+  { isim: 'Kalkan Sihri', tip: 'savunma', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'common', tags: ['defend'], effects: [{ kind: 'block', die: 'd4' }] },
+  { isim: 'Ateş Topu', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd6', rarity: 'common', tags: ['skill', 'attack'], effects: [{ kind: 'damage', die: 'd6', ignoresArmor: true, damageBonus: 2 }] },
+  { isim: 'Buhar Nefesi', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd8', rarity: 'uncommon', tags: ['skill', 'heal'], effects: [{ kind: 'heal', die: 'd8' }] },
+  { isim: 'Zayıflatıcı Lanet', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['skill', 'control'], effects: [{ kind: 'status', status: 'weakened', duration: 2, value: 1, target: 'enemy' }] },
+  { isim: 'Zehirli Bıçak', tip: 'saldırı', manaBedeli: 2, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['attack', 'poison'], effects: [{ kind: 'attack', die: 'd4' }, { kind: 'status', status: 'poisoned', duration: 3, value: 1, target: 'enemy' }] },
+  { isim: 'Savaş İlhamı', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['skill', 'combo'], effects: [{ kind: 'status', status: 'empowered', duration: 2, value: 2 }, { kind: 'energy', amount: 1 }] },
+  { isim: 'Büyüleyici Çukur', tip: 'yetenek', manaBedeli: 3, baseHasar: 0, zarTuru: 'd10', rarity: 'rare', tags: ['skill', 'control'], effects: [{ kind: 'skip', target: 'enemy' }] },
+  { isim: 'Kırılgan Zafer', tip: 'saldırı', manaBedeli: 2, baseHasar: 0, zarTuru: 'd8', rarity: 'rare', tags: ['attack', 'risk'], effects: [{ kind: 'attack', die: 'd8', damageBonus: 3 }, { kind: 'status', status: 'vulnerable', duration: 2, value: 1, target: 'player' }] },
+  { isim: 'Taktik Hazırlık', tip: 'yetenek', manaBedeli: 0, baseHasar: 0, zarTuru: 'd1', rarity: 'rare', tags: ['skill', 'setup'], effects: [{ kind: 'draw', amount: 1 }, { kind: 'status', status: 'empowered', duration: 1, value: 1 }] },
+];
 
 // Function to create initial deck (e.g., 5 copies of each)
 function createInitialDeck(): Card[] {
-  return shuffle(sampleCardDefs.slice(0, 7).map((def) => ({ ...def, id: generateRandomId() })));
+  return shuffle(sampleCardDefs.slice(0, 7).map((def) => ({ ...def, id: Math.random().toString(36).substr(2, 9) })));
 }
 
 // Get 3 random unique cards from sampleCardDefs
@@ -277,7 +256,7 @@ function getRandomRewards(): Card[] {
   const shuffled = shuffle([...sampleCardDefs]);
   return shuffled.slice(0, 3).map((def) => ({
     ...def,
-    id: generateRandomId(),
+    id: Math.random().toString(36).substr(2, 9),
   }));
 }
 
@@ -298,17 +277,13 @@ export const useGameStore = create<GameState>((set) => ({
   enemyBlock: 0,
   enemySkipNextTurn: false,
   victoryCount: 0,
-  gamePhase: 'mapSelection',
+  gamePhase: 'combat',
   rewardOptions: [],
   enemyIntent: null,
   enemyIntentValue: 0,
   enemyArchetype: 'goblin',
   playerStatuses: [],
   enemyStatuses: [],
-  currentNode: null,
-  availableNodes: generateAvailableNodes(0),
-  runFloor: 0,
-  nodeType: null,
   comboChain: [],
   comboCount: 0,
   nextDamageBonus: 0,
@@ -333,11 +308,7 @@ export const useGameStore = create<GameState>((set) => ({
         gold: 50,
         currentEnergy: state.maxEnergy,
         initialized: true,
-        gamePhase: 'mapSelection',
-        currentNode: null,
-        availableNodes: generateAvailableNodes(0),
-        runFloor: 0,
-        nodeType: null,
+        gamePhase: 'combat',
         battleLogs: ['Oyun başlatıldı. Destek hazırlanıyor...'],
         playerBlock: 0,
         enemyBlock,
@@ -436,8 +407,8 @@ export const useGameStore = create<GameState>((set) => ({
         // Process enemy intent
         switch (state.enemyIntent?.type) {
           case 'attack':
-            // Enemy AI: roll d20 with advantage/disadvantage vs player AC
-            const enemyRoll = rollAttackDie(enemy.advantageCounter, enemy.disadvantageCounter);
+            // Enemy AI: roll d20 + enemy.gucCarpani vs player AC
+            const enemyRoll = Math.floor(Math.random() * 20) + 1;
             const isCritHit = enemyRoll === 20;
             const isCritFail = enemyRoll === 1;
             const enemyTotal = enemyRoll + enemy.gucCarpani;
@@ -499,11 +470,6 @@ export const useGameStore = create<GameState>((set) => ({
               log = `Düşman Zar: ${enemyRoll}. ${hitText}`;
             }
 
-            enemy = {
-              ...enemy,
-              advantageCounter: Math.max(0, enemy.advantageCounter - 1),
-              disadvantageCounter: Math.max(0, enemy.disadvantageCounter - 1),
-            };
             battleLogs = [...battleLogs, log];
             // Check if player died after enemy attack
             if (player.mevcutCan <= 0) {
@@ -538,14 +504,14 @@ export const useGameStore = create<GameState>((set) => ({
 
           case 'special':
             if (state.enemyArchetype === 'mage') {
-              const damage = rollDie(6) + enemy.gucCarpani;
+              const damage = rollDie('d6') + enemy.gucCarpani;
               player = { ...player, mevcutCan: Math.max(0, player.mevcutCan - damage) };
               battleLogs = [...battleLogs, `Büyücü gizemli bir patlamayla ${damage} hasar verdi.`];
             } else if (state.enemyArchetype === 'goblin') {
               playerStatuses = addStatus(playerStatuses, { id: 'weakened', duration: 2, stacks: 1, value: 1 });
               battleLogs = [...battleLogs, `Goblin hileli hamleyle oyuncuyu güçsüzleştirdi.`];
             } else {
-              const healRoll = rollDie(4);
+              const healRoll = rollDie('d4');
               enemy = { ...enemy, mevcutCan: Math.min(enemy.maksimumCan, enemy.mevcutCan + healRoll) };
               battleLogs = [...battleLogs, `Muhafız ${healRoll} can iyileştirdi.`];
             }
@@ -570,13 +536,9 @@ export const useGameStore = create<GameState>((set) => ({
           player,
           enemy,
           battleLogs,
-          gamePhase: 'mapSelection',
+          gamePhase: 'victory',
           victoryCount: state.victoryCount + 1,
           rewardOptions: rewards,
-          runFloor: state.runFloor + 1,
-          currentNode: null,
-          availableNodes: generateAvailableNodes(state.runFloor + 1),
-          nodeType: null,
           playerBlock: 0,
           enemyBlock: 0,
           enemySkipNextTurn: false,
@@ -670,13 +632,7 @@ export const useGameStore = create<GameState>((set) => ({
             let hit = true;
             let attackRoll = 0;
             if (effect.kind === 'attack' && !effect.ignoresArmor) {
-              attackRoll = rollAttackDie(updatedPlayer.advantageCounter, updatedPlayer.disadvantageCounter);
-              // Consume advantage/disadvantage for this attack
-              updatedPlayer = {
-                ...updatedPlayer,
-                advantageCounter: Math.max(0, updatedPlayer.advantageCounter - 1),
-                disadvantageCounter: Math.max(0, updatedPlayer.disadvantageCounter - 1),
-              };
+              attackRoll = rollDie('d20');
               hit = attackRoll !== 1 && (attackRoll === 20 || attackRoll + state.player.gucCarpani >= updatedEnemy.zirhSinifi);
             }
             if (!hit) {
@@ -685,7 +641,7 @@ export const useGameStore = create<GameState>((set) => ({
               continue;
             }
             const die = effect.die ?? card.zarTuru;
-            let damage = rollDie(parseInt(die.slice(1), 10)) + card.baseHasar + (effect.damageBonus ?? 0) + state.player.gucCarpani + updatedNextDamageBonus;
+            let damage = rollDie(die) + card.baseHasar + (effect.damageBonus ?? 0) + state.player.gucCarpani + updatedNextDamageBonus;
             if (statusValue(updatedPlayerStatuses, 'empowered') > 0) damage += statusValue(updatedPlayerStatuses, 'empowered');
             if (statusValue(updatedEnemyStatuses, 'vulnerable') > 0) damage = Math.ceil(damage * 1.25);
             if (updatedEnemyBlock > 0) {
@@ -696,11 +652,11 @@ export const useGameStore = create<GameState>((set) => ({
             effectLogs.push(`${card.isim} ${damage} hasar verdi${updatedComboCount > state.comboCount ? ` (Kombo ${updatedComboCount})` : ''}.`);
             updatedNextDamageBonus = 0;
           } else if (effect.kind === 'block') {
-            updatedPlayerBlock = effect.amount ?? (effect.die ? rollDie(parseInt(effect.die.slice(1), 10)) : 0);
+            updatedPlayerBlock = effect.amount ?? (effect.die ? rollDie(effect.die) : 0);
             effectLogs.push(`${card.isim} ${updatedPlayerBlock} blok kazandırdı.`);
           } else if (effect.kind === 'heal') {
             const target = effect.target === 'enemy' ? updatedEnemy : updatedPlayer;
-            const amount = effect.amount ?? (effect.die ? rollDie(parseInt(effect.die.slice(1), 10)) : 0);
+            const amount = effect.amount ?? (effect.die ? rollDie(effect.die) : 0);
             const healed = Math.min(target.maksimumCan, target.mevcutCan + amount);
             if (effect.target === 'enemy') updatedEnemy = { ...target, mevcutCan: healed };
             else updatedPlayer = { ...target, mevcutCan: healed };
@@ -722,24 +678,6 @@ export const useGameStore = create<GameState>((set) => ({
           } else if (effect.kind === 'skip') {
             updatedEnemySkipNextTurn = true;
             effectLogs.push('Düşman sonraki turunu atlayacak.');
-          } else if (effect.kind === 'advantage') {
-            const amount = effect.value ?? 1;
-            if (effect.target === 'enemy') {
-              updatedEnemy = { ...updatedEnemy, advantageCounter: updatedEnemy.advantageCounter + amount };
-              effectLogs.push(`${card.isim} düşmana ${amount} avantaj sağladı.`);
-            } else {
-              updatedPlayer = { ...updatedPlayer, advantageCounter: updatedPlayer.advantageCounter + amount };
-              effectLogs.push(`${card.isim} ${amount} avantaj sağladı.`);
-            }
-          } else if (effect.kind === 'disadvantage') {
-            const amount = effect.value ?? 1;
-            if (effect.target === 'enemy') {
-              updatedEnemy = { ...updatedEnemy, disadvantageCounter: updatedEnemy.disadvantageCounter + amount };
-              effectLogs.push(`${card.isim} düşmana ${amount} dezavantaj verdi.`);
-            } else {
-              updatedPlayer = { ...updatedPlayer, disadvantageCounter: updatedPlayer.disadvantageCounter + amount };
-              effectLogs.push(`${card.isim} ${amount} dezavantaj verdi.`);
-            }
           }
         }
         log = effectLogs.join(' ');
@@ -770,14 +708,10 @@ export const useGameStore = create<GameState>((set) => ({
           comboCount: updatedComboCount,
           nextDamageBonus: updatedNextDamageBonus,
           battleLogs: [...state.battleLogs, log],
-          gamePhase: 'mapSelection',
+          gamePhase: 'victory',
           gold: state.gold + 20 + state.victoryCount * 5,
           victoryCount: state.victoryCount + 1,
           rewardOptions: getRandomRewards(),
-          runFloor: state.runFloor + 1,
-          currentNode: null,
-          availableNodes: generateAvailableNodes(state.runFloor + 1),
-          nodeType: null,
         };
       }
 
@@ -823,7 +757,7 @@ export const useGameStore = create<GameState>((set) => ({
   // Victory phase actions
   addRewardCardToDeck: (cardId: string) => {
     set((state) => {
-      if (state.gamePhase !== 'victory' && state.gamePhase !== 'mapSelection') return state;
+      if (state.gamePhase !== 'victory') return state;
       // Find the card in rewardOptions
       const rewardCard = state.rewardOptions.find((c) => c.id === cardId);
       if (!rewardCard) {
@@ -844,7 +778,7 @@ export const useGameStore = create<GameState>((set) => ({
 
   skipReward: () => {
     set((state) => {
-      if (state.gamePhase !== 'victory' && state.gamePhase !== 'mapSelection') return state;
+      if (state.gamePhase !== 'victory') return state;
       // Go to shop without adding a card
       return {
         ...state,
@@ -910,31 +844,39 @@ export const useGameStore = create<GameState>((set) => ({
   // Start next combat after shop (reset enemy to default or scaled?)
   upgradeCard: (cardId: string) => {
     set((state) => {
+      // Find the card in the deck (since we can only upgrade cards in the deck)
       const cardIndex = state.deck.findIndex((c) => c.id === cardId);
       if (cardIndex === -1) {
+        // Card not found in deck
         console.warn('Card not found in deck for upgrade');
         return state;
       }
       const card = state.deck[cardIndex];
+      // Check if already upgraded
       if (card.isUpgraded) {
         console.warn('Card is already upgraded');
         return state;
       }
+      // Calculate cost
       const cost = calculateUpgradeCost(card.rarity, state.victoryCount);
       if (state.gold < cost) {
+        // Not enough gold
         console.warn(`Not enough gold. Need ${cost} gold.`);
         return state;
       }
+      // Create upgraded card
       const upgradedCard = {
         ...card,
-        // keep same id
+        id: Math.random().toString(36).substr(2, 9), // new id
         isUpgraded: true,
+        // Enhance effects
         effects: card.effects?.map(enhanceEffect) || [],
       };
-      // replace card at same index
-      const newDeck = [...state.deck];
-      newDeck[cardIndex] = upgradedCard;
+      // Add the upgraded card to the deck
+      const newDeck = [...state.deck, upgradedCard];
+      // Deduct gold
       const newGold = state.gold - cost;
+      // We can add a log
       const newLogs = [...state.battleLogs, `Kart ${card.isim} ${cost} altınla yükseltildi.`];
       return {
         ...state,
@@ -963,10 +905,7 @@ export const useGameStore = create<GameState>((set) => ({
       return {
         ...state,
         enemy: scaledEnemy,
-        gamePhase: 'mapSelection',
-        currentNode: null,
-        nodeType: null,
-        availableNodes: generateAvailableNodes(state.runFloor),
+        gamePhase: 'combat',
         isPlayerTurn: true, // player starts combat
         playerBlock: 0,
         enemyBlock,
@@ -975,11 +914,6 @@ export const useGameStore = create<GameState>((set) => ({
         enemyIntentValue: value,
         enemyArchetype,
         // Reset player state for new combat
-        player: {
-          ...state.player,
-          advantageCounter: 0,
-          disadvantageCounter: 0,
-        },
         currentEnergy: state.maxEnergy, // full energy
         hand: newHand, // draw initial hand
         deck: newDeck, // remaining cards
@@ -990,46 +924,6 @@ export const useGameStore = create<GameState>((set) => ({
         comboCount: 0,
         nextDamageBonus: 0,
         // Optionally clear battle logs? Keep them.
-      };
-    });
-  },
-
-  selectNode: (nodeId: string) => {
-    set((state) => {
-      if (state.gamePhase !== 'mapSelection') return state;
-      const selectedNode = state.availableNodes.find((node) => node.id === nodeId);
-      if (!selectedNode) return state;
-
-      if (selectedNode.type === 'shop') {
-        return { ...state, gamePhase: 'shop', currentNode: selectedNode.type, nodeType: selectedNode.type };
-      }
-
-      const enemyArchetype = chooseArchetype(state.victoryCount);
-      const baseEnemy = createEnemy(enemyArchetype, state.runFloor);
-      const enemy = selectedNode.type === 'elite'
-        ? { ...baseEnemy, mevcutCan: baseEnemy.maksimumCan * 1.5, maksimumCan: baseEnemy.maksimumCan * 1.5, zirhSinifi: baseEnemy.zirhSinifi + 1, gucCarpani: baseEnemy.gucCarpani + 0.5 }
-        : baseEnemy;
-      const { intent, value, block: enemyBlock } = generateEnemyIntent(enemy, enemyArchetype);
-      const shuffledDeck = shuffle([...state.deck, ...state.hand, ...state.discardPile]);
-
-      return {
-        ...state,
-        gamePhase: 'combat',
-        currentNode: selectedNode.type,
-        nodeType: selectedNode.type,
-        enemy,
-        enemyArchetype,
-        enemyIntent: intent,
-        enemyIntentValue: value,
-        enemyBlock,
-        currentEnergy: state.maxEnergy,
-        playerBlock: 0,
-        hand: shuffledDeck.slice(0, state.drawCount),
-        deck: shuffledDeck.slice(state.drawCount),
-        discardPile: [],
-        playerStatuses: [],
-        enemyStatuses: [],
-        isPlayerTurn: true,
       };
     });
   }
