@@ -33,7 +33,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, onPlay, isPlayable = 
   return (
     <button
       type="button"
-      className={`game-card game-card--${card.tip} game-card--${card.rarity ?? 'common'}${isPlayable ? '' : ' game-card--disabled'}`}
+      className={`game-card game-card--${card.tip} game-card--${card.rarity ?? 'common'}${card.theme ? ` game-card--${card.theme}` : ''}${isPlayable ? '' : ' game-card--disabled'}`}
       onClick={() => onPlay(card)}
       disabled={!isPlayable}
       aria-label={`${card.isim}, ${cardTypeLabel}, ${card.manaBedeli} mana, ${card.zarTuru} zar, ${card.baseHasar} temel hasar, ${availabilityLabel}`}

@@ -18,8 +18,8 @@ export const ShopPanel: React.FC = () => {
   const canHeal = gold >= 25;
   const canRemove = gold >= 50;
 
-  const upgradeCost = (rarity: 'common' | 'uncommon' | 'rare' | undefined) => {
-    const baseCost = rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
+  const upgradeCost = (rarity: 'common' | 'uncommon' | 'rare' | 'legendary' | undefined) => {
+    const baseCost = rarity === 'legendary' ? 120 : rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
     return baseCost + Math.floor(baseCost * victoryCount * 0.1);
   };
 

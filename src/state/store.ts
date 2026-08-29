@@ -21,7 +21,7 @@ function shuffle<T>(array: T[]): T[] {
 
 
 function calculateUpgradeCost(rarity: Card['rarity'] | undefined, victoryCount: number): number {
-  const baseCost = rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
+  const baseCost = rarity === 'legendary' ? 120 : rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
   return baseCost + Math.floor(baseCost * victoryCount * 0.1);
 }
 
@@ -113,7 +113,7 @@ function chooseArchetype(victoryCount: number): EnemyArchetypeId {
 function createEnemy(archetypeId: EnemyArchetypeId, tier: number): Character {
   const archetype = enemyArchetypes[archetypeId];
   const hp = archetype.hp + tier * (archetypeId === 'guardian' ? 3 : 2);
-  return { id: `enemy-${tier}`, isim: archetype.name, mevcutCan: hp, maksimumCan: hp, zirhSinifi: archetype.ac + Math.floor(tier / 2), gucCarpani: archetype.power + Math.floor(tier / 3) };
+  return { id: `enemy-${tier}`, isim: archetype.name, mevcutCan: hp, maksimumCan: hp, zirhSinifi: archetype.ac + Math.floor(tier / 2), gucCarpani: archetype.power + Math.floor(tier / 3), advantageCounter: 0, disadvantageCounter: 0 };
 }
 
 function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, previous?: EnemyIntent | null): { intent: EnemyIntent; value: number; block: number } {
@@ -166,6 +166,24 @@ function tickStatuses(statuses: StatusEffect[], target: 'player' | 'enemy', char
     return nextDuration > 0 ? [{ ...status, duration: nextDuration }] : [];
   });
   return { statuses: remaining, character: updatedCharacter, log };
+}
+
+function rollAttackDie(advantage: number, disadvantage: number, rng: () => number = Math.random): number {
+  const net = advantage - disadvantage;
+  if (net > 0) {
+    // advantage: roll two d20s, take higher
+    const roll1 = rollDie(20, rng);
+    const roll2 = rollDie(20, rng);
+    return Math.max(roll1, roll2);
+  } else if (net < 0) {
+    // disadvantage: roll two d20s, take lower
+    const roll1 = rollDie(20, rng);
+    const roll2 = rollDie(20, rng);
+    return Math.min(roll1, roll2);
+  } else {
+    // normal: single d20
+    return rollDie(20, rng);
+  }
 }
 
 export interface GameState extends RunMapState {
@@ -236,6 +254,8 @@ const defaultPlayer: Character = {
   maksimumCan: 10,
   zirhSinifi: 12,
   gucCarpani: 2,
+  advantageCounter: 0,
+  disadvantageCounter: 0,
 };
 
 const defaultEnemy = createEnemy('goblin', 0);
@@ -416,8 +436,8 @@ export const useGameStore = create<GameState>((set) => ({
         // Process enemy intent
         switch (state.enemyIntent?.type) {
           case 'attack':
-            // Enemy AI: roll d20 + enemy.gucCarpani vs player AC
-            const enemyRoll = Math.floor(Math.random() * 20) + 1;
+            // Enemy AI: roll d20 with advantage/disadvantage vs player AC
+            const enemyRoll = rollAttackDie(enemy.advantageCounter, enemy.disadvantageCounter);
             const isCritHit = enemyRoll === 20;
             const isCritFail = enemyRoll === 1;
             const enemyTotal = enemyRoll + enemy.gucCarpani;
@@ -479,6 +499,11 @@ export const useGameStore = create<GameState>((set) => ({
               log = `Düşman Zar: ${enemyRoll}. ${hitText}`;
             }
 
+            enemy = {
+              ...enemy,
+              advantageCounter: Math.max(0, enemy.advantageCounter - 1),
+              disadvantageCounter: Math.max(0, enemy.disadvantageCounter - 1),
+            };
             battleLogs = [...battleLogs, log];
             // Check if player died after enemy attack
             if (player.mevcutCan <= 0) {
@@ -645,7 +670,13 @@ export const useGameStore = create<GameState>((set) => ({
             let hit = true;
             let attackRoll = 0;
             if (effect.kind === 'attack' && !effect.ignoresArmor) {
-              attackRoll = rollDie(20);
+              attackRoll = rollAttackDie(updatedPlayer.advantageCounter, updatedPlayer.disadvantageCounter);
+              // Consume advantage/disadvantage for this attack
+              updatedPlayer = {
+                ...updatedPlayer,
+                advantageCounter: Math.max(0, updatedPlayer.advantageCounter - 1),
+                disadvantageCounter: Math.max(0, updatedPlayer.disadvantageCounter - 1),
+              };
               hit = attackRoll !== 1 && (attackRoll === 20 || attackRoll + state.player.gucCarpani >= updatedEnemy.zirhSinifi);
             }
             if (!hit) {
@@ -691,6 +722,24 @@ export const useGameStore = create<GameState>((set) => ({
           } else if (effect.kind === 'skip') {
             updatedEnemySkipNextTurn = true;
             effectLogs.push('Düşman sonraki turunu atlayacak.');
+          } else if (effect.kind === 'advantage') {
+            const amount = effect.value ?? 1;
+            if (effect.target === 'enemy') {
+              updatedEnemy = { ...updatedEnemy, advantageCounter: updatedEnemy.advantageCounter + amount };
+              effectLogs.push(`${card.isim} düşmana ${amount} avantaj sağladı.`);
+            } else {
+              updatedPlayer = { ...updatedPlayer, advantageCounter: updatedPlayer.advantageCounter + amount };
+              effectLogs.push(`${card.isim} ${amount} avantaj sağladı.`);
+            }
+          } else if (effect.kind === 'disadvantage') {
+            const amount = effect.value ?? 1;
+            if (effect.target === 'enemy') {
+              updatedEnemy = { ...updatedEnemy, disadvantageCounter: updatedEnemy.disadvantageCounter + amount };
+              effectLogs.push(`${card.isim} düşmana ${amount} dezavantaj verdi.`);
+            } else {
+              updatedPlayer = { ...updatedPlayer, disadvantageCounter: updatedPlayer.disadvantageCounter + amount };
+              effectLogs.push(`${card.isim} ${amount} dezavantaj verdi.`);
+            }
           }
         }
         log = effectLogs.join(' ');
@@ -926,6 +975,11 @@ export const useGameStore = create<GameState>((set) => ({
         enemyIntentValue: value,
         enemyArchetype,
         // Reset player state for new combat
+        player: {
+          ...state.player,
+          advantageCounter: 0,
+          disadvantageCounter: 0,
+        },
         currentEnergy: state.maxEnergy, // full energy
         hand: newHand, // draw initial hand
         deck: newDeck, // remaining cards

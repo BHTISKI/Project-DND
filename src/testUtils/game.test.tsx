@@ -13,8 +13,8 @@ import { cleanup } from '@testing-library/react';
 // Reset store to initial state before each test
 beforeEach(() => {
   useGameStore.setState({
-    player: { id: 'player-1', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2 },
-    enemy: { id: 'enemy-0', isim: 'Goblin', mevcutCan: 7, maksimumCan: 7, zirhSinifi: 11, gucCarpani: 1 },
+    player: { id: 'player-1', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 },
+    enemy: { id: 'enemy-0', isim: 'Goblin', mevcutCan: 7, maksimumCan: 7, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 },
     isPlayerTurn: true,
     maxEnergy: 3,
     currentEnergy: 3,

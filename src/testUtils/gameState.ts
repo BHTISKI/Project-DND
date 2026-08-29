@@ -31,6 +31,8 @@ export function makePlayer(partial: Partial<Character> = {}): Character {
     maksimumCan: 10,
     zirhSinifi: 12,
     gucCarpani: 2,
+    advantageCounter: 0,
+    disadvantageCounter: 0,
   };
   return { ...defaults, ...partial };
 }
@@ -47,6 +49,8 @@ export function makeGameState(partial: Partial<GameState>): GameState {
       maksimumCan: 7,
       zirhSinifi: 11,
       gucCarpani: 1,
+      advantageCounter: 0,
+      disadvantageCounter: 0,
     },
     // Game state
     isPlayerTurn: true,

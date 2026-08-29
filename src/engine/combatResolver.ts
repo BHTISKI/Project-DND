@@ -19,7 +19,7 @@ export function chooseArchetype(victoryCount: number): EnemyArchetypeId {
 export function createEnemy(archetypeId: EnemyArchetypeId, tier: number): Character {
   const archetype = archetypes[archetypeId];
   const hp = archetype.hp + tier * (archetypeId === 'guardian' ? 3 : 2);
-  return { id: `enemy-${tier}`, isim: archetypeId === 'goblin' ? 'Goblin' : archetypeId === 'guardian' ? 'Muhafız' : 'Büyücü', mevcutCan: hp, maksimumCan: hp, zirhSinifi: archetype.ac + Math.floor(tier / 2), gucCarpani: archetype.power + Math.floor(tier / 3) };
+  return { id: `enemy-${tier}`, isim: archetypeId === 'goblin' ? 'Goblin' : archetypeId === 'guardian' ? 'Muhafız' : 'Büyücü', mevcutCan: hp, maksimumCan: hp, zirhSinifi: archetype.ac + Math.floor(tier / 2), gucCarpani: archetype.power + Math.floor(tier / 3), advantageCounter: 0, disadvantageCounter: 0 };
 }
 
 export function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId): { intent: EnemyIntent; value: number; block: number } {

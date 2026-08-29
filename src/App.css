@@ -228,6 +228,16 @@
   --panel-dark: #202b2d;
   --red-deep: #8f3936;
   --teal-deep: #126361;
+  --wind: var(--teal);
+  --blood: var(--red);
+  --earth: #8fbc8f;
+  --fire: #e67e22;
+  --sky: #85C1E9;
+  --armor: #95A5A6;
+  --poison: #2ECC71;
+  --lightning: #F1C40F;
+  --fate: #9B59B6;
+  --shadow: #2C3E50;
 }
 
 body { background: radial-gradient(circle at 50% -20%, #fffdf7 0, var(--paper) 48%, #e7ded0 100%); }
@@ -284,6 +294,26 @@ body { background: radial-gradient(circle at 50% -20%, #fffdf7 0, var(--paper) 4
 .reward-card--savunma { border-top-color: var(--teal); }
 .reward-card--yetenek { border-top-color: var(--gold); }
 .reward-card--rare { background: #fff8e4; border-top-width: 6px; }
+.game-card--wind { border-top-color: var(--wind); }
+.game-card--wind .card-glyph { color: var(--wind); }
+.game-card--blood { border-top-color: var(--blood); }
+.game-card--blood .card-glyph { color: var(--blood); }
+.game-card--earth { border-top-color: var(--earth); }
+.game-card--earth .card-glyph { color: var(--earth); }
+.game-card--fire { border-top-color: var(--fire); }
+.game-card--fire .card-glyph { color: var(--fire); }
+.game-card--sky { border-top-color: var(--sky); }
+.game-card--sky .card-glyph { color: var(--sky); }
+.game-card--armor { border-top-color: var(--armor); }
+.game-card--armor .card-glyph { color: var(--armor); }
+.game-card--poison { border-top-color: var(--poison); }
+.game-card--poison .card-glyph { color: var(--poison); }
+.game-card--lightning { border-top-color: var(--lightning); }
+.game-card--lightning .card-glyph { color: var(--lightning); }
+.game-card--fate { border-top-color: var(--fate); }
+.game-card--fate .card-glyph { color: var(--fate); }
+.game-card--shadow { border-top-color: var(--shadow); }
+.game-card--shadow .card-glyph { color: var(--shadow); }
 .reward-card h3 { margin: 4px 0 7px; font: 700 1.35rem var(--heading); }
 .reward-card > p:not(.reward-type) { min-height: 20px; margin: 0; }
 .reward-card .button { margin-top: auto; }

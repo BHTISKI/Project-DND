@@ -7,8 +7,8 @@ import { useGameStore } from './store';
 import { setupMockRandom, resetMockRandom } from '../testUtils';
 import { cleanup } from '@testing-library/react';
 
-const player = { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2 };
-const enemy = { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1 };
+const player = { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 };
+const enemy = { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 };
 
 function card(overrides: Partial<Card> = {}): Card {
   return {

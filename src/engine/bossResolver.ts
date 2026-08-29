@@ -19,6 +19,8 @@ export class BossResolver {
       maksimumCan: baseEnemy.maksimumCan * 2,
       zirhSinifi: baseEnemy.zirhSinifi + 2,
       gucCarpani: baseEnemy.gucCarpani + 1,
+      advantageCounter: 0,
+      disadvantageCounter: 0,
     };
 
     return {
