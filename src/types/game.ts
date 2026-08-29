@@ -33,6 +33,7 @@ export type CardEffect =
   | { kind: "strength"; amount: number }
   | { kind: "weak"; amount: number }
   | { kind: "trash"; amount?: number; target?: "player" | "enemy" }
+  | { kind: "trade"; trashAmount?: number; drawAmount?: number; target?: "player" | "enemy" }
   | { kind: "advantage"; value?: number; target?: "player" | "enemy" }
   | { kind: "disadvantage"; value?: number; target?: "player" | "enemy" }
 
@@ -104,5 +105,6 @@ export const sampleCardDefs: Omit<Card, 'id'>[] = [
   { isim: 'Gölge Adımı', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd6', rarity: 'rare', theme: 'shadow', tags: ['skill', 'skip', 'draw'], effects: [{ kind: 'skip', target: 'enemy' }, { kind: 'draw', amount: 1 }] },
   { isim: 'Alev Fısıltısı', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', theme: 'fire', tags: ['skill', 'advantage'], effects: [{ kind: 'advantage', value: 1, target: 'player' }, { kind: 'status', status: 'weakened', duration: 1, value: 1, target: 'player' }] },
   { isim: 'Kötümserin Bakışı', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', theme: 'fate', tags: ['skill', 'disadvantage', 'draw'], effects: [{ kind: 'disadvantage', value: 1, target: 'enemy' }, { kind: 'draw', amount: 1 }] },
+  { isim: 'Dönüşüm Müzikçisi', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd6', rarity: 'uncommon', theme: 'transmutation', tags: ['skill', 'trade'], effects: [{ kind: 'trade', trashAmount: 1, drawAmount: 2 }] },
 ]
 

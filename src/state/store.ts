@@ -755,6 +755,33 @@ export const useGameStore = create<GameState>((set) => ({
             } else {
               effectLogs.push(`Düşmanın deste aucune kartı kaldıramadı (düşmanın deste yok).`);
             }
+          } else if (effect.kind === 'trade') {
+            const trashAmount = effect.trashAmount ?? 1;
+            const drawAmount = effect.drawAmount ?? 1;
+            const target = effect.target ?? 'player';
+            if (target === 'player') {
+              // Trash
+              const actualTrash = Math.min(trashAmount, deck.length);
+              if (actualTrash > 0) {
+                const trashed = deck.slice(0, actualTrash);
+                deck = deck.slice(actualTrash);
+                effectLogs.push(`${actualTrash} kart ${trashed.map(c => c.isim).join(', ')} desteleden kaldırıldı.`);
+              } else {
+                effectLogs.push(`Deste boş, kart kaldırılamadı.`);
+              }
+              // Draw
+              const actualDraw = Math.min(drawAmount, deck.length);
+              if (actualDraw > 0) {
+                const drawn = deck.slice(0, actualDraw);
+                deck = deck.slice(actualDraw);
+                newHand.push(...drawn);
+                effectLogs.push(`${actualDraw} kart çekildi.`);
+              } else {
+                effectLogs.push(`Deste yetersiz, ${drawAmount} kart çekilemedi.`);
+              }
+            } else {
+              effectLogs.push(`Düşmanın deste keine erişim, trade effect uygulanamadı.`);
+            }
           }
         }
         log = effectLogs.join(' ');

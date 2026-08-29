@@ -22,6 +22,12 @@ function formatEffect(effect: NonNullable<Card['effects']>[number]) {
     const target = effect.target === 'enemy' ? 'düşmanın' : 'oyuncunun';
     return `${amount} kartı ${target} desteleden kaldır`;
   }
+  if (effect.kind === 'trade') {
+    const trashAmount = effect.trashAmount ?? 1;
+    const drawAmount = effect.drawAmount ?? 1;
+    const target = effect.target === 'enemy' ? 'düşmanın' : 'oyuncunun';
+    return `${trashAmount} kart ${target} desteleden kaldır, ${drawAmount} kart çek`;
+  }
   return 'Düşmanın turunu atlat';
 }
 
