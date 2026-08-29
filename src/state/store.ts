@@ -100,6 +100,29 @@ function enhanceEffect(effect: CardEffect): CardEffect {
 }
 
 
+function loadMetaState(): { metaGold: number; metaVictories: number } {
+  try {
+    const metaGold = localStorage.getItem('metaGold');
+    const metaVictories = localStorage.getItem('metaVictories');
+    return {
+      metaGold: metaGold !== null ? parseInt(metaGold, 10) : 0,
+      metaVictories: metaVictories !== null ? parseInt(metaVictories, 10) : 0,
+    };
+  } catch (e) {
+    console.warn('Failed to load meta state', e);
+    return { metaGold: 0, metaVictories: 0 };
+  }
+}
+
+function saveMetaState(metaGold: number, metaVictories: number): void {
+  try {
+    localStorage.setItem('metaGold', String(metaGold));
+    localStorage.setItem('metaVictories', String(metaVictories));
+  } catch (e) {
+    console.warn('Failed to save meta state', e);
+  }
+}
+
 const enemyArchetypes: Record<EnemyArchetypeId, { name: string; hp: number; ac: number; power: number; attackDie: string; blockDie: string; special: 'heal' | 'damage' | 'weakened'; weights: [number, number, number] }> = {
   goblin: { name: 'Goblin', hp: 7, ac: 11, power: 1, attackDie: 'd6', blockDie: 'd4', special: 'weakened', weights: [0.65, 0.2, 0.15] },
   guardian: { name: 'Muhafız', hp: 11, ac: 13, power: 0, attackDie: 'd8', blockDie: 'd6', special: 'heal', weights: [0.3, 0.55, 0.15] },
@@ -201,6 +224,9 @@ export interface GameState extends RunMapState {
   drawCount: number;
   // Gold for shop
   gold: number;
+  // Meta progression (persistent between runs)
+  metaGold: number;
+  metaVictories: number;
   // Battle logs
   battleLogs: string[];
   // Game initialization flag
@@ -292,6 +318,8 @@ export const useGameStore = create<GameState>((set) => ({
   discardPile: [],
   drawCount: 5,
   gold: 50, // starting gold
+  metaGold: 0,
+  metaVictories: 0,
   battleLogs: [],
   initialized: false,
   playerBlock: 0,
@@ -323,6 +351,7 @@ export const useGameStore = create<GameState>((set) => ({
       const hand = deck.slice(0, state.drawCount);
       const remainingDeck = deck.slice(state.drawCount);
       const { intent, value, block: enemyBlock } = generateEnemyIntent(enemy, 'goblin');
+      const { metaGold, metaVictories } = loadMetaState();
       return {
         ...state,
         player,
@@ -351,6 +380,8 @@ export const useGameStore = create<GameState>((set) => ({
         comboChain: [],
         comboCount: 0,
         nextDamageBonus: 0,
+        metaGold,
+        metaVictories,
       };
     });
   },
@@ -560,6 +591,9 @@ export const useGameStore = create<GameState>((set) => ({
       if (enemy.mevcutCan <= 0 && state.gamePhase === 'combat') {
         // Transition to victory with 3 random reward cards
         const rewards = getRandomRewards();
+        const newMetaVictories = state.metaVictories + 1;
+        const newMetaGold = state.metaGold + 10;
+        saveMetaState(newMetaVictories, newMetaGold);
         return {
           ...state,
           deck,
@@ -572,6 +606,8 @@ export const useGameStore = create<GameState>((set) => ({
           battleLogs,
           gamePhase: 'mapSelection',
           victoryCount: state.victoryCount + 1,
+          metaVictories: newMetaVictories,
+          metaGold: newMetaGold,
           rewardOptions: rewards,
           runFloor: state.runFloor + 1,
           currentNode: null,
