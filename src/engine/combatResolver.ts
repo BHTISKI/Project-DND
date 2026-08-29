@@ -1,4 +1,7 @@
+// Savaş çözümleyici: düşman niyetini belirler ve hasar hesaplar
 import type { Character, EnemyArchetypeId, EnemyIntent } from '../types/game';
+import { rollDie } from './dice';
+import { averageDie } from '../utils/math';
 
 const archetypes: Record<EnemyArchetypeId, { hp: number; ac: number; power: number; attackDie: string; blockDie: string; special: 'heal' | 'damage' | 'weakened'; weights: [number, number, number] }> = {
   goblin: { hp: 7, ac: 11, power: 1, attackDie: 'd6', blockDie: 'd4', special: 'weakened', weights: [0.65, 0.2, 0.15] },
@@ -18,16 +21,18 @@ export function createEnemy(archetypeId: EnemyArchetypeId, tier: number): Charac
 
 export function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId): { intent: EnemyIntent; value: number; block: number } {
   const archetype = archetypes[archetypeId];
-  const roll = Math.random();
+  // Use rollDie(100) to get a value 1-100, then convert to 0-1 range
+  const roll = rollDie(100) / 100;
   if (roll < archetype.weights[0]) {
-    const value = (Number.parseInt(archetype.attackDie.slice(1), 10) + 1) / 2 + enemy.gucCarpani;
+    const value = averageDie(archetype.attackDie) + enemy.gucCarpani;
     return { intent: { type: 'attack', estimatedDamage: value }, value, block: 0 };
   }
   if (roll < archetype.weights[0] + archetype.weights[1]) {
-    const block = Math.floor(Math.random() * Number.parseInt(archetype.blockDie.slice(1), 10)) + 1;
+    const blockSides = Number.parseInt(archetype.blockDie.slice(1), 10);
+    const block = rollDie(blockSides);
     return { intent: { type: 'defend', estimatedBlock: block }, value: block, block };
   }
-  if (archetype.special === 'heal') return { intent: { type: 'special', estimatedHeal: 2.5 }, value: 2.5, block: 0 };
-  if (archetype.special === 'damage') return { intent: { type: 'special', estimatedDamage: 3.5 + enemy.gucCarpani }, value: 3.5 + enemy.gucCarpani, block: 0 };
+  if (archetype.special === 'heal') return { intent: { type: 'special', estimatedHeal: averageDie('d4') }, value: averageDie('d4'), block: 0 };
+  if (archetype.special === 'damage') return { intent: { type: 'special', estimatedDamage: averageDie('d6') + enemy.gucCarpani }, value: averageDie('d6') + enemy.gucCarpani, block: 0 };
   return { intent: { type: 'special' }, value: 0, block: 0 };
 }

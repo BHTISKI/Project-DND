@@ -20,6 +20,22 @@ export type CardEffect =
   | { kind: "draw"; amount: number }
   | { kind: "energy"; amount: number }
   | { kind: "skip"; target?: "enemy" }
+  | { kind: "exhaust" }
+  | { kind: "retain"; amount?: number }
+  | { kind: "ethereal" }
+  | { kind: "duplicate" }
+  | { kind: "xAttack"; multiplier: number }
+  | { kind: "blockIfAttacked"; amount: number }
+  | { kind: "strength"; amount: number }
+  | { kind: "weak"; amount: number }
+  | { kind: "exhaust" }
+  | { kind: "retain"; amount?: number }
+  | { kind: "ethereal" }
+  | { kind: "duplicate" }
+  | { kind: "xAttack"; multiplier: number }
+  | { kind: "blockIfAttacked"; amount: number }
+  | { kind: "strength"; amount: number }
+  | { kind: "weak"; amount: number }
 
 export type StatusId = "vulnerable" | "weakened" | "poisoned" | "fortified" | "empowered"
 
@@ -72,3 +88,4 @@ export const sampleCardDefs: Omit<Card, 'id'>[] = [
   { isim: 'Kırılgan Zafer', tip: 'saldırı', manaBedeli: 2, baseHasar: 0, zarTuru: 'd8', rarity: 'rare', isUpgraded: false, tags: ['attack', 'risk'], effects: [{ kind: 'attack', die: 'd8', damageBonus: 3 }, { kind: 'status', status: 'vulnerable', duration: 2, value: 1, target: 'player' }] },
   { isim: 'Taktik Hazırlık', tip: 'yetenek', manaBedeli: 0, baseHasar: 0, zarTuru: 'd1', rarity: 'rare', isUpgraded: false, tags: ['skill', 'setup'], effects: [{ kind: 'draw', amount: 1 }, { kind: 'status', status: 'empowered', duration: 1, value: 1 }] },
 ]
+

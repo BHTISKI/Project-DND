@@ -1,6 +1,10 @@
+// Zustand store tanımı ve oyun durumu yönetimi
 import { sampleCardDefs } from '../types/game';
 import type { Card, CardEffect, Character, EnemyArchetypeId, EnemyIntent, NodeType, RunMapState, StatusEffect, StatusId } from '../types/game';
 import { create } from 'zustand';
+import { rollDie } from "../engine/dice";
+import { generateRandomId } from '../utils/id';
+import { averageDie } from '../utils/math';
 
 // Helper to shuffle array (Fisher-Yates)
 function shuffle<T>(array: T[]): T[] {
@@ -12,8 +16,6 @@ function shuffle<T>(array: T[]): T[] {
   return arr;
 }
 
-const rollDie = (die: string) => Math.floor(Math.random() * Number.parseInt(die.slice(1), 10)) + 1;
-const averageDie = (die: string) => (Number.parseInt(die.slice(1), 10) + 1) / 2;
 
 function calculateUpgradeCost(rarity: Card['rarity'] | undefined, victoryCount: number): number {
   const baseCost = rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
@@ -122,7 +124,7 @@ function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, pr
     return { intent: { type: 'attack', estimatedDamage: value, effectKey: 'archetype-attack' }, value, block: 0 };
   }
   if (roll < weights[0] + weights[1]) {
-    const block = rollDie(archetype.blockDie);
+    const block = rollDie(parseInt(archetype.blockDie.slice(1), 10));
     return { intent: { type: 'defend', estimatedBlock: block, effectKey: 'archetype-defend' }, value: block, block };
   }
   if (archetype.special === 'heal') {
@@ -244,7 +246,7 @@ function generateAvailableNodes(floor: number): Array<{ type: NodeType; id: stri
 
 // Function to create initial deck (e.g., 5 copies of each)
 function createInitialDeck(): Card[] {
-  return shuffle(sampleCardDefs.slice(0, 7).map((def) => ({ ...def, id: Math.random().toString(36).substr(2, 9) })));
+  return shuffle(sampleCardDefs.slice(0, 7).map((def) => ({ ...def, id: generateRandomId() })));
 }
 
 // Get 3 random unique cards from sampleCardDefs
@@ -252,7 +254,7 @@ function getRandomRewards(): Card[] {
   const shuffled = shuffle([...sampleCardDefs]);
   return shuffled.slice(0, 3).map((def) => ({
     ...def,
-    id: Math.random().toString(36).substr(2, 9),
+    id: generateRandomId(),
   }));
 }
 
@@ -508,14 +510,14 @@ export const useGameStore = create<GameState>((set) => ({
 
           case 'special':
             if (state.enemyArchetype === 'mage') {
-              const damage = rollDie('d6') + enemy.gucCarpani;
+              const damage = rollDie(6) + enemy.gucCarpani;
               player = { ...player, mevcutCan: Math.max(0, player.mevcutCan - damage) };
               battleLogs = [...battleLogs, `Büyücü gizemli bir patlamayla ${damage} hasar verdi.`];
             } else if (state.enemyArchetype === 'goblin') {
               playerStatuses = addStatus(playerStatuses, { id: 'weakened', duration: 2, stacks: 1, value: 1 });
               battleLogs = [...battleLogs, `Goblin hileli hamleyle oyuncuyu güçsüzleştirdi.`];
             } else {
-              const healRoll = rollDie('d4');
+              const healRoll = rollDie(4);
               enemy = { ...enemy, mevcutCan: Math.min(enemy.maksimumCan, enemy.mevcutCan + healRoll) };
               battleLogs = [...battleLogs, `Muhafız ${healRoll} can iyileştirdi.`];
             }
@@ -640,7 +642,7 @@ export const useGameStore = create<GameState>((set) => ({
             let hit = true;
             let attackRoll = 0;
             if (effect.kind === 'attack' && !effect.ignoresArmor) {
-              attackRoll = rollDie('d20');
+              attackRoll = rollDie(20);
               hit = attackRoll !== 1 && (attackRoll === 20 || attackRoll + state.player.gucCarpani >= updatedEnemy.zirhSinifi);
             }
             if (!hit) {
@@ -649,7 +651,7 @@ export const useGameStore = create<GameState>((set) => ({
               continue;
             }
             const die = effect.die ?? card.zarTuru;
-            let damage = rollDie(die) + card.baseHasar + (effect.damageBonus ?? 0) + state.player.gucCarpani + updatedNextDamageBonus;
+            let damage = rollDie(parseInt(die.slice(1), 10)) + card.baseHasar + (effect.damageBonus ?? 0) + state.player.gucCarpani + updatedNextDamageBonus;
             if (statusValue(updatedPlayerStatuses, 'empowered') > 0) damage += statusValue(updatedPlayerStatuses, 'empowered');
             if (statusValue(updatedEnemyStatuses, 'vulnerable') > 0) damage = Math.ceil(damage * 1.25);
             if (updatedEnemyBlock > 0) {
@@ -660,11 +662,11 @@ export const useGameStore = create<GameState>((set) => ({
             effectLogs.push(`${card.isim} ${damage} hasar verdi${updatedComboCount > state.comboCount ? ` (Kombo ${updatedComboCount})` : ''}.`);
             updatedNextDamageBonus = 0;
           } else if (effect.kind === 'block') {
-            updatedPlayerBlock = effect.amount ?? (effect.die ? rollDie(effect.die) : 0);
+            updatedPlayerBlock = effect.amount ?? (effect.die ? rollDie(parseInt(effect.die.slice(1), 10)) : 0);
             effectLogs.push(`${card.isim} ${updatedPlayerBlock} blok kazandırdı.`);
           } else if (effect.kind === 'heal') {
             const target = effect.target === 'enemy' ? updatedEnemy : updatedPlayer;
-            const amount = effect.amount ?? (effect.die ? rollDie(effect.die) : 0);
+            const amount = effect.amount ?? (effect.die ? rollDie(parseInt(effect.die.slice(1), 10)) : 0);
             const healed = Math.min(target.maksimumCan, target.mevcutCan + amount);
             if (effect.target === 'enemy') updatedEnemy = { ...target, mevcutCan: healed };
             else updatedPlayer = { ...target, mevcutCan: healed };

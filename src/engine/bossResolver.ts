@@ -1,36 +1,30 @@
 // Boss resolver for handling boss nodes
 import type { GameState } from '../state/store';
 import type { Card, Character } from '../types/game';
-import { chooseArchetype, createEnemy, generateEnemyIntent } from './combatResolver';
+import { generateRandomId } from '../utils/id';
 
 export class BossResolver {
   static initializeBoss(gameState: GameState): GameState {
     const state = { ...gameState };
-
-    // Boss is based on the current victory count, but stronger
-    const victoryFactor = state.victoryCount * 2; // Boss scales faster
-    const enemyArchetype = chooseArchetype(victoryFactor);
-
-    // Make boss significantly stronger
-    const baseEnemy = createEnemy(enemyArchetype, victoryFactor);
+    const baseEnemy = state.enemy;
+    if (!baseEnemy) {
+      throw new Error('No enemy in state');
+    }
     const bossEnemy: Character = {
       ...baseEnemy,
-      mevcutCan: baseEnemy.maksimumCan * 2, // Double HP
+      mevcutCan: baseEnemy.maksimumCan * 2,
       maksimumCan: baseEnemy.maksimumCan * 2,
-      zirhSinifi: baseEnemy.zirhSinifi + 2, // Higher AC
-      gucCarpani: baseEnemy.gucCarpani + 1  // Higher power
+      zirhSinifi: baseEnemy.zirhSinifi + 2,
+      gucCarpani: baseEnemy.gucCarpani + 1,
     };
-
-    // Generate initial enemy intent
-    const { intent, value, block: enemyBlock } = generateEnemyIntent(bossEnemy, enemyArchetype);
 
     return {
       ...state,
       enemy: bossEnemy,
-      enemyArchetype,
-      enemyIntent: intent,
-      enemyIntentValue: value,
-      enemyBlock,
+      enemyArchetype: state.enemyArchetype,
+      enemyIntent: { type: 'attack', estimatedDamage: 0 }, // placeholder
+      enemyIntentValue: 0,
+      enemyBlock: 0,
       // Reset player state for battle
       currentEnergy: state.maxEnergy,
       playerBlock: 0,
@@ -58,7 +52,7 @@ export class BossResolver {
       const shuffled = resolver.shuffleArray([...resolver.getSampleCardDefs()]);
       const rewardOptions = shuffled.slice(0, bossCardRewardCount).map((def) => ({
         ...def,
-        id: Math.random().toString(36).substr(2, 9),
+        id: generateRandomId(),
       }));
 
       return {
@@ -98,7 +92,7 @@ export class BossResolver {
       { isim: 'Zayıflatıcı Lanet', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['skill', 'control'], effects: [{ kind: 'status', status: 'weakened', duration: 2, value: 1, target: 'enemy' }] },
       { isim: 'Zehirli Bıçak', tip: 'saldırı', manaBedeli: 2, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['attack', 'poison'], effects: [{ kind: 'attack', die: 'd4' }, { kind: 'status', status: 'poisoned', duration: 3, value: 1, target: 'enemy' }] },
       { isim: 'Savaş İlhamı', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', tags: ['skill', 'combo'], effects: [{ kind: 'status', status: 'empowered', duration: 2, value: 2 }, { kind: 'energy', amount: 1 }] },
-      { isim: 'Büyüleyici Çukur', tip: 'yetenek', manaBedeli: 3, baseHasar: 0, zarTuru: 'd10', rarity: 'rare', tags: ['skill', 'control'], effects: [{ kind: 'skip', target: 'enemy' }] },
+      { isim: 'Büyüleyici Çukur', tip: 'yetenek', manaBedeli: 3, baseHasar: 0, zarTuru: 'd10', rarity: 'rare', tags: ['skill', 'control'], effects: [{ kind: 'status', status: 'empowered', duration: 2, value: 2 }] },
       { isim: 'Kırılgan Zafer', tip: 'saldırı', manaBedeli: 2, baseHasar: 0, zarTuru: 'd8', rarity: 'rare', tags: ['attack', 'risk'], effects: [{ kind: 'attack', die: 'd8', damageBonus: 3 }, { kind: 'status', status: 'vulnerable', duration: 2, value: 1, target: 'player' }] },
       { isim: 'Taktik Hazırlık', tip: 'yetenek', manaBedeli: 0, baseHasar: 0, zarTuru: 'd1', rarity: 'rare', tags: ['skill', 'setup'], effects: [{ kind: 'draw', amount: 1 }, { kind: 'status', status: 'empowered', duration: 1, value: 1 }] },
     ];

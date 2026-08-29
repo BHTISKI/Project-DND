@@ -47,13 +47,14 @@ export class RestResolver {
           };
         }
 
-        // Remove a random card from deck
+        // Remove a random card from deck - FIXED: Use immutable operation
         const removeIndex = Math.floor(Math.random() * state.deck.length);
-        const [removedCard] = state.deck.splice(removeIndex, 1);
+        const deckCopy = [...state.deck];
+        const [removedCard] = deckCopy.splice(removeIndex, 1);
 
         return {
           ...state,
-          deck: [...state.deck],
+          deck: deckCopy,
           battleLogs: [
             ...state.battleLogs,
             `${removedCard.isim} kartı desteğinizden kaldırıldı.`

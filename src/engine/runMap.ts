@@ -1,5 +1,6 @@
 // Run map system for generating node-based progression
 import type { NodeType } from '../types/game';
+import { generateRandomId } from '../utils/id';
 
 // Weights for node type selection based on floor
 const nodeTypeWeights: Record<NodeType, { base: number; floorFactor: number }> = {
@@ -13,7 +14,7 @@ const nodeTypeWeights: Record<NodeType, { base: number; floorFactor: number }> =
 
 // Generate a unique ID for nodes
 function generateNodeId(): string {
-  return Math.random().toString(36).substr(2, 9);
+  return generateRandomId();
 }
 
 // Get weights for a specific floor
@@ -78,30 +79,40 @@ export function generateAvailableNodes(currentFloor: number, _currentNodeType: N
   const selectionPool = weightedTypes.length > 0 ? weightedTypes : selectionTypes;
 
   // Add remaining choices
-  while (nodes.length < choiceCount && selectionPool.length > 0) {
-    const randomIndex = Math.floor(Math.random() * selectionPool.length);
-    const selectedType = selectionPool[randomIndex];
-
-    // Avoid duplicating the same type too often (except for combat which is common)
-    const sameTypeCount = nodes.filter(n => n.type === selectedType).length;
-    const maxSameType = selectedType === 'combat' ? 2 : 1;
-
-    if (sameTypeCount < maxSameType) {
-      nodes.push({ type: selectedType, id: generateNodeId() });
-    }
-
-    // If we can't add more of this type, remove it from selection pool temporarily
-    if (sameTypeCount >= maxSameType) {
-      // Create a new array without this type for this iteration
-      const filteredPool = selectionPool.filter(t => t !== selectedType);
-      if (filteredPool.length > 0) {
-        // Continue with filtered pool
-        // Note: We don't modify selectionPool permanently to maintain variety
-      }
-    }
+  // Track how many of each type we have added in this call
+  const typeCount: Record<NodeType, number> = {} as Record<NodeType, number>;
+  for (const type of selectionTypes) {
+    typeCount[type] = 0;
   }
 
-  // Ensure we have at least 2 choices
+  let attempts = 0;
+  const maxAttempts = 100;
+  while (nodes.length < choiceCount && attempts < maxAttempts) {
+    attempts++;
+    if (selectionPool.length === 0) {
+      break;
+    }
+    const randomIndex = Math.floor(Math.random() * selectionPool.length);
+    const selectedType = selectionPool[randomIndex] as NodeType;
+
+    // Check if we have reached the limit for this type
+    const maxAllowed = selectedType === 'combat' ? 2 : 1;
+    if (typeCount[selectedType] >= maxAllowed) {
+      // Skip this type and try again
+      continue;
+    }
+
+    // Add the selected type
+    nodes.push({ type: selectedType, id: generateNodeId() });
+    typeCount[selectedType] = (typeCount[selectedType] || 0) + 1;
+  }
+
+  // If we still need more nodes (due to attempt limit), fill with combat nodes
+  while (nodes.length < choiceCount) {
+    nodes.push({ type: 'combat', id: generateNodeId() });
+  }
+
+  // Ensure we have at least 2 choices (should already be satisfied by the loops above, but keep for safety)
   if (nodes.length < 2) {
     // Add combat nodes as fallback
     while (nodes.length < 2) {

@@ -209,7 +209,7 @@ describe('test utilities and critical game flows', () => {
   });
 
   it('renders the combat view and ends a player turn', async () => {
-    await withMockRandom(Array.from({ length: 20 }, (_, index) => (index + 1) / 21), async () => {
+    await withMockRandom(Array.from({ length: 200 }, (_, index) => (index + 1) / 201), async () => {
       render(<App />);
       console.log('State after render:', useGameStore.getState());
       expect(screen.getByRole('heading', { name: 'Yolunu seç' })).toBeInTheDocument();
