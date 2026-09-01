@@ -61,6 +61,8 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     discardPile: [] as Card[],
     drawCount: 5,
     gold: 50,
+    metaGold: 0,
+    metaVictories: 0,
     battleLogs: [] as string[],
     initialized: false,
     gamePhase: 'mapSelection' as const,
