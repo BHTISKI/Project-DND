@@ -85,7 +85,7 @@ export const BattleStats: React.FC = () => {
           </div>
         </div>
       </article>
-      <span className="sr-only">Altın: {gold}. Deste: {deckSize}, El: {handSize}, Mezarlık: {discardSize}.</span>
+      <span className="sr-only">Altın: {gold}. Deste: {deckSize}, El: {handSize}, Mezarlık: {discardSize}</span>
     </>
   );
 };
