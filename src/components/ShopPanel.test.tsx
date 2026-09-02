@@ -194,7 +194,7 @@ describe('ShopPanel', () => {
     await userEvent.click(uncommonUpgradeButton);
     // check that the card is now upgraded in the store
     const { deck } = useGameStore.getState();
-    const uncommonCard = deck.find(c => c.id === 'card-uncommon');
+    const uncommonCard = deck.find(c => c.id === 'card-uncommon')!;
     expect(uncommonCard.isUpgraded).toBe(true);
   });
 
@@ -243,29 +243,44 @@ describe('ShopPanel', () => {
     // victoryCount=2: 40 + floor(40*2*0.1)=40+8=48
     // victoryCount=10: 40 + floor(40*10*0.1)=40+40=80
     useGameStore.setState({ ...useGameStore.getState(), victoryCount: 0, gold: 1000 });
-    render(<ShopPanel />);
+    const { rerender } = render(<ShopPanel />);
     // victoryCount=0
-    const commonRowV0 = screen.getByText(/Kart Sıradan/).closest('.shop-card-row--upgrade');
-    const costTextV0 = commonRowV0.querySelector('span')?.textContent; // the span that shows the cost or "Güçlendirildi"
-    expect(costTextV0).toMatch(/40 altın/);
+    const upgradeButtonV0 = screen.getByRole('button', {
+      name: /Kart Sıradan kartını 40 altınla yükselt/
+    });
+    const upgradeRowV0 = upgradeButtonV0.closest('.shop-card-row--upgrade')! as HTMLElement;
+    const costSpanV0 = upgradeRowV0.querySelectorAll('span')[1];
+    expect(costSpanV0).toHaveTextContent(/40 altın/);
 
     // victoryCount=1
     useGameStore.setState({ ...useGameStore.getState(), victoryCount: 1 });
-    const commonRowV1 = screen.getByText(/Kart Sıradan/).closest('.shop-card-row--upgrade');
-    const costTextV1 = commonRowV1.querySelector('span')?.textContent;
-    expect(costTextV1).toMatch(/44 altın/);
+    rerender(<ShopPanel />);
+    const upgradeButtonV1 = screen.getByRole('button', {
+      name: /Kart Sıradan kartını 44 altınla yükselt/
+    });
+    const upgradeRowV1 = upgradeButtonV1.closest('.shop-card-row--upgrade')! as HTMLElement;
+    const costSpanV1 = upgradeRowV1.querySelectorAll('span')[1];
+    expect(costSpanV1).toHaveTextContent(/44 altın/);
 
     // victoryCount=2
     useGameStore.setState({ ...useGameStore.getState(), victoryCount: 2 });
-    const commonRowV2 = screen.getByText(/Kart Sıradan/).closest('.shop-card-row--upgrade');
-    const costTextV2 = commonRowV2.querySelector('span')?.textContent;
-    expect(costTextV2).toMatch(/48 altın/);
+    rerender(<ShopPanel />);
+    const upgradeButtonV2 = screen.getByRole('button', {
+      name: /Kart Sıradan kartını 48 altınla yükselt/
+    });
+    const upgradeRowV2 = upgradeButtonV2.closest('.shop-card-row--upgrade')! as HTMLElement;
+    const costSpanV2 = upgradeRowV2.querySelectorAll('span')[1];
+    expect(costSpanV2).toHaveTextContent(/48 altın/);
 
     // victoryCount=10
     useGameStore.setState({ ...useGameStore.getState(), victoryCount: 10 });
-    const commonRowV10 = screen.getByText(/Kart Sıradan/).closest('.shop-card-row--upgrade');
-    const costTextV10 = commonRowV10.querySelector('span')?.textContent;
-    expect(costTextV10).toMatch(/80 altın/);
+    rerender(<ShopPanel />);
+    const upgradeButtonV10 = screen.getByRole('button', {
+      name: /Kart Sıradan kartını 80 altınla yükselt/
+    });
+    const upgradeRowV10 = upgradeButtonV10.closest('.shop-card-row--upgrade')! as HTMLElement;
+    const costSpanV10 = upgradeRowV10.querySelectorAll('span')[1];
+    expect(costSpanV10).toHaveTextContent(/80 altın/);
   });
 
   it('legendary card upgrade cost is calculated correctly', () => {
@@ -273,19 +288,19 @@ describe('ShopPanel', () => {
     // victoryCount=0: 120
     // victoryCount=1: 120 + floor(120*1*0.1)=120+12=132
     useGameStore.setState({ ...useGameStore.getState(), victoryCount: 0, gold: 1000 });
-    render(<ShopPanel />);
+    const { rerender } = render(<ShopPanel />);
     // Check for victoryCount=0
     const allLegendaryTexts = screen.getAllByText(/Kart Efsanevi/);
     const upgradeList = screen.getByLabelText(/Yükseltilebilir kartlar/);
-    const legendaryTextEl = allLegendaryTexts.find(el => upgradeList.contains(el));
-    const legendaryRow = legendaryTextEl.closest('.shop-card-row--upgrade');
+    const legendaryTextEl = allLegendaryTexts.find(el => upgradeList.contains(el))!;
+    const legendaryRow = legendaryTextEl.closest('.shop-card-row--upgrade')! as HTMLElement;
     const costSpan = legendaryRow.querySelectorAll('span')[1];
     const costText = costSpan?.textContent;
     expect(costText).toMatch(/120 altın/);
 
     // Now update victoryCount to 1
     useGameStore.setState({ ...useGameStore.getState(), victoryCount: 1 });
-    render(<ShopPanel />);
+    rerender(<ShopPanel />);
     // The component should re-render automatically
     const allLegendaryTextsV1 = screen.getAllByText(/Kart Efsanevi/);
     const upgradeListV1 = screen.getByLabelText(/Yükseltilebilir kartlar/);

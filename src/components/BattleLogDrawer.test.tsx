@@ -132,8 +132,8 @@ describe('BattleLogDrawer', () => {
     // index 6: KRİTİK hasar! -> critical
 
     // Helper to check that an element has the base class and optionally a specific class
-    const hasBaseClass = (el: HTMLElement) => el.classList.contains('log-entry');
-    const hasSpecificClass = (el: HTMLElement, specific: string) => el.classList.contains(`log-entry--${specific}`);
+    const hasBaseClass = (el: Element) => el.classList.contains('log-entry');
+    const hasSpecificClass = (el: Element, specific: string) => el.classList.contains(`log-entry--${specific}`);
 
     // Normal mesaj: only base class
     expect(hasBaseClass(logEntries[0])).toBe(true);

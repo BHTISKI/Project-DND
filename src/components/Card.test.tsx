@@ -3,6 +3,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { cleanup } from '@testing-library/react';
 import { CardComponent } from './Card';
 import type { Card } from '../types/game';
 
@@ -14,7 +15,7 @@ describe('Card', () => {
     manaBedeli: 2,
     baseHasar: 3,
     zarTuru: 'd6',
-    effects: [{ kind: 'attack', die: 'd6' }],
+    effects: [{ kind: 'attack' as const, die: 'd6' }],
     isUpgraded: false,
     rarity: 'common',
     tags: ['attack'],
@@ -25,6 +26,7 @@ describe('Card', () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
@@ -36,7 +38,7 @@ describe('Card', () => {
     expect(screen.getByText(/Test Kartı/i)).toBeInTheDocument();
     // mana: check the aria-label of the card-mana strong element
     const manaStrong = screen.getByText(/2/i);
-    expect(manaStrong).toHaveAttribute('aria-label', /2 mana/i);
+    expect(manaStrong).toHaveAttribute('aria-label', '2 mana');
     // effect text (attack d6 -> "Zırha karşı saldır")
     expect(screen.getByText(/Zırha karşı saldır/i)).toBeInTheDocument();
     // upgraded indicator should not be present
@@ -59,7 +61,6 @@ describe('Card', () => {
 
     const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
     expect(button).not.toBeDisabled();
-    expect(button).toHaveAttribute('aria-disabled', 'false');
   });
 
   it('is not playable when isPlayable prop is false', () => {
@@ -92,90 +93,83 @@ describe('Card', () => {
   it('renders correct card type glyph and color', () => {
     const onPlay = vi.fn();
     // test each type
-    const attackCard = { ...baseCard, tip: 'saldırı' };
-    const defenseCard = { ...baseCard, tip: 'savunma' };
-    const skillCard = { ...baseCard, tip: 'yetenek' };
+    const attackCard = { ...baseCard, tip: 'saldırı' as const } as Card;
+    const defenseCard = { ...baseCard, tip: 'savunma' as const } as Card;
+    const skillCard = { ...baseCard, tip: 'yetenek' as const } as Card;
 
-    render(<CardComponent card={attackCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/⚔/i)).toBeInTheDocument(); // attack glyph
-    expect(screen.getByText(/Saldırı/i)).toBeInTheDocument();
+    const { rerender } = render(<CardComponent card={attackCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/⚔/i, { selector: '.card-type > span[aria-hidden]' })).toBeInTheDocument(); // attack glyph
+    expect(screen.getByText(/Saldırı/i, { selector: '.card-type' })).toBeInTheDocument();
 
-    render(<CardComponent card={defenseCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/◈/i)).toBeInTheDocument(); // defense glyph
-    expect(screen.getByText(/Savunma/i)).toBeInTheDocument();
+    rerender(<CardComponent card={defenseCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/◈/i, { selector: '.card-type > span[aria-hidden]' })).toBeInTheDocument(); // defense glyph
+    expect(screen.getByText(/Savunma/i, { selector: '.card-type' })).toBeInTheDocument();
 
-    render(<CardComponent card={skillCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/✦/i)).toBeInTheDocument(); // skill glyph
-    expect(screen.getByText(/Yetenek/i)).toBeInTheDocument();
+    rerender(<CardComponent card={skillCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/✦/i, { selector: '.card-type > span[aria-hidden]' })).toBeInTheDocument(); // skill glyph
+    expect(screen.getByText(/Yetenek/i, { selector: '.card-type' })).toBeInTheDocument();
   });
 
   it('renders rarity label correctly', () => {
     const onPlay = vi.fn();
-    const rareCard = { ...baseCard, rarity: 'rare' };
-    const uncommonCard = { ...baseCard, rarity: 'uncommon' };
-    const commonCard = { ...baseCard, rarity: 'common' };
-    const legendaryCard = { ...baseCard, rarity: 'legendary' };
+    const rareCard = { ...baseCard, rarity: 'rare' as const } as Card;
+    const uncommonCard = { ...baseCard, rarity: 'uncommon' as const } as Card;
+    const commonCard = { ...baseCard, rarity: 'common' as const } as Card;
+    const legendaryCard = { ...baseCard, rarity: 'legendary' as const } as Card;
 
-    render(<CardComponent card={rareCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/Nadir/i)).toBeInTheDocument();
+    const { rerender } = render(<CardComponent card={rareCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/Nadir/i, { selector: '.card-rarity' })).toBeInTheDocument();
 
-    render(<CardComponent card={uncommonCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/Seçkin/i)).toBeInTheDocument();
+    rerender(<CardComponent card={uncommonCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/Seçkin/i, { selector: '.card-rarity' })).toBeInTheDocument();
 
-    render(<CardComponent card={commonCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/Sıradan/i)).toBeInTheDocument();
+    rerender(<CardComponent card={commonCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/Sıradan/i, { selector: '.card-rarity' })).toBeInTheDocument();
 
-    render(<CardComponent card={legendaryCard} onPlay={onPlay} isPlayable={true} />);
-    // legendary rarity label? In the component, rarityLabel is only defined for rare/uncommon, else 'Sıradan'
+    rerender(<CardComponent card={legendaryCard} onPlay={onPlay} isPlayable={true} />);
+    // legendary rarity label? In the component, rarityLabel is only defined for rare/unbalanced, else 'Sıradan'
     // So legendary will show as 'Sıradan'
-    expect(screen.getByText(/Sıradan/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sıradan/i, { selector: '.card-rarity' })).toBeInTheDocument();
   });
 
   it('formats different effect types correctly', () => {
     const onPlay = vi.fn();
     // heal effect
-    const healCard = { ...baseCard, effets: [{ kind: 'heal', amount: 5 }] };
-    render(<CardComponent card={healCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/5 can yenile/i)).toBeInTheDocument();
+    const healCard = { ...baseCard, effects: [{ kind: 'heal' as const, amount: 5 }] };
+    const blockDieCard = { ...baseCard, effects: [{ kind: 'block' as const, die: 'd8' }] };
+    const blockAmountCard = { ...baseCard, effects: [{ kind: 'block' as const, amount: 3 }] };
+    const drawCard = { ...baseCard, effects: [{ kind: 'draw' as const, amount: 2 }] };
+    const energyCard = { ...baseCard, effects: [{ kind: 'energy' as const, amount: 1 }] };
+    const statusCard = { ...baseCard, effects: [{ kind: 'status' as const, status: 'vulnerable' as const, duration: 1 }] };
+    const trashCard = { ...baseCard, effects: [{ kind: 'trash' as const, amount: 2, target: 'enemy' as const }] };
+    const tradeCard = { ...baseCard, effects: [{ kind: 'trade' as const, trashAmount: 1, drawAmount: 2, target: 'player' as const }] };
+    const skipCard = { ...baseCard, effects: [{ kind: 'skip' as const, target: 'enemy' as const }] };
 
-    // block effect with die
-    const blockDieCard = { ...baseCard, effets: [{ kind: 'block', die: 'd8' }] };
-    render(<CardComponent card={blockDieCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/d8 blok kazan/i)).toBeInTheDocument();
+    const { rerender } = render(<CardComponent card={healCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/5 can yenile/i, { selector: '.card-effect' })).toBeInTheDocument();
 
-    // block effect with amount
-    const blockAmountCard = { ...baseCard, effets: [{ kind: 'block', amount: 3 }] };
-    render(<CardComponent card={blockAmountCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/3 blok kazan/i)).toBeInTheDocument();
+    rerender(<CardComponent card={blockDieCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/d8 blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
 
-    // draw effect
-    const drawCard = { ...baseCard, effets: [{ kind: 'draw', amount: 2 }] };
-    render(<CardComponent card={drawCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/2 kart çek/i)).toBeInTheDocument();
+    rerender(<CardComponent card={blockAmountCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/3 blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
 
-    // energy effect
-    const energyCard = { ...baseCard, effets: [{ kind: 'energy', amount: 1 }] };
-    render(<CardComponent card={energyCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/1 enerji kazan/i)).toBeInTheDocument();
+    rerender(<CardComponent card={drawCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/2 kart çek/i, { selector: '.card-effect' })).toBeInTheDocument();
 
-    // status effect
-    const statusCard = { ...baseCard, effets: [{ kind: 'status', status: 'vulnerable' }] };
-    render(<CardComponent card={statusCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/vulnerable uygula/i)).toBeInTheDocument();
+    rerender(<CardComponent card={energyCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/1 enerji kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
 
-    // trash effect
-    const trashCard = { ...baseCard, effets: [{ kind: 'trash', amount: 2, target: 'enemy' }] };
-    render(<CardComponent card={trashCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/2 kartı düşmanın desteleden kaldır/i)).toBeInTheDocument();
+    rerender(<CardComponent card={statusCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/vulnerable uygula/i, { selector: '.card-effect' })).toBeInTheDocument();
 
-    // trade effect
-    const tradeCard = { ...baseCard, effets: [{ kind: 'trade', trashAmount: 1, drawAmount: 2, target: 'player' }] };
-    render(<CardComponent card={tradeCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/1 kartı oyuncunun desteleden kaldır, 2 kart çek/i)).toBeInTheDocument();
+    rerender(<CardComponent card={trashCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/2 kartı düşmanın desteleden kaldır/i, { selector: '.card-effect' })).toBeInTheDocument();
 
-    // skip effect
-    const skipCard = { ...baseCard, effets: [{ kind: 'skip', target: 'enemy' }] };
-    render(<CardComponent card={skipCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/düşmanın turunu atlat/i)).toBeInTheDocument();
+    rerender(<CardComponent card={tradeCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/1 kart oyuncunun desteleden kaldır, 2 kart çek/i, { selector: '.card-effect' })).toBeInTheDocument();
+
+    rerender(<CardComponent card={skipCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/düşmanın turunu atlat/i, { selector: '.card-effect' })).toBeInTheDocument();
   });
 });

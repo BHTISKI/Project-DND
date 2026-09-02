@@ -10,7 +10,7 @@ import { generateRandomId } from '../utils/id';
 import { averageDie } from '../utils/math';
 
 // Helper to shuffle array (Fisher-Yates)
-function shuffle<T>(array: T[]): T[] {
+export function shuffle<T>(array: T[]): T[] {
   const arr = array.slice();
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -20,12 +20,12 @@ function shuffle<T>(array: T[]): T[] {
 }
 
 
-function calculateUpgradeCost(rarity: Card['rarity'] | undefined, victoryCount: number): number {
+export function calculateUpgradeCost(rarity: Card['rarity'] | undefined, victoryCount: number): number {
   const baseCost = rarity === 'legendary' ? 120 : rarity === 'rare' ? 80 : rarity === 'uncommon' ? 60 : 40;
   return baseCost + Math.floor(baseCost * victoryCount * 0.1);
 }
 
-function enhanceEffect(effect: CardEffect): CardEffect {
+export function enhanceEffect(effect: CardEffect): CardEffect {
   switch (effect.kind) {
     case 'attack':
     case 'damage':
@@ -100,7 +100,7 @@ function enhanceEffect(effect: CardEffect): CardEffect {
 }
 
 
-function loadMetaState(): { metaGold: number; metaVictories: number } {
+export function loadMetaState(): { metaGold: number; metaVictories: number } {
   try {
     const metaGold = localStorage.getItem('metaGold');
     const metaVictories = localStorage.getItem('metaVictories');
@@ -114,7 +114,7 @@ function loadMetaState(): { metaGold: number; metaVictories: number } {
   }
 }
 
-function saveMetaState(metaGold: number, metaVictories: number): void {
+export function saveMetaState(metaGold: number, metaVictories: number): void {
   try {
     localStorage.setItem('metaGold', String(metaGold));
     localStorage.setItem('metaVictories', String(metaVictories));
@@ -129,17 +129,17 @@ const enemyArchetypes: Record<EnemyArchetypeId, { name: string; hp: number; ac: 
   mage: { name: 'Büyücü', hp: 8, ac: 10, power: 2, attackDie: 'd4', blockDie: 'd3', special: 'damage', weights: [0.35, 0.15, 0.5] },
 };
 
-function chooseArchetype(victoryCount: number): EnemyArchetypeId {
+export function chooseArchetype(victoryCount: number): EnemyArchetypeId {
   return (['goblin', 'guardian', 'mage'] as EnemyArchetypeId[])[victoryCount % 3];
 }
 
-function createEnemy(archetypeId: EnemyArchetypeId, tier: number): Character {
+export function createEnemy(archetypeId: EnemyArchetypeId, tier: number): Character {
   const archetype = enemyArchetypes[archetypeId];
   const hp = archetype.hp + tier * (archetypeId === 'guardian' ? 3 : 2);
   return { id: `enemy-${tier}`, isim: archetype.name, mevcutCan: hp, maksimumCan: hp, zirhSinifi: archetype.ac + Math.floor(tier / 2), gucCarpani: archetype.power + Math.floor(tier / 3), advantageCounter: 0, disadvantageCounter: 0 };
 }
 
-function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, previous?: EnemyIntent | null): { intent: EnemyIntent; value: number; block: number } {
+export function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, previous?: EnemyIntent | null): { intent: EnemyIntent; value: number; block: number } {
   const archetype = enemyArchetypes[archetypeId];
   const weights = [...archetype.weights];
   if (previous?.type === 'attack') weights[0] *= 0.7;
@@ -164,7 +164,7 @@ function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, pr
   return { intent: { type: 'special', effectKey: 'weakened' }, value: 0, block: 0 };
 }
 
-function addStatus(statuses: StatusEffect[], effect: StatusEffect): StatusEffect[] {
+export function addStatus(statuses: StatusEffect[], effect: StatusEffect): StatusEffect[] {
   const existing = statuses.find((status) => status.id === effect.id);
   if (!existing) return [...statuses, effect];
   return statuses.map((status) => status.id === effect.id
@@ -172,18 +172,21 @@ function addStatus(statuses: StatusEffect[], effect: StatusEffect): StatusEffect
     : status);
 }
 
-function statusValue(statuses: StatusEffect[], id: StatusId): number {
+export function statusValue(statuses: StatusEffect[], id: StatusId): number {
   return statuses.find((status) => status.id === id)?.value ?? 0;
 }
 
-function tickStatuses(statuses: StatusEffect[], target: 'player' | 'enemy', character: Character): { statuses: StatusEffect[]; character: Character; log: string[] } {
+export function tickStatuses(statuses: StatusEffect[], target: 'player' | 'enemy', character: Character): { statuses: StatusEffect[]; character: Character; log: string[] } {
   let updatedCharacter = character;
   const log: string[] = [];
   const remaining = statuses.flatMap((status) => {
     if (status.id === 'poisoned') {
-      const damage = Math.max(1, status.value ?? 1) * status.stacks;
-      updatedCharacter = { ...updatedCharacter, mevcutCan: Math.max(0, updatedCharacter.mevcutCan - damage) };
-      log.push(`${target === 'player' ? 'Oyuncu' : 'Düşman'} zehirden ${damage} hasar aldı.`);
+      const value = status.value ?? 0;
+      if (value > 0) {
+        const damage = Math.max(1, value) * status.stacks;
+        updatedCharacter = { ...updatedCharacter, mevcutCan: Math.max(0, updatedCharacter.mevcutCan - damage) };
+        log.push(`${target === 'player' ? 'Oyuncu' : 'Düşman'} zehirden ${damage} hasar aldı.`);
+      }
     }
     const nextDuration = status.duration - 1;
     return nextDuration > 0 ? [{ ...status, duration: nextDuration }] : [];
@@ -191,7 +194,7 @@ function tickStatuses(statuses: StatusEffect[], target: 'player' | 'enemy', char
   return { statuses: remaining, character: updatedCharacter, log };
 }
 
-function rollAttackDie(advantage: number, disadvantage: number, rng: () => number = Math.random): number {
+export function rollAttackDie(advantage: number, disadvantage: number, rng: () => number = Math.random): number {
   const net = advantage - disadvantage;
   if (net > 0) {
     // advantage: roll two d20s, take higher
@@ -286,20 +289,34 @@ const defaultPlayer: Character = {
 
 const defaultEnemy = createEnemy('goblin', 0);
 
-function generateAvailableNodes(floor: number): Array<{ type: NodeType; id: string }> {
+export function generateAvailableNodes(floor: number): Array<{ type: NodeType; id: string }> {
   const types: NodeType[] = floor > 0 && floor % 3 === 0
     ? ['boss', 'elite', 'shop']
     : ['combat', 'combat', 'shop'];
-  return types.map((type, index) => ({ type, id: `floor-${floor}-${type}-${index}` }));
+
+  // For each type, we want to start numbering from 0
+  // Track how many times we've seen each type so far
+  const typeCounts: Record<NodeType, number> = {
+    boss: 0,
+    elite: 0,
+    shop: 0,
+    combat: 0
+  } as Record<NodeType, number>;
+
+  return types.map(type => {
+    const id = `floor-${floor}-${type}-${typeCounts[type]}`;
+    typeCounts[type]++;
+    return { type, id };
+  });
 }
 
 // Function to create initial deck (e.g., 5 copies of each)
-function createInitialDeck(): Card[] {
+export function createInitialDeck(): Card[] {
   return shuffle(sampleCardDefs.slice(0, 7).map((def) => ({ ...def, id: generateRandomId() })));
 }
 
 // Get 3 random unique cards from sampleCardDefs
-function getRandomRewards(): Card[] {
+export function getRandomRewards(): Card[] {
   const shuffled = shuffle([...sampleCardDefs]);
   return shuffled.slice(0, 3).map((def) => ({
     ...def,
@@ -991,17 +1008,26 @@ export const useGameStore = create<GameState>((set) => ({
       const cardIndex = state.deck.findIndex((c) => c.id === cardId);
       if (cardIndex === -1) {
         console.warn('Card not found in deck for upgrade');
-        return state;
+        return {
+          ...state,
+          battleLogs: [...state.battleLogs, 'Kart deste için bulunamadı.'],
+        };
       }
       const card = state.deck[cardIndex];
       if (card.isUpgraded) {
         console.warn('Card is already upgraded');
-        return state;
+        return {
+          ...state,
+          battleLogs: [...state.battleLogs, 'Kart zaten yükseltilmiş.'],
+        };
       }
       const cost = calculateUpgradeCost(card.rarity, state.victoryCount);
       if (state.gold < cost) {
         console.warn(`Not enough gold. Need ${cost} gold.`);
-        return state;
+        return {
+          ...state,
+          battleLogs: [...state.battleLogs, `Yetersiz altın! Kart silmek için ${cost} altın gerekiyor.`],
+        };
       }
       const upgradedCard = {
         ...card,

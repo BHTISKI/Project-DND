@@ -43,7 +43,7 @@ function RewardCards({ cards, onSelect }: { cards: Card[]; onSelect: (cardId: st
 function MapSelection({ floor, nodes, rewards, onSelectNode, onSelectReward, onSkipReward }: { floor: number; nodes: Array<{ type: NodeType; id: string }>; rewards: Card[]; onSelectNode: (id: string) => void; onSelectReward: (id: string) => void; onSkipReward: () => void }) {
   return <div className="map-selection">
     <div className="map-selection__intro"><span className="map-floor">BÖLÜM {floor + 1}</span><p>Bir sonraki karşılaşmanın kaderini belirle.</p></div>
-    <div className="map-nodes" aria-label="Mevcut yol seçenekleri">{nodes.map((node) => <button key={node.id} type="button" className={`map-node map-node--${node.type}`} onClick={() => onSelectNode(node.id)}>
+    <div className="map-nodes" aria-label="Mevcut yol seçenekleri">{nodes.map((node, index) => <button key={`${node.id}-${index}`} type="button" className={`map-node map-node--${node.type}`} onClick={() => onSelectNode(node.id)}>
       <span className="map-node__icon" aria-hidden="true">{nodeInfo[node.type].icon}</span><span><strong>{nodeInfo[node.type].label}</strong><small>{nodeInfo[node.type].detail}</small></span><span className="map-node__arrow" aria-hidden="true">→</span>
     </button>)}</div>
     {rewards.length > 0 && <div className="map-reward-note"><span aria-hidden="true">★</span> Zafer ödülün hazır. Önce bir kart seçebilir veya pas geçebilirsin.</div>}

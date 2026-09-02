@@ -6,7 +6,7 @@ import { BattleStats } from './BattleStats';
 import { useGameStore } from '../state/store';
 import { setupMockRandom, resetMockRandom } from '../testUtils';
 import { cleanup } from '@testing-library/react';
-import type { Card, EnemyIntent } from '../types/game';
+import type { EnemyIntent} from '../types/game';
 
 describe('BattleStats', () => {
   const basePlayer = { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 };
@@ -59,18 +59,18 @@ describe('BattleStats', () => {
     console.log("Debugging DOM:");
     screen.debug();
     // Use more specific selectors to avoid extra DOM elements
-    const playerHealthRow = screen.getByText(/Oyuncu/i).closest('.fighter--player').querySelector('.health-row');
+    const playerHealthRow = screen.getByText(/Oyuncu/i).closest('.fighter--player')!.querySelector('.health-row');
     expect(playerHealthRow).toHaveTextContent(/Can.*10.*10/i);
-    const playerStats = screen.getByText(/Oyuncu/i).closest('.fighter--player').querySelector('.fighter-stats');
+    const playerStats = screen.getByText(/Oyuncu/i).closest('.fighter--player')!.querySelector('.fighter-stats');
     expect(playerStats).toHaveTextContent(/12\s*AC/i);
     expect(playerStats).toHaveTextContent(/\+2\s*GÜÇ/i);
     expect(playerStats).toHaveTextContent(/0\s*BLOK/i);
     // enemy
     expect(screen.getByText(/Goblin/i)).toBeInTheDocument();
     // Use more specific selectors to avoid extra DOM elements
-    const enemyHealthRow = screen.getByText(/Goblin/i).closest('.fighter--enemy').querySelector('.health-row');
+    const enemyHealthRow = screen.getByText(/Goblin/i).closest('.fighter--enemy')!.querySelector('.health-row');
     expect(enemyHealthRow).toHaveTextContent(/Can.*10.*10/i);
-    const enemyStats = screen.getByText(/Goblin/i).closest('.fighter--enemy').querySelector('.fighter-stats');
+    const enemyStats = screen.getByText(/Goblin/i).closest('.fighter--enemy')!.querySelector('.fighter-stats');
     expect(enemyStats).toHaveTextContent(/11\s*AC/i);
     expect(enemyStats).toHaveTextContent(/\+1\s*GÜÇ/i);
     expect(enemyStats).toHaveTextContent(/0\s*BLOK/i);
@@ -88,8 +88,8 @@ describe('BattleStats', () => {
     console.log('player HP after setState:', useGameStore.getState().player.mevcutCan);
     screen.debug();
     const playerLabel = screen.getByText(/Oyuncu/i);
-    const healthRow = playerLabel.parentElement.querySelector('.health-row');
-    const strong = healthRow.querySelector('strong');
+    const healthRow = playerLabel.parentElement!.querySelector('.health-row')!;
+    const strong = healthRow.querySelector('strong')!;
     const text = strong.textContent.trim();
     console.log('strong textContent:', JSON.stringify(text));
     expect(text).toMatch(/3\s*\/\s*10/i);
@@ -112,8 +112,8 @@ describe('BattleStats', () => {
   });
 
   it('displays player status effects', () => {
-    const poisonedStatus = { id: 'poisoned', stacks: 2, duration: 3 };
-    const weakenedStatus = { id: 'weakened', stacks: 1, duration: 2 };
+    const poisonedStatus = { id: 'poisoned' as const, stacks: 2, duration: 3 };
+    const weakenedStatus = { id: 'weakened' as const, stacks: 1, duration: 2 };
     useGameStore.setState({ ...useGameStore.getState(), playerStatuses: [poisonedStatus, weakenedStatus] });
     render(<BattleStats />);
     expect(screen.getByText(/Zehirli · 2 stack · 3 tur/i)).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe('BattleStats', () => {
   });
 
   it('displays enemy status effects', () => {
-    const vulnerableStatus = { id: 'vulnerable', stacks: 1, duration: 2 };
+    const vulnerableStatus = { id: 'vulnerable' as const, stacks: 1, duration: 2 };
     useGameStore.setState({ ...useGameStore.getState(), enemyStatuses: [vulnerableStatus] });
     render(<BattleStats />);
     expect(screen.getByText(/Savunmasız · 1 stack · 2 tur/i)).toBeInTheDocument();
