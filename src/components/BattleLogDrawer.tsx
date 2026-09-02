@@ -41,7 +41,7 @@ export const BattleLogDrawer: React.FC<BattleLogDrawerProps> = ({ messages, isOp
       </button>
       <aside id="battle-log-drawer" ref={drawerRef} className={`log-drawer${isOpen ? ' log-drawer--open' : ''}`} aria-label="Savaş günlüğü" aria-hidden={!isOpen} tabIndex={-1}>
         <div className="log-drawer__header">
-          <div><p className="eyebrow">Kayıt</p><h2>Savaş Günlüğü</h2></div>
+          <div><p className="eyebrow">Kayıt</p><h2>Kader Günlüğü</h2></div>
           <button type="button" className="log-drawer__close" onClick={onToggle} tabIndex={isOpen ? 0 : -1} aria-label="Savaş günlüğünü kapat">×</button>
         </div>
         <div className="log-drawer__body" aria-live="polite">

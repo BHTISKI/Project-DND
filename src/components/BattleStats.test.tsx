@@ -56,24 +56,23 @@ describe('BattleStats', () => {
     // player
     expect(screen.getByText(/Oyuncu/i)).toBeInTheDocument();
     expect(screen.getByText(/Ero/i)).toBeInTheDocument();
-    console.log("Debugging DOM:");
     screen.debug();
     // Use more specific selectors to avoid extra DOM elements
     const playerHealthRow = screen.getByText(/Oyuncu/i).closest('.fighter--player')!.querySelector('.health-row');
     expect(playerHealthRow).toHaveTextContent(/Can.*10.*10/i);
     const playerStats = screen.getByText(/Oyuncu/i).closest('.fighter--player')!.querySelector('.fighter-stats');
-    expect(playerStats).toHaveTextContent(/12\s*AC/i);
     expect(playerStats).toHaveTextContent(/\+2\s*GÜÇ/i);
     expect(playerStats).toHaveTextContent(/0\s*BLOK/i);
+    expect(playerStats).not.toHaveTextContent(/AC/i);
     // enemy
     expect(screen.getByText(/Goblin/i)).toBeInTheDocument();
     // Use more specific selectors to avoid extra DOM elements
     const enemyHealthRow = screen.getByText(/Goblin/i).closest('.fighter--enemy')!.querySelector('.health-row');
     expect(enemyHealthRow).toHaveTextContent(/Can.*10.*10/i);
     const enemyStats = screen.getByText(/Goblin/i).closest('.fighter--enemy')!.querySelector('.fighter-stats');
-    expect(enemyStats).toHaveTextContent(/11\s*AC/i);
     expect(enemyStats).toHaveTextContent(/\+1\s*GÜÇ/i);
     expect(enemyStats).toHaveTextContent(/0\s*BLOK/i);
+    expect(enemyStats).not.toHaveTextContent(/AC/i);
     // energy
     expect(screen.getByLabelText(/3 \/ 3 enerji/i)).toBeInTheDocument();
     // sr-only text
@@ -85,13 +84,11 @@ describe('BattleStats', () => {
     // set player HP to 3 (30% of 10)
     useGameStore.setState({ ...useGameStore.getState(), player: { ...basePlayer, mevcutCan: 3 } });
     await Promise.resolve();
-    console.log('player HP after setState:', useGameStore.getState().player.mevcutCan);
     screen.debug();
     const playerLabel = screen.getByText(/Oyuncu/i);
     const healthRow = playerLabel.parentElement!.querySelector('.health-row')!;
     const strong = healthRow.querySelector('strong')!;
     const text = strong.textContent.trim();
-    console.log('strong textContent:', JSON.stringify(text));
     expect(text).toMatch(/3\s*\/\s*10/i);
     const playerArticle = screen.getByText(/Oyuncu/i).closest('.fighter--player');
     expect(playerArticle).toHaveClass('fighter--low-health');

@@ -3,9 +3,19 @@
 import type { Card, CardEffect } from "../types/game";
 import type { IRNG } from './rng';
 
+function upgradeDie(die: string | undefined): string | undefined {
+  if (!die || !/^d\d+$/.test(die)) return die;
+  const sides = Number(die.slice(1));
+  return `d${sides + 2}`;
+}
+
 export function calculateUpgradeCost(rarity: Card["rarity"] | undefined, victoryCount: number): number {
   const baseCost = rarity === "legendary" ? 120 : rarity === "rare" ? 80 : rarity === "uncommon" ? 60 : 40;
   return baseCost + Math.floor(baseCost * victoryCount * 0.1);
+}
+
+export function getCardWeight(card: Pick<Card, 'rarity'>): number {
+  return card.rarity === 'legendary' ? 4 : card.rarity === 'rare' ? 3 : card.rarity === 'uncommon' ? 2 : 1;
 }
 
 export function enhanceEffect(effect: CardEffect): CardEffect {
@@ -22,42 +32,18 @@ export function enhanceEffect(effect: CardEffect): CardEffect {
           ...effect,
           amount: (effect.amount ?? 0) + 2,
         };
-      } else if (effect.die) {
-        const dieMap: Record<string, string> = {
-          "d4": "d6",
-          "d6": "d8",
-          "d8": "d10",
-          "d10": "d12",
-          "d12": "d20",
-        };
-        const newDie = dieMap[effect.die] || effect.die;
-        return {
-          ...effect,
-          die: newDie,
-        };
+      } else {
+        return { ...effect, die: upgradeDie(effect.die) };
       }
-      return effect;
     case "heal":
       if (effect.amount !== undefined) {
         return {
           ...effect,
           amount: (effect.amount ?? 0) + 2,
         };
-      } else if (effect.die) {
-        const dieMap: Record<string, string> = {
-          "d4": "d6",
-          "d6": "d8",
-          "d8": "d10",
-          "d10": "d12",
-          "d12": "d20",
-        };
-        const newDie = dieMap[effect.die] || effect.die;
-        return {
-          ...effect,
-          die: newDie,
-        };
+      } else {
+        return { ...effect, die: upgradeDie(effect.die) };
       }
-      return effect;
     case "status":
       return {
         ...effect,

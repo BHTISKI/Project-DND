@@ -9,38 +9,28 @@ import { cleanup } from '@testing-library/react';
 describe('BattleLogDrawer', () => {
   const mockClassify = vi.fn((message: string) => {
     const lowerMessage = message.toLocaleLowerCase('tr');
-    console.log('classify called with:', message);
-    console.log('lowerMessage:', lowerMessage);
     let result;
     if (lowerMessage.includes('kritik')) {
       result = { className: 'log-entry--critical', icon: '✦', label: 'Kritik' };
-      console.log('classified as critical');
     }
     else if (lowerMessage.includes('hasar') || lowerMessage.includes('saldırı') || lowerMessage.includes('vuruldu')) {
       result = { className: 'log-entry--attack', icon: '⚔', label: 'Saldırı' };
-      console.log('classified as attack');
     }
     else if (lowerMessage.includes('blok') || lowerMessage.includes('savun')) {
       result = { className: 'log-entry--defense', icon: '◈', label: 'Savunma' };
-      console.log('classified as defense');
     }
     else if (lowerMessage.includes('iyileş')) {
       result = { className: 'log-entry--heal', icon: '✚', label: 'Şifa' };
-      console.log('classified as heal');
     }
     else if (lowerMessage.includes('zafer') || lowerMessage.includes('ödül')) {
       result = { className: 'log-entry--victory', icon: '★', label: 'Zafer' };
-      console.log('classified as victory');
     }
     else if (lowerMessage.includes('bitti') || lowerMessage.includes('ölü')) {
       result = { className: 'log-entry--gameover', icon: '×', label: 'Run sonu' };
-      console.log('classified as gameover');
     }
     else {
       result = { className: '', icon: '·', label: 'Kayıt' };
-      console.log('classified as normal');
     }
-    console.log('classify result:', result);
     return result;
   });
 

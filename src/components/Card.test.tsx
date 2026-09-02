@@ -37,10 +37,10 @@ describe('Card', () => {
     // name
     expect(screen.getByText(/Test Kartı/i)).toBeInTheDocument();
     // mana: check the aria-label of the card-mana strong element
-    const manaStrong = screen.getByText(/2/i);
+    const manaStrong = screen.getByText(/2/i, { selector: '.card-mana' });
     expect(manaStrong).toHaveAttribute('aria-label', '2 mana');
     // effect text (attack d6 -> "Zırha karşı saldır")
-    expect(screen.getByText(/Zırha karşı saldır/i)).toBeInTheDocument();
+    expect(screen.getByText(/Zırha karşı saldır/i, { selector: '.card-effect' })).toBeInTheDocument();
     // upgraded indicator should not be present
     expect(screen.queryByText(/↑/i)).not.toBeInTheDocument();
     // card should be enabled (not disabled)
@@ -88,6 +88,19 @@ describe('Card', () => {
     const button = screen.getByLabelText(/Test Kartı için yeterli enerji yok/i);
     await userEvent.click(button);
     expect(onPlay).not.toHaveBeenCalled();
+  });
+
+  it('expands the selected card on double click', async () => {
+    const onPlay = vi.fn();
+    render(<CardComponent card={baseCard} onPlay={onPlay} isPlayable={true} />);
+
+    const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
+    await userEvent.dblClick(button);
+
+    expect(button).toHaveClass('zoomed');
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    expect(button).toHaveTextContent('ENERJİ');
+    expect(button).toHaveTextContent('HASAR');
   });
 
   it('renders correct card type glyph and color', () => {
@@ -149,7 +162,7 @@ describe('Card', () => {
     expect(screen.getByText(/5 can yenile/i, { selector: '.card-effect' })).toBeInTheDocument();
 
     rerender(<CardComponent card={blockDieCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/d8 blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
+    expect(screen.getByText(/4 blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
 
     rerender(<CardComponent card={blockAmountCard} onPlay={onPlay} isPlayable={true} />);
     expect(screen.getByText(/3 blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();

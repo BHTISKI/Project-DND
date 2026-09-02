@@ -75,7 +75,9 @@ describe('App', () => {
     expect(combatButtons.length).toBeGreaterThan(0);
     const combatNode = combatButtons[0];
     await userEvent.click(combatNode);
-    // after selecting node, gamePhase should change to combat
+    expect(screen.getByText(/Desteni kur/i)).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
+    await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
     expect(screen.getByText(/Hamleni seç/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Savaş alanı/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Oyuncu turunu bitir/i })).toBeInTheDocument();
@@ -89,6 +91,8 @@ describe('App', () => {
     expect(combatButtons.length).toBeGreaterThan(0);
     const combatNode = combatButtons[0];
     await userEvent.click(combatNode);
+    await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
+    await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
     // now in combat, we need to have a card that can kill the enemy
     // Set up state for guaranteed victory
     setupMockRandom([0.9]); // high roll for die if needed
@@ -181,11 +185,11 @@ describe('App', () => {
     });
     render(<App />);
     // should see gameOver screen
-    const gameOverHeading = screen.getByRole('heading', { level: 2, name: /Oyun Bitti/i });
+        const gameOverHeading = await screen.findByRole('heading', { level: 2, name: /Oyun Bitti/i });
     expect(gameOverHeading).toBeInTheDocument();
     expect(screen.getByText(/Yeni Oyun Başlat/i)).toBeInTheDocument();
     // click restart button
-    const restartButton = screen.getByRole('button', { name: /Yeni Oyun Başlat/i });
+        const restartButton = await screen.findByRole('button', { name: /Yeni Oyun Başlat/i });
     await userEvent.click(restartButton);
     // after restart, should go back to mapSelection with initialized true
     await screen.findByText(/Bölüm 1/i);
