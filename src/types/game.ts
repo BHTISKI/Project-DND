@@ -95,7 +95,7 @@ export interface EnemyIntent {
   action?: EnemyAction
 }
 
-export type EnemyArchetypeId = "goblin" | "guardian" | "mage"
+export type EnemyArchetypeId = "goblin" | "guardian" | "mage" | "assassin" | "knight"
 
 export type NodeType = "combat" | "elite" | "shop" | "event" | "rest" | "boss"
 

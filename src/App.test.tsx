@@ -78,6 +78,7 @@ describe('App', () => {
     expect(screen.getByText(/Desteni kur/i)).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
     await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
+    await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
     expect(screen.getByText(/Hamleni seç/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Savaş alanı/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Oyuncu turunu bitir/i })).toBeInTheDocument();
@@ -91,6 +92,7 @@ describe('App', () => {
     expect(combatButtons.length).toBeGreaterThan(0);
     const combatNode = combatButtons[0];
     await userEvent.click(combatNode);
+    await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
     await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
     await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
     // now in combat, we need to have a card that can kill the enemy

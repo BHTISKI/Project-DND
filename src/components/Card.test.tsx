@@ -145,6 +145,13 @@ describe('Card', () => {
     expect(screen.getByText(/Sıradan/i, { selector: '.card-rarity' })).toBeInTheDocument();
   });
 
+  it('applies the card theme visual class', () => {
+    const onPlay = vi.fn();
+    render(<CardComponent card={{ ...baseCard, theme: 'blood' }} onPlay={onPlay} isPlayable={true} />);
+
+    expect(screen.getByRole('button', { name: /Test Kartı oynanabilir/i })).toHaveClass('game-card--theme-blood');
+  });
+
   it('formats different effect types correctly', () => {
     const onPlay = vi.fn();
     // heal effect

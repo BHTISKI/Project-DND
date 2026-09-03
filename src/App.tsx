@@ -8,6 +8,7 @@ import { CombatControls } from './components/CombatControls';
 import { Hand } from './components/Hand';
 import { ShopPanel } from './components/ShopPanel';
 import { BattleLogDrawer } from './components/BattleLogDrawer';
+import { EnemyBoard } from './components/EnemyBoard';
 import { DeckBuild, MapSelection, PhaseChoices, RewardCards } from './components/AppSections';
 import { classifyLog } from './components/appView';
 import { useShallow } from 'zustand/react/shallow';
@@ -32,6 +33,7 @@ function App() {
     battleLogs,
     initializeGame,
     playCard,
+    round,
   } = useGameStore(useShallow((state) => ({
     restartGame: state.restartGame,
     gamePhase: state.gamePhase,
@@ -50,6 +52,7 @@ function App() {
     battleLogs: state.battleLogs,
     initializeGame: state.initializeGame,
     playCard: state.playCard,
+    round: state.round,
   })));
   const [isLogOpen, setIsLogOpen] = useState(false);
   // Drag and drop state
@@ -97,12 +100,12 @@ function App() {
   const isCombatBoardVisible = gamePhase !== 'mapSelection' && gamePhase !== 'deckBuild';
 
   return (
-    <div className={`app${impactPulse ? ' screen-shake' : ''}`}>
+    <div className={`app app--${gamePhase}${impactPulse ? ' screen-shake' : ''}`}>
       <div className="app-title">DND Oyunu</div>
-      <h2 className="title">{combatTitle}</h2>
+      <div className="title-row"><h2 className="title">{combatTitle}</h2>{gamePhase === 'combat' && <span className="round-badge">ROUND {round}</span>}</div>
       <div className="top-zone">
         <div className={`battle-participants${impactPulse ? ' battle-participants--impact' : ''}`}>
-          <BattleStats />
+          {gamePhase === 'combat' ? <div className="enemy-stack"><EnemyBoard /><BattleStats side="enemy" /></div> : <BattleStats />}
         </div>
         <div className="battle-log-drawer-container">
           <BattleLogDrawer
@@ -116,7 +119,7 @@ function App() {
       <div className="middle-zone">
         <div className="battlefield-content" aria-label={isCombatBoardVisible ? 'Savaş alanı' : undefined}>
           {floatingText && <span className="floating-combat-text" aria-live="polite">{floatingText}</span>}
-          {isCombatBoardVisible && (
+          {isCombatBoardVisible && gamePhase !== 'combat' && (
             <div className="battle-divider" aria-hidden="true"><span>VS</span></div>
           )}
           {gamePhase === 'mapSelection' && (
@@ -152,11 +155,10 @@ function App() {
       </div>
       <div className="bottom-zone player-hand-zone">
         {/* Only show hand in combat phase */}
-        {gamePhase === 'combat' && <Hand
-          draggedCardId={draggedCardId}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        />}
+        {gamePhase === 'combat' && <>
+          <div className="player-bar"><BattleStats side="player" /></div>
+          <Hand draggedCardId={draggedCardId} onDragStart={handleDragStart} onDragEnd={handleDragEnd} />
+        </>}
       </div>
     </div>
   );

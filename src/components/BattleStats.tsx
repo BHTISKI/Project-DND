@@ -65,7 +65,11 @@ function getIntentDetails(value: EnemyIntent | null | undefined) {
   };
 }
 
-export const BattleStats: React.FC = () => {
+interface BattleStatsProps {
+  side?: 'all' | 'player' | 'enemy';
+}
+
+export const BattleStats: React.FC<BattleStatsProps> = ({ side = 'all' }) => {
   const {
     player,
     enemy,
@@ -111,17 +115,17 @@ export const BattleStats: React.FC = () => {
 
   return (
     <>
-      <FighterPanel kind="player" name={player.isim} health={player.mevcutCan} maxHealth={player.maksimumCan} strength={player.gucCarpani} block={playerBlock} posture={player.denge ?? 0} maxPosture={player.maksimumDenge ?? 10} staggered={player.staggered ?? false} statuses={playerStatuses} statusLabel={statusLabel} energy={<div className="energy-display" aria-label={`${currentEnergy} / ${maxEnergy} enerji`}>
+      {(side === 'all' || side === 'player') && <FighterPanel kind="player" name={player.isim} health={player.mevcutCan} maxHealth={player.maksimumCan} strength={player.gucCarpani} block={playerBlock} posture={player.denge ?? 0} maxPosture={player.maksimumDenge ?? 10} staggered={player.staggered ?? false} statuses={playerStatuses} statusLabel={statusLabel} energy={<div className="energy-display" aria-label={`${currentEnergy} / ${maxEnergy} enerji`}>
           <small>ENERJİ</small>
           <span>{currentEnergy} <b>/ {maxEnergy}</b></span>
           <span className="energy-pips" aria-hidden="true">{Array.from({ length: maxEnergy }, (_, index) => <i key={index} className={index < currentEnergy ? 'energy-pip energy-pip--full' : 'energy-pip'} />)}</span>
-        </div>} />
+        </div>} />}
 
-      <FighterPanel kind="enemy" name={enemy.isim} health={enemy.mevcutCan} maxHealth={enemy.maksimumCan} strength={enemy.gucCarpani} block={enemyBlock} posture={enemy.denge ?? 0} maxPosture={enemy.maksimumDenge ?? 10} staggered={enemy.staggered ?? false} statuses={enemyStatuses} statusLabel={statusLabel} intent={<div key={`${intentType}-${displayedIntentValue}`} className={`enemy-intent enemy-intent--${intentClass}`} aria-live="polite">
+      {(side === 'all' || side === 'enemy') && <FighterPanel kind="enemy" name={enemy.isim} health={enemy.mevcutCan} maxHealth={enemy.maksimumCan} strength={enemy.gucCarpani} block={enemyBlock} posture={enemy.denge ?? 0} maxPosture={enemy.maksimumDenge ?? 10} staggered={enemy.staggered ?? false} statuses={enemyStatuses} statusLabel={statusLabel} intent={<div key={`${intentType}-${displayedIntentValue}`} className={`enemy-intent enemy-intent--${intentClass}`} aria-live="polite">
             <span className="enemy-intent__icon" aria-hidden="true">{telegraph?.icon ?? (intentIsAttack ? '⚔' : intentIsDefend ? '◈' : '✦')}</span>
             <span><b>Düşman niyeti</b><strong>{intentLabel}</strong></span>
             {displayedIntentValue && <small>{displayedIntentValue}</small>}
-          </div>} />
+          </div>} />}
       <span className="sr-only">Altın: {gold}. Deste: {deckSize}, El: {handSize}, Mezarlık: {discardSize}</span>
     </>
   );

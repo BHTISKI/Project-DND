@@ -26,7 +26,7 @@ interface DeckBuildProps {
 
 export function DeckBuild({ cards, picks, budget, onPick }: DeckBuildProps) {
   return <section className="deck-build" aria-label="Savaş öncesi deste kurma">
-    <div className="deck-build__header"><span className="eyebrow">Savaş öncesi hazırlık</span><h3>Desteni kur</h3><p>Üç karttan ikisini seç. Güçlü kartlar daha ağırdır; seçim hakkın sınırlı.</p><strong>{picks} / 2 seçim · {budget} yük kaldı</strong></div>
+    <div className="deck-build__header"><span className="eyebrow">Savaş öncesi hazırlık</span><h3>Desteni kur</h3><p>Beş seçenekten üç kart seç. Her seçim başlangıç desteni tamamlar.</p><strong>{picks} / 3 seçim · {budget} yük kaldı</strong></div>
     <div className="draft-grid">{cards.map((card) => { const weight = getCardWeight(card); return <article key={card.id} className={`draft-card draft-card--${card.tip}`}>
       <span className="draft-card__glyph" aria-hidden="true">{card.tip === 'saldırı' ? '⚔' : card.tip === 'savunma' ? '◈' : '✦'}</span>
       <span className="draft-card__type">{card.tip} · {card.rarity === 'rare' ? 'nadir' : card.rarity === 'uncommon' ? 'seçkin' : card.rarity === 'legendary' ? 'efsanevi' : 'sıradan'} · Yük {weight}</span>

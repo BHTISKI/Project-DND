@@ -54,6 +54,7 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     },
     // Game state
     isPlayerTurn: true,
+    round: 1,
     maxEnergy: 3,
     currentEnergy: 3,
     deck: [] as Card[],

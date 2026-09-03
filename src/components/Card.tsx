@@ -52,6 +52,7 @@ export const CardComponent: React.FC<CardProps> = ({
   const cardTypeLabel = card.tip === 'saldırı' ? 'Saldırı' : card.tip === 'savunma' ? 'Savunma' : 'Yetenek';
   const cardGlyph = card.tip === 'saldırı' ? '⚔' : card.tip === 'savunma' ? '◈' : '✦';
   const rarityLabel = card.rarity === 'rare' ? 'Nadir' : card.rarity === 'uncommon' ? 'Seçkin' : 'Sıradan';
+  const visualTheme = card.theme ?? card.tip;
   const effectText = card.effects?.map(formatEffect).join(' · ') || `${card.baseHasar} hasar`;
   const availabilityLabel = isPlayable ? `${card.isim} oynanabilir` : card.onDiscardPenalty ? `${card.isim} lanetli ve oynanamaz` : `${card.isim} için yeterli enerji yok`;
 
@@ -108,7 +109,7 @@ export const CardComponent: React.FC<CardProps> = ({
   return (
     <button
       type="button"
-      className={`card game-card game-card--${card.tip} game-card--${card.rarity ?? 'common'}${card.theme ? ` game-card--${card.theme}` : ''}${isPlayable ? '' : ' game-card--disabled'}${zoomed ? ' zoomed' : ''}${sending ? ' card--sending' : ''}${isDragging ? ' card--dragging' : ''}${denied ? ' denied-shake' : ''}`}
+      className={`card game-card game-card--${card.tip} game-card--${card.rarity ?? 'common'} game-card--theme-${visualTheme}${card.theme ? ` game-card--${card.theme}` : ''}${isPlayable ? '' : ' game-card--disabled'}${zoomed ? ' zoomed' : ''}${sending ? ' card--sending' : ''}${isDragging ? ' card--dragging' : ''}${denied ? ' denied-shake' : ''}`}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       aria-pressed={zoomed}

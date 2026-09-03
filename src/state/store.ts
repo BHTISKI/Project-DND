@@ -13,50 +13,12 @@ import { create } from 'zustand';
 import { generateRandomId } from '../utils/id';
 import { calculateUpgradeCost, enhanceEffect, getCardWeight, shuffle } from '../utils/game';
 import { loadMetaState, saveMetaState } from './persistence';
+import { enemyArchetypes, chooseArchetype, createEnemy, generateEnemyIntent } from '../engine/enemyArchetypes';
 
 export { calculateUpgradeCost, enhanceEffect, getCardWeight, shuffle } from '../utils/game';
 export { loadMetaState, saveMetaState } from './persistence';
 
-const enemyArchetypes: Record<EnemyArchetypeId, { name: string; hp: number; ac: number; power: number; attackDamage: number; block: number; special: 'heal' | 'damage' | 'weakened'; weights: [number, number, number] }> = {
-  goblin: { name: 'Goblin', hp: 7, ac: 11, power: 1, attackDamage: 4, block: 2, special: 'weakened', weights: [0.65, 0.2, 0.15] },
-  guardian: { name: 'Muhafız', hp: 11, ac: 13, power: 0, attackDamage: 5, block: 4, special: 'heal', weights: [0.3, 0.55, 0.15] },
-  mage: { name: 'Büyücü', hp: 8, ac: 10, power: 2, attackDamage: 3, block: 2, special: 'damage', weights: [0.35, 0.15, 0.5] },
-};
-
-export function chooseArchetype(victoryCount: number): EnemyArchetypeId {
-  return (['goblin', 'guardian', 'mage'] as EnemyArchetypeId[])[victoryCount % 3];
-}
-
-export function createEnemy(archetypeId: EnemyArchetypeId, tier: number): Character {
-  const archetype = enemyArchetypes[archetypeId];
-  const hp = archetype.hp + tier * (archetypeId === 'guardian' ? 3 : 2);
-  return { id: `enemy-${tier}`, isim: archetype.name, mevcutCan: hp, maksimumCan: hp, zirhSinifi: archetype.ac + Math.floor(tier / 2), gucCarpani: archetype.power + Math.floor(tier / 3), advantageCounter: 0, disadvantageCounter: 0, denge: 0, maksimumDenge: 10, staggered: false };
-}
-
-export function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, previous?: EnemyIntent | null): { intent: EnemyIntent; value: number; block: number } {
-  const archetype = enemyArchetypes[archetypeId];
-  const weights = [...archetype.weights];
-  if (previous?.type === 'attack') weights[0] *= 0.7;
-  if (previous?.type === 'defend') weights[1] *= 0.7;
-  const roll = Math.random() * (weights[0] + weights[1] + weights[2]);
-  if (roll < weights[0]) {
-    const value = archetype.attackDamage + enemy.gucCarpani;
-    return { intent: { type: 'attack', estimatedDamage: value, effectKey: 'archetype-attack' }, value, block: 0 };
-  }
-  if (roll < weights[0] + weights[1]) {
-    const block = archetype.block;
-    return { intent: { type: 'defend', estimatedBlock: block, effectKey: 'archetype-defend' }, value: block, block };
-  }
-  if (archetype.special === 'heal') {
-    const value = 4;
-    return { intent: { type: 'special', estimatedHeal: value, effectKey: 'heal' }, value, block: 0 };
-  }
-  if (archetype.special === 'damage') {
-    const value = 6 + enemy.gucCarpani;
-    return { intent: { type: 'special', estimatedDamage: value, effectKey: 'arcane-blast' }, value, block: 0 };
-  }
-  return { intent: { type: 'special', effectKey: 'weakened' }, value: 0, block: 0 };
-}
+export { chooseArchetype, createEnemy, generateEnemyIntent } from '../engine/enemyArchetypes';
 
 function behaviorIntent(enemy: Character, behavior: EnemyBehaviorId, player: Character, playerBlock: number, lastPlayerSignal: PlayerSignal, desperationStacks: number, canLie = false): { intent: EnemyIntent; decisionStacks: number } {
   const decision = decideEnemyBehavior({ behavior, enemy, player, playerBlock, playerStatuses: [], previousIntent: null, lastPlayerSignal, desperationStacks, canLie });
@@ -75,7 +37,7 @@ function behaviorIntent(enemy: Character, behavior: EnemyBehaviorId, player: Cha
 
 function behaviorForEncounter(nodeType: NodeType, archetype: EnemyArchetypeId): EnemyBehaviorId {
   if (nodeType === 'elite' || nodeType === 'boss') return 'paranoid';
-  if (archetype === 'goblin') return 'opportunist';
+  if (archetype === 'goblin' || archetype === 'assassin') return 'opportunist';
   if (archetype === 'mage') return 'paranoid';
   return 'standard';
 }
@@ -128,6 +90,7 @@ export interface GameState extends RunMapState {
   player: Character;
   enemy: Character;
   isPlayerTurn: boolean;
+  round: number;
   // Energy system
   maxEnergy: number;
   currentEnergy: number;
@@ -266,6 +229,7 @@ export const useGameStore = create<GameState>((set) => ({
   player: defaultPlayer,
   enemy: defaultEnemy,
   isPlayerTurn: true,
+  round: 1,
   maxEnergy: 3,
   currentEnergy: 3,
   deck: [],
@@ -285,7 +249,7 @@ export const useGameStore = create<GameState>((set) => ({
   rewardOptions: [],
   draftOptions: [],
   draftPicks: 0,
-  draftBudget: 5,
+  draftBudget: 6,
   starterDraftComplete: false,
   apocalypseTurns: null,
   enemyIntent: null,
@@ -326,6 +290,7 @@ export const useGameStore = create<GameState>((set) => ({
         gold: 50,
         currentEnergy: state.maxEnergy,
         initialized: true,
+        round: 1,
         gamePhase: 'mapSelection',
         currentNode: null,
         availableNodes: generateAvailableNodes(0),
@@ -333,7 +298,7 @@ export const useGameStore = create<GameState>((set) => ({
         nodeType: null,
         draftOptions: [],
         draftPicks: 0,
-        draftBudget: 5,
+        draftBudget: 6,
         starterDraftComplete: false,
         apocalypseTurns: null,
         battleLogs: ['Oyun başlatıldı. Destek hazırlanıyor...'],
@@ -651,6 +616,7 @@ export const useGameStore = create<GameState>((set) => ({
         comboCount: 0,
         nextDamageBonus: 0,
         apocalypseTurns,
+        round: state.round + 1,
       };
     });
   },
@@ -1187,15 +1153,20 @@ export const useGameStore = create<GameState>((set) => ({
         const openingDecision = behaviorIntent(encounterEnemy, enemyBehavior, state.player, 0, 'none', 0, enemyCanLie);
         const enemyBlock = openingDecision.intent.estimatedBlock ?? 0;
         const shuffledDeck = shuffle([...state.deck, ...state.hand, ...state.discardPile]);
-        return { ...encounterState, gamePhase: 'combat', currentNode: selectedNode.type, nodeType: selectedNode.type, enemy: encounterEnemy, enemyArchetype, enemyBehavior, enemyCanLie, lastPlayerSignal: 'none', desperationStacks: openingDecision.decisionStacks, enemyIntent: openingDecision.intent, enemyIntentValue: openingDecision.intent.estimatedDamage ?? 0, enemyBlock, currentEnergy: state.maxEnergy, playerBlock: 0, hand: shuffledDeck.slice(0, state.drawCount), deck: shuffledDeck.slice(state.drawCount), discardPile: [], playerStatuses: [], enemyStatuses: [], isPlayerTurn: true };
+        return { ...encounterState, gamePhase: 'combat', currentNode: selectedNode.type, nodeType: selectedNode.type, enemy: encounterEnemy, enemyArchetype, enemyBehavior, enemyCanLie, lastPlayerSignal: 'none', desperationStacks: openingDecision.decisionStacks, enemyIntent: openingDecision.intent, enemyIntentValue: openingDecision.intent.estimatedDamage ?? 0, enemyBlock, currentEnergy: state.maxEnergy, playerBlock: 0, hand: shuffledDeck.slice(0, state.drawCount), deck: shuffledDeck.slice(state.drawCount), discardPile: [], playerStatuses: [], enemyStatuses: [], isPlayerTurn: true, round: 1 };
       }
 
-      const draftPool = shuffle([...sampleCardDefs]);
+      const draftPool = shuffle(sampleCardDefs.filter((def) => !def.isCursed));
       const draftDefinitions = [
-        draftPool.find((def) => def.rarity === 'common') ?? draftPool[0],
-        draftPool.find((def) => def.rarity === 'uncommon') ?? draftPool[1],
-        draftPool.find((def) => def.rarity === 'rare' || def.rarity === 'legendary') ?? draftPool[2],
+        ...draftPool.filter((def) => def.rarity === 'common').slice(0, 3),
+        ...draftPool.filter((def) => def.rarity === 'uncommon').slice(0, 1),
+        ...draftPool.filter((def) => def.rarity === 'rare' || def.rarity === 'legendary').slice(0, 1),
       ];
+      while (draftDefinitions.length < 5) {
+        const fallback = draftPool.find((def) => !draftDefinitions.includes(def));
+        if (!fallback) break;
+        draftDefinitions.push(fallback);
+      }
       const draftOptions = draftDefinitions.map((def) => ({ ...def, id: generateRandomId(), agirlik: getCardWeight(def) }));
 
       return {
@@ -1252,7 +1223,7 @@ export const useGameStore = create<GameState>((set) => ({
       if (weight > state.draftBudget) return { ...state, battleLogs: [...state.battleLogs, `${picked.isim} fazla ağır. Kalan yük: ${state.draftBudget}.`] };
       const draftOptions = state.draftOptions.filter((card) => card.id !== cardId);
       const deck = [...state.deck, picked];
-      if (state.draftPicks + 1 < 2) {
+      if (state.draftPicks + 1 < 3) {
         return { ...state, deck, draftOptions, draftPicks: state.draftPicks + 1, draftBudget: state.draftBudget - weight, battleLogs: [...state.battleLogs, `${picked.isim} desteye eklendi. Yük: ${weight}.`] };
       }
 
@@ -1263,7 +1234,7 @@ export const useGameStore = create<GameState>((set) => ({
         ...state,
         gamePhase: 'combat',
         draftOptions: [],
-        draftPicks: 2,
+        draftPicks: 3,
         draftBudget: state.draftBudget - weight,
         starterDraftComplete: true,
         enemyIntent: openingDecision.intent,
@@ -1277,6 +1248,7 @@ export const useGameStore = create<GameState>((set) => ({
         playerStatuses: [],
         enemyStatuses: [],
         isPlayerTurn: true,
+        round: 1,
         lastPlayerSignal: 'none',
         battleLogs: [...state.battleLogs, `${picked.isim} desteye eklendi. Savaş başlıyor!`],
       };
