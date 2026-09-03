@@ -1,7 +1,7 @@
 // Bu dosya src/components/Hand.test.tsx için ilgili kodları içerir.
 // Hand bileşeni testleri: render ve kullanıcı etkileşimleri
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Hand } from './Hand';
 import { useGameStore } from '../state/store';
@@ -65,13 +65,13 @@ describe('Hand', () => {
 
   it('renders hand with correct number of cards', () => {
     render(<Hand />);
-    expect(screen.getAllByRole('button', { name: /Test Kartı/i })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /Test Kartı (oynanabilir|için)/i })).toHaveLength(1);
   });
 
   it('does not render anything when hand is empty', () => {
     useGameStore.setState({ ...useGameStore.getState(), hand: [] });
     render(<Hand />);
-    expect(screen.queryByRole('button', { name: /Test Kartı/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Test Kartı (oynanabilir|için)/i })).not.toBeInTheDocument();
   });
 
   it('only allows playing cards when in combat phase and player turn and has enough energy', async () => {
@@ -86,23 +86,23 @@ describe('Hand', () => {
   it('does not allow playing card when not in combat phase', async () => {
     useGameStore.setState({ ...useGameStore.getState(), gamePhase: 'mapSelection' });
     render(<Hand />);
-    const button = await screen.findByRole('button', { name: /Test Kartı/i });
+    const button = await screen.findByRole('button', { name: /Test Kartı (oynanabilir|için)/i });
     expect(button).toBeDisabled();
   });
 
   it('does not allow playing card when not player turn', async () => {
     useGameStore.setState({ ...useGameStore.getState(), isPlayerTurn: false });
     render(<Hand />);
-    const button = await screen.findByRole('button', { name: /Test Kartı/i });
+    const button = await screen.findByRole('button', { name: /Test Kartı (oynanabilir|için)/i });
     expect(button).toBeDisabled();
   });
 
   it('calls onCardPlay when card is clicked and playable', async () => {
     const playCardSpy = vi.spyOn(useGameStore.getState(), 'playCard');
     render(<Hand />);
-    const button = screen.getByRole('button', { name: /Test Kartı/i });
+    const button = screen.getByRole('button', { name: /Test Kartı (oynanabilir|için)/i });
     await userEvent.click(button);
-    expect(playCardSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(playCardSpy).toHaveBeenCalledTimes(1));
     expect(playCardSpy).toHaveBeenCalledWith('test-card');
   });
 

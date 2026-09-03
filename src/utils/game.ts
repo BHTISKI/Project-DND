@@ -76,3 +76,12 @@ export function shuffle<T>(array: T[], rng?: IRNG): T[] {
   }
   return arr;
 }
+
+// A no-op must never be sold as an upgrade.
+export function upgradedCard(card: Card): Card | null {
+  if (card.isUpgraded || card.onDiscardPenalty) return null;
+  const effects = card.effects?.map(enhanceEffect) ?? [];
+  if (JSON.stringify(effects) !== JSON.stringify(card.effects ?? [])) return { ...card, effects, isUpgraded: true };
+  if (card.manaBedeli > 0) return { ...card, manaBedeli: card.manaBedeli - 1, isUpgraded: true };
+  return null;
+}

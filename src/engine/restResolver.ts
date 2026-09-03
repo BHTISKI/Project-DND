@@ -1,82 +1,30 @@
-// Bu dosya src/engine/restResolver.ts için ilgili kodları içerir.
-// Rest resolver for handling rest nodes
-// Mantık: dinlenme düğümleri için HP iyileşmesi ve blok yönetimi
-// Mantık: dinlenme düğümleri için HP iyileşmesi ve blok yönetimi
 import type { GameState } from '../state/store';
-import { useGameStore } from '../state/store';
+import { allCards, removeOwnedCard } from './cardPiles';
+
+export function restChoices(state: Pick<GameState, 'gold' | 'player' | 'deck' | 'hand' | 'discardPile'>) {
+  return [
+    { title: 'Dinlen', detail: '25 altın karşılığında en fazla 4 can yenile.',
+      disabled: state.gold < 25 || state.player.mevcutCan >= state.player.maksimumCan },
+    { title: 'Desteyi arındır', detail: 'Bütün destenden rastgele bir kartı kalıcı olarak kaldır.',
+      disabled: allCards(state).length <= 1 },
+  ];
+}
 
 export class RestResolver {
-  static resolveRest(gameState: GameState, choiceIndex: number): GameState {
-    const state = { ...gameState }
-
-    switch (choiceIndex) {
-      case 0: // Heal option
-        const healCost = 25; // Same as shop heal
-        const healAmount = 4; // Same as shop heal
-
-        if (state.gold >= healCost) {
-          const newHp = Math.min(state.player.maksimumCan, state.player.mevcutCan + healAmount);
-          // Add player dialog for heal choice
-          setTimeout(() => {
-            useGameStore.getState().addPlayerDialog('Bir dinlenme yapmam lazım, canımı toparlayayım.');
-          }, 100);
-
-          return {
-            ...state,
-            gold: state.gold - healCost,
-            player: {
-              ...state.player,
-              mevcutCan: newHp
-            },
-            battleLogs: [
-              ...state.battleLogs,
-              `Oyuncu ${healAmount} can iyileştirdi! (${healCost} altın)`
-            ]
-          };
-        }
-        // Not enough gold
-        return {
-          ...state,
-          battleLogs: [
-            ...state.battleLogs,
-            `Yetersiz altın! Can iyileştirmek için ${healCost} altın gerekiyor.`
-          ]
-        };
-
-      case 1: // Remove card option
-        // For simplicity, we'll remove a random card from the deck
-        // In a full implementation, this would show a UI to select which card to remove
-        if (state.deck.length === 0) {
-          return {
-            ...state,
-            battleLogs: [
-              ...state.battleLogs,
-              "Desteğinizde kaldırılacak kart bulunmuyor."
-            ]
-          };
-        }
-
-        // Remove a random card from deck - FIXED: Use immutable operation
-        const removeIndex = Math.floor(Math.random() * state.deck.length);
-        const deckCopy = [...state.deck];
-        const [removedCard] = deckCopy.splice(removeIndex, 1);
-        // Add player dialog for card removal choice
-        setTimeout(() => {
-          useGameStore.getState().addPlayerDialog(`${removedCard.isim} kartı bu destede işime yaramıyor, çıkarıyorum.`);
-        }, 100);
-
-        return {
-          ...state,
-          deck: deckCopy,
-          battleLogs: [
-            ...state.battleLogs,
-            `${removedCard.isim} kartı desteğinizden kaldırıldı.`
-          ]
-        };
-
-      default:
-        // Default to heal if choice index is invalid
-        return RestResolver.resolveRest(state, 0);
+  static resolveRest(state: GameState, choice: number): GameState {
+    if (choice === 0) {
+      const amount = Math.min(4, state.player.maksimumCan - state.player.mevcutCan);
+      if (state.gold < 25 || amount <= 0) return state;
+      return { ...state, gold: state.gold - 25, player: { ...state.player, mevcutCan: state.player.mevcutCan + amount },
+        battleLogs: [...state.battleLogs, `${amount} can yenilendi. (25 altın)`] };
     }
+    if (choice === 1) {
+      const cards = allCards(state);
+      if (cards.length <= 1) return state;
+      const card = cards[Math.floor(Math.random() * cards.length)];
+      return { ...state, ...removeOwnedCard(state, card.id),
+        battleLogs: [...state.battleLogs, `${card.isim} destenden kalıcı olarak kaldırıldı.`] };
+    }
+    return state;
   }
 }

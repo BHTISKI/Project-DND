@@ -33,12 +33,13 @@ describe('Store helper functions', () => {
   let setItemMock: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    getItemMock = vi.spyOn(window.localStorage, 'getItem');
-    setItemMock = vi.spyOn(window.localStorage, 'setItem');
+    getItemMock = vi.spyOn(Storage.prototype, 'getItem');
+    setItemMock = vi.spyOn(Storage.prototype, 'setItem');
   });
 
   describe('shuffle', () => {
     it('should shuffle an array', () => {
+      setupMockRandom([0]);
       const array = [1, 2, 3, 4, 5];
       const shuffled = shuffle(array);
       expect(shuffled).toHaveLength(5);
@@ -149,8 +150,7 @@ describe('Store helper functions', () => {
         if (key === 'metaVictories') return '5'
         return null
       })
-console.log("getItemMock metaGold:", getItemMock("metaGold"));
-      const meta = loadMetaState(); console.log("meta:", meta);
+      const meta = loadMetaState();
       expect(meta).toEqual({ metaGold: 100, metaVictories: 5 })
       expect(getItemMock).toHaveBeenCalledWith('metaGold')
       expect(getItemMock).toHaveBeenCalledWith('metaVictories')
@@ -658,7 +658,7 @@ describe('Store actions', () => {
 
     it('should not play card if not enough energy', () => {
       useGameStore.getState().initializeGame();
-      const stateBefore = useGameStore.getState();
+
       useGameStore.setState({
         ...useGameStore.getState(),
         currentEnergy: 0,
@@ -666,6 +666,7 @@ describe('Store actions', () => {
         isPlayerTurn: true,
         hand: [{ id: 'card-1', isim: 'Test Strike', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', effects: [{ kind: 'attack', die: 'd4' }] }],
       });
+      const stateBefore = useGameStore.getState();
       console.log("Before battleLogs:", JSON.stringify(stateBefore.battleLogs));
       useGameStore.getState().playCard('card-1');
       const stateAfter = useGameStore.getState();
@@ -834,8 +835,8 @@ describe('Store actions', () => {
       console.log("After battleLogs:", JSON.stringify(stateAfter.battleLogs));
       expect(stateAfter.gamePhase).toBe('mapSelection');
       expect(stateAfter.enemy.mevcutCan).toBeGreaterThan(0);
-      expect(stateAfter.hand).toHaveLength(5); // drew new hand
-      expect(stateAfter.deck).toHaveLength(0); // all cards drawn
+      expect(stateAfter.hand).toHaveLength(0); // no draw until combat starts
+      expect(stateAfter.deck).toHaveLength(5); // cards preserved on map
       expect(stateAfter.discardPile).toHaveLength(0);
     });
   });
@@ -852,6 +853,7 @@ describe('Store actions', () => {
       expect(stateAfter.gamePhase).toBe('deckBuild');
       expect(stateAfter.enemy).toBeDefined();
       useGameStore.getState().chooseDraftCard(stateAfter.draftOptions[0].id);
+      useGameStore.getState().chooseDraftCard(useGameStore.getState().draftOptions[0].id);
       useGameStore.getState().chooseDraftCard(useGameStore.getState().draftOptions[0].id);
       expect(useGameStore.getState().gamePhase).toBe('combat');
       expect(stateAfter.hand).toHaveLength(5);

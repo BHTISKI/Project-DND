@@ -12,6 +12,8 @@ describe('App', () => {
   beforeEach(() => {
     // Reset store to initial state (not initialized)
     useGameStore.setState({
+      ...useGameStore.getInitialState(),
+      playerName: 'Ero',
       initialized: false,
       gamePhase: 'mapSelection', // will be overwritten by initializeGame, but we set a default
       player: { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 },
@@ -40,8 +42,8 @@ describe('App', () => {
       nextDamageBonus: 0,
       // runFloor, currentNode, availableNodes, nodeType, metaGold, metaVictories will be set by initializeGame
     });
-    setupMockRandom([0]); // deterministic mock for any random calls
     vi.restoreAllMocks();
+    setupMockRandom([0]);
   });
 
   afterEach(() => {
@@ -57,7 +59,7 @@ describe('App', () => {
     expect(screen.getByText(/Kader Günlüğü/i)).toBeInTheDocument();
     expect(screen.getByText(/DND Oyunu/i)).toBeInTheDocument();
     // "Destek hazırlanıyor..." log entry
-    expect(screen.getByText(/Destek hazırlanıyor.../i)).toBeInTheDocument();
+    expect(screen.getByText(/Deste hazırlandı/i, { selector: '.log-drawer__body *' })).toBeInTheDocument();
     // map selection buttons should be visible
     const combatButtons = screen.getAllByRole('button', { name: /Savaş/i });
     expect(combatButtons.length).toBeGreaterThan(0);
@@ -137,7 +139,7 @@ describe('App', () => {
     // Wait for combat title to update (store update)
     await screen.findByText(/Hamleni seç/i);
     // play the card
-    const cardButton = screen.getByRole('button', { name: /Test Kartı/i });
+    const cardButton = screen.getByRole('button', { name: /Test Kartı oynanabilir/i });
     await userEvent.click(cardButton);
     // after playing card, enemy should be dead, and we should go to mapSelection of next floor
     await screen.findByText(/Bölüm 2/i);
@@ -196,7 +198,7 @@ describe('App', () => {
     // after restart, should go back to mapSelection with initialized true
     await screen.findByText(/Bölüm 1/i);
     expect(screen.getByText(/Kader Günlüğü/i)).toBeInTheDocument();
-    expect(screen.getByText(/Destek hazırlanıyor.../i)).toBeInTheDocument();
+    expect(screen.getByText(/Deste hazırlandı/i, { selector: '.log-drawer__body *' })).toBeInTheDocument();
     // victory count should be reset to 0 (because initializeGame resets it)
     expect(useGameStore.getState().victoryCount).toBe(0);
     // gold should be reset to 50

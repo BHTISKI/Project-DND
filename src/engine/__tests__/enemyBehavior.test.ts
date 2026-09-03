@@ -16,8 +16,8 @@ describe('EnemyBehavior', () => {
   it('punishes a player who ends with zero block', () => {
     const decision = decideEnemyBehavior({ behavior: 'opportunist', enemy: enemy(10), player, playerBlock: 0, playerStatuses: [], previousIntent: null, lastPlayerSignal: 'no-block', desperationStacks: 0, canLie: false });
     expect(decision.action.kind).toBe('critical-execution');
-    expect(decision.action.damage).toBe(10);
-    expect(decision.telegraph.label).toBe('Kritik İnfaz');
+    expect(decision.action.damage).toBe(6);
+    expect(decision.telegraph.label).toBe('Fırsat saldırısı');
   });
 
   it('answers a parry signal with poison instead of an attack', () => {

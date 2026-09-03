@@ -17,8 +17,19 @@
   --bronze-light: #a77144;
   --stone-bg: #1e1e1e;      /* Ana arka plan - koyu taş */
   --font-title: 'MedievalSharp', cursive;
+  --font-body: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-fantasy: 'Uncial Antiqua', cursive;
   --card-height: clamp(170px, calc(100vh - 650px), 300px);
   --card-width: calc(var(--card-height) * 0.667);
+
+  /* Health bar improvements */
+  --health-bar-height: 10px;
+  --posture-bar-height: 6px;
+  --health-bar-border-radius: 12px;
+  --health-gradient-player: linear-gradient(90deg, #4ecdc4, #44a08d);
+  --health-gradient-enemy: linear-gradient(90deg, #ff6b6b, #ff9f43);
+  --health-gradient-player-low: linear-gradient(90deg, #ff6b6b, #ff9f43);
+  --health-gradient-enemy-low: linear-gradient(90deg, #ff9f43, #ff6b6b);
 }
 
 /* Sıfırlama */
@@ -127,15 +138,365 @@ html, body, #root {
 .health-row { justify-content: space-between; color: var(--muted); font-size: .82rem; }
 .health-row small { margin-left: 6px; opacity: .7; }
 .health-row strong { color: var(--ink); font-size: 1.35rem; line-height: 1; }
-.health-bar { height: 8px; margin: 9px 0 16px; overflow: hidden; border-radius: 99px; background: rgba(0,0,0,.5); }
-.health-bar span { display: block; height: 100%; border-radius: inherit; background: var(--teal); transition: width .3s ease; }
-.fighter--enemy .health-bar span { background: var(--red); }
-.posture-bar { height: 5px; margin: -9px 0 4px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.12); }
-.posture-bar span { display: block; height: 100%; border-radius: inherit; background: var(--gold); transition: width .35s ease, background .2s ease; }
-.fighter--enemy .posture-bar span { background: #d98b45; }
-.posture-bar--broken span { background: #f3e27a; box-shadow: 0 0 12px var(--gold); }
-.posture-label { display: block; color: var(--muted); font-size: .58rem; letter-spacing: .12em; text-align: right; }
-.posture-bar--broken + .posture-label { color: var(--gold); font-weight: 700; }
+/* Improved Health Bars */
+.health-bar {
+  height: var(--health-bar-height);
+  margin: 12px 0 16px;
+  overflow: hidden;
+  border-radius: var(--health-bar-border-radius);
+  background: rgba(0,0,0,.5);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3),
+              0 1px 2px rgba(0,0,0,0.2);
+  position: relative;
+}
+.health-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width .4s ease;
+  position: relative;
+  overflow: hidden;
+}
+.health-bar span::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.1) 0%,
+    rgba(255,255,255,0.15) 50%,
+    rgba(255,255,255,0.1) 100%
+  );
+  pointer-events: none;
+}
+.health-bar span::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.1) 2px,
+    rgba(255,255,255,0.1) 4px
+  );
+  pointer-events: none;
+  opacity: 0.3;
+}
+.fighter--enemy .health-bar span {
+  background: var(--health-gradient-enemy);
+}
+.fighter--enemy .health-bar span::before {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.1) 0%,
+    rgba(255,255,255,0.15) 50%,
+    rgba(255,255,255,0.1) 100%
+  );
+}
+
+/* Image avatar styles */
+.fighter-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; filter: brightness(1.1); transition: filter 0.2s ease; }
+.fighter-avatar-img:hover { filter: brightness(1.3); }
+
+/* Low health warning */
+.fighter--low-health .health-bar span {
+  animation: healthPulse 2s ease-in-out infinite;
+  background: var(--health-gradient-player-low) !important;
+}
+.fighter--enemy.fighter--low-health .health-bar span {
+  background: var(--health-gradient-enemy-low) !important;
+}
+
+@keyframes healthPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Health bar percentage text */
+.health-bar .health-percent {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-shadow: 0 0 3px rgba(0,0,0,0.5);
+  pointer-events: none;
+  letter-spacing: 0.5px;
+}
+
+/* Improved Posture Bars */
+.posture-bar {
+  height: var(--posture-bar-height);
+  margin: 8px 0 4px;
+  overflow: hidden;
+  border-radius: var(--health-bar-border-radius);
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+}
+.posture-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold);
+  transition: width .35s ease, background .2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.posture-bar span::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.2) 0%,
+    rgba(255,255,255,0.3) 50%,
+    rgba(255,255,255,0.2) 100%
+  );
+  pointer-events: none;
+}
+.fighter--enemy .posture-bar span {
+  background: #d98b45;
+}
+.fighter--enemy .posture-bar span::before {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.2) 0%,
+    rgba(255,255,255,0.25) 50%,
+    rgba(255,255,255,0.2) 100%
+  );
+}
+.posture-bar--broken span {
+  background: #f3e27a;
+  box-shadow: 0 0 8px var(--gold);
+  animation: posturePulse 1.5s ease-in-out infinite;
+}
+.posture-bar--broken + .posture-label {
+  color: var(--gold);
+  font-weight: 700;
+}
+.posture-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.6rem;
+  letter-spacing: .12em;
+  text-align: right;
+  margin-top: 2px;
+}
+
+/* Posture broken animation */
+@keyframes posturePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Enhanced Fighter Panel */
+.fighter {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(48,42,37,0.95), rgba(25,25,25,0.95));
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.06);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.fighter:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+}
+.fighter--player {
+  border-color: rgba(108,180,238,0.7);
+  background: linear-gradient(145deg, rgba(48,42,37,0.9), rgba(30,30,30,0.95));
+}
+.fighter--enemy {
+  border-color: rgba(185,75,66,0.8);
+  background: linear-gradient(145deg, rgba(40,30,30,0.9), rgba(30,25,25,0.95));
+}
+.fighter-avatar {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  font: 700 2.4rem/1 var(--font-title);
+  background: radial-gradient(circle at 35% 25%, rgba(255,255,255,0.25), transparent 35%), #27313a;
+  box-shadow: inset 0 0 0 8px rgba(0,0,0,0.2), 0 10px 22px rgba(0,0,0,0.35);
+  position: relative;
+}
+.fighter-avatar::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.fighter:hover .fighter-avatar::before {
+  opacity: 1;
+}
+.fighter-avatar--player {
+  color: var(--teal);
+}
+.fighter-avatar--enemy {
+  color: var(--red);
+  background-color: #3a2727;
+}
+.fighter-copy { min-width: 0; }
+.fighter-kicker {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.fighter h2 {
+  margin: 4px 0 12px;
+  font: 1.5rem/1.1 var(--font-title);
+  color: var(--ink);
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 4px rgba(0,0,0,0.3);
+}
+.health-row, .fighter-stats {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+}
+.health-row {
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.health-row small {
+  margin-left: 6px;
+  opacity: 0.8;
+}
+.health-row strong {
+  color: var(--ink);
+  font-size: 1.5rem;
+  line-height: 1;
+  font-weight: 700;
+}
+.posture-bar {
+  height: 6px;
+  margin: -8px 0 4px;
+}
+.fighter-stats {
+  gap: 24px;
+}
+.fighter-stats .stat-item {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.fighter-stats b {
+  color: var(--ink);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.fighter-stats small, .energy-display small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+}
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.status-chip {
+  padding: 5px 10px;
+  border: 1px solid rgba(108,180,238,0.35);
+  border-radius: 6px;
+  color: var(--teal);
+  font-size: 0.78rem;
+}
+.status-chip--enemy {
+  border-color: rgba(185,75,66,0.4);
+  color: #e58a82;
+}
+.energy-display {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-width: 80px;
+  color: var(--gold);
+}
+.energy-display > span {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.energy-display > span b {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.energy-pips {
+  display: flex;
+  gap: 5px;
+}
+.energy-pip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+}
+.energy-pip--full {
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(212,175,55,0.65);
+}
+.enemy-intent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px;
+  border-left: 4px solid var(--red);
+  background: rgba(185,75,66,0.1);
+  border-radius: 0 8px 8px 0;
+}
+.enemy-intent__icon {
+  font-size: 1.4rem;
+}
+.enemy-intent span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+.enemy-intent b, .enemy-intent small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.enemy-intent strong {
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+.enemy-intent--special .enemy-intent__icon {
+  color: var(--gold);
+}
 .fighter-stats { gap: 22px; }
 .fighter-stats .stat-item { display: grid; gap: 3px; margin: 0; }
 .fighter-stats b { color: var(--ink); font-size: 1.25rem; line-height: 1; }
@@ -677,9 +1038,69 @@ html, body, #root {
   border-radius: 8px;
   padding: 12px;
   max-height: 200px; /* Yükseklik sabitlendi */
-  overflow-y: auto; /* İçinde kaydırma */
+  overflow: auto; /* Her iki yönde kaydırma - yatay ve dikey */
   font-size: 0.9rem;
+  position: relative;
 }
+
+/* Draggable indicators */
+.BattleLogDrawer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.BattleLogDrawer::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Scrollbar styling */
+.BattleLogDrawer::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.BattleLogDrawer::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+.BattleLogDrawer::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 4px;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.BattleLogDrawer::-webkit-scrollbar-thumb:hover {
+  background: var(--bronze-light);
+}
+
+/* Log entry styles remain the same */
+.log-entry {
+  margin: 6px 0;
+  padding: 4px 8px;
+  border-left: 3px solid;
+}
+.log-entry--critical { border-color: var(--gold); background: rgba(212,175,55,0.1); }
+.log-entry--attack   { border-color: var(--teal); background: rgba(108,180,238,0.1); }
+.log-entry--defense  { border-color: #8e44ad; background: rgba(142,68,173,0.1); }
+.log-entry--heal     { border-color: #27ae60; background: rgba(39,174,96,0.1); }
+.log-entry--victory  { border-color: var(--gold); background: rgba(212,175,55,0.2); }
+.log-entry--gameover { border-color: var(--red); background: rgba(185,75,66,0.2); }
 .log-entry {
   margin: 6px 0;
   padding: 4px 8px;
@@ -709,6 +1130,191 @@ html, body, #root {
 @keyframes fadeInUp {
   from { opacity:0; transform: translateY(-10px); }
   to { opacity:1; transform: translateY(0); }
+}
+
+/* Name Input Styles */
+.name-input-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: var(--stone-bg);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+.name-input-box {
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 32px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add decorative parchment texture */
+.name-input-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 20px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 20px);
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.name-input-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.name-input-header h2 {
+  color: var(--gold);
+  font-family: var(--font-title);
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+  text-shadow: 0 0 8px rgba(212,175,55,0.5);
+  letter-spacing: 1px;
+}
+
+.name-input-flavor {
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.5;
+  max-width: 300px;
+  margin: 0 auto;
+  font-size: 0.95rem;
+}
+
+.name-input-error {
+  background: rgba(185,75,66,0.2);
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 20px;
+  color: var(--red);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.name-input-field {
+  margin-bottom: 20px;
+}
+
+.input-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.name-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(30,30,30,0.6);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.name-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.2);
+  background: rgba(40,40,40,0.7);
+}
+
+.name-input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.name-input.submitting {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(212,175,55,0); }
+  100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); }
+}
+
+.name-input-button {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--gold), var(--bronze-light));
+  color: #201b12;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.name-input-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  background: linear-gradient(135deg, var(--bronze-light), var(--gold));
+}
+
+.name-input-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.name-input-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.name-input-footer {
+  margin-top: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 16px;
+}
+
+.name-input-tip {
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .name-input-box {
+    padding: 24px;
+    margin: 0 16px;
+  }
+
+  .name-input-header h2 {
+    font-size: 1.6rem;
+  }
+
+  .name-input-flavor {
+    font-size: 0.9rem;
+  }
 }
 
 /* Yeni harita seçim stilleri */
@@ -845,6 +1451,75 @@ html, body, #root {
   35% { filter: brightness(2.5) saturate(.2); transform: scale(.9); }
   100% { filter: brightness(1); transform: scale(1); }
 }
+.card-name {
+  font-weight: 600;
+  margin: 0;
+  font-size: 1.05rem;
+  text-align: center;
+  font-family: var(--font-fantasy);
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 3px rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Responsive adjustments for card names */
+@media (max-width: 760px) {
+  .card-name {
+    font-size: 0.95rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Desktop combat must fit its content instead of clipping game information. */
+@media (min-width: 761px) {
+  html, body, #root { height: auto; min-height: 100%; overflow: auto; }
+  .app { min-height: 100vh; height: auto; overflow: visible; }
+  .app--combat { --card-width: 218px; --card-height: 360px; gap: 12px; padding-bottom: 24px; }
+  .app--combat .fighter { height: auto; min-height: 174px; overflow: visible; }
+  .app--combat .fighter-avatar { width: 56px; }
+  .app--combat .fighter { grid-template-columns: 56px minmax(0, 1fr) auto; }
+  .app--combat .status-row { max-height: none; overflow: visible; flex-wrap: wrap; }
+  .app--combat .fighter--enemy .fighter-copy { padding-right: 220px; }
+  .app--combat .enemy-intent { width: 210px; }
+  .app--combat .middle-zone { flex: 0 0 auto; overflow: visible; }
+  .app--combat .bottom-zone { position: static; transform: none; width: 100%; gap: 8px; }
+  .app--combat .hand-grid { justify-content: flex-start; align-items: stretch; gap: 12px; overflow-x: auto; min-height: 408px; padding: 14px 4px 32px; }
+  .app--combat .card-hit-area, .app--combat .hand-grid:hover .card-hit-area { margin-left: 0; flex: 0 0 var(--card-width); }
+  .app--combat .card-hit-area .card { margin: 0; }
+  .app--combat .card-art { min-height: 46px; }
+  .app--combat .card-effect { font-size: .82rem; line-height: 1.45; overflow: auto; }
+  .app--combat .card-content { gap: 7px; }
+  .app--combat .card-topline { flex-wrap: wrap; }
+  .app--combat .card:hover, .app--combat .card.zoomed { transform: translateY(-4px); }
+  .shop-card-stack { flex-wrap: wrap; gap: 14px; }
+  .shop-card-stack .shop-offer, .shop-card-stack:hover .shop-offer { flex: 1 1 210px; margin-left: 0; }
+  .shop-offer p { margin-bottom: 12px; }
+  .draft-grid { align-items: stretch; }
+  .draft-card { display: flex; flex-direction: column; gap: 10px; }
+  .draft-card button { margin-top: auto; }
+  .battle-log-drawer-container { top: -38px; left: 0; right: auto; }
+  .button--turn { color: var(--ink); }
+  .fighter--player .health-bar > span { background: var(--health-gradient-player); }
+  .app--combat .hand-grid:not(.hand-grid--inactive) .card:not(.game-card--disabled):not(.card--dragging) {
+    animation: cardDrawIn .55s ease-out var(--draw-delay, 0ms) both, playablePulse 2.8s ease-in-out infinite;
+  }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.card-inspect { position: absolute; bottom: -25px; right: 0; left: 0; border: 1px solid var(--line); border-radius: 4px; background: #292622; color: var(--ink); cursor: pointer; padding: 3px; }
+.card-inspection-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 24px; background: #000b; }
+.card-inspection { position: relative; width: min(560px, 100%); max-height: 85vh; overflow: auto; padding: 30px; border: 1px solid var(--gold); border-radius: 12px; background: #292622; color: var(--ink); box-shadow: 0 20px 80px #000a; }
+.card-inspection h2 { margin: 18px 0; color: var(--gold); }
+.card-inspection p { margin: 16px 0; line-height: 1.7; }
+.card-inspection button { padding: 8px 16px; background: #3c3630; color: var(--ink); border: 1px solid var(--gold); border-radius: 5px; cursor: pointer; }
+.card-inspection button:first-child { float: right; }
+.card-inspection button:disabled, .phase-choice:disabled, .map-node-button:disabled { opacity: .45; cursor: not-allowed; }
+.dialog-layer { position: fixed; right: 24px; top: 70px; z-index: 50; display: grid; gap: 8px; max-width: 300px; pointer-events: none; }
+.dialog-bubble { padding: 10px 14px; border: 1px solid var(--teal); border-radius: 8px; background: #202020ed; color: var(--ink); font-size: .86rem; }
+.dialog-bubble--enemy { border-color: var(--red); }
+button:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }

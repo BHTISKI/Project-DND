@@ -13,6 +13,8 @@ import { cleanup } from '@testing-library/react';
 // Reset store to initial state before each test
 beforeEach(() => {
   useGameStore.setState({
+    ...useGameStore.getInitialState(),
+    playerName: 'Ero',
     player: { id: 'player-1', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 },
     enemy: { id: 'enemy-0', isim: 'Goblin', mevcutCan: 7, maksimumCan: 7, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 },
     isPlayerTurn: true,
@@ -216,6 +218,7 @@ describe('test utilities and critical game flows', () => {
       render(<App />);
       expect(screen.getByRole('heading', { name: 'Yolunu seç' })).toBeInTheDocument();
       await userEvent.click(screen.getAllByRole('button', { name: /Savaş/ })[0]);
+      for (let i = 0; i < 3; i++) await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/ })[0]);
       expect(screen.getByRole('heading', { name: 'Hamleni seç' })).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'Oyuncu turunu bitir' }));
       expect(useGameStore.getState().battleLogs.length).toBeGreaterThan(1);

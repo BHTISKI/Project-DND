@@ -4,12 +4,16 @@
 import React from 'react';
 import { useGameStore } from '../state/store';
 import { sampleCardDefs } from '../types/game';
-import { calculateUpgradeCost } from '../utils/game';
+import { calculateUpgradeCost, upgradedCard } from '../utils/game';
+import { describeCard } from '../utils/cardText';
 import { useShallow } from 'zustand/react/shallow';
 
 export const ShopPanel: React.FC = () => {
-  const { deck, gold, victoryCount, buyCard, healPlayer, removeCardFromDeck, upgradeCard, startNextCombat, purifyDeck } = useGameStore(useShallow((state) => ({
-    deck: state.deck,
+  const { drawPile, hand, discardPile, player, gold, victoryCount, buyCard, healPlayer, removeCardFromDeck, upgradeCard, startNextCombat, purifyDeck } = useGameStore(useShallow((state) => ({
+    drawPile: state.deck,
+    hand: state.hand,
+    discardPile: state.discardPile,
+    player: state.player,
     gold: state.gold,
     victoryCount: state.victoryCount,
     buyCard: state.buyCard,
@@ -20,8 +24,10 @@ export const ShopPanel: React.FC = () => {
     purifyDeck: state.purifyDeck,
   })));
 
-  const canHeal = gold >= 25;
-  const canRemove = gold >= 50;
+  const deck = [...drawPile, ...hand, ...discardPile];
+  const canHeal = gold >= 25 && player.mevcutCan < player.maksimumCan;
+  const canRemove = gold >= 50 && deck.length > 1;
+  const curseCount = deck.filter(card => card.isCursed).length;
   const shopCards = sampleCardDefs.slice(7, 11).map((card, index) => ({ ...card, id: `shop-${index + 7}` }));
 
   return (
@@ -39,7 +45,7 @@ export const ShopPanel: React.FC = () => {
             return <article key={card.id} className={`shop-offer shop-offer--${card.tip}`}>
               <div className="shop-offer__top"><span>{card.tip}</span><strong>{cost} <small>ALTIN</small></strong></div>
               <span className="shop-offer__glyph" aria-hidden="true">{card.tip === 'saldırı' ? '⚔' : card.tip === 'savunma' ? '◈' : '✦'}</span>
-              <h4>{card.isim}</h4><p>{card.effects?.[0]?.kind === 'attack' || card.effects?.[0]?.kind === 'damage' ? `${card.baseHasar || 4} hasar verir` : card.effects?.[0]?.kind === 'block' ? `${card.effects?.[0]?.amount ?? 4} blok kazan` : 'Özel yetenek'}</p>
+              <h4>{card.isim}</h4><p>{card.manaBedeli} enerji · {describeCard(card)}</p>
               <button onClick={() => buyCard(card.id)} className="button button--shop-buy" disabled={!canBuy} type="button" aria-label={`${card.isim} kartını al`}>Satın al</button>
             </article>;
           })}
@@ -47,7 +53,7 @@ export const ShopPanel: React.FC = () => {
       </section>
       <div className="shop-action shop-action--heal">
         <span className="shop-action__icon" aria-hidden="true">✚</span>
-        <div><p className="eyebrow">Şifa</p><h3>Canını toparla</h3><p>+4 can · 25 altın</p></div>
+        <div><p className="eyebrow">Şifa</p><h3>Canını toparla</h3><p>{player.mevcutCan >= player.maksimumCan ? 'Canın zaten tam' : `+${Math.min(4, player.maksimumCan - player.mevcutCan)} can · 25 altın`}</p></div>
         <button onClick={healPlayer} className="button button--shop" disabled={!canHeal} type="button">Satın al</button>
       </div>
       <div className="shop-action shop-action--upgrade">
@@ -57,12 +63,13 @@ export const ShopPanel: React.FC = () => {
           {deck.map((card) => {
             const cost = calculateUpgradeCost(card.rarity, victoryCount);
             const isUpgraded = card.isUpgraded === true;
-            const canUpgrade = !isUpgraded && gold >= cost;
+            const preview = upgradedCard(card);
+            const canUpgrade = preview !== null && gold >= cost;
             return <div key={card.id} className="shop-card-row shop-card-row--upgrade">
               <span className={`shop-card-mark shop-card-mark--${card.tip}`} aria-hidden="true" />
-              <h4>{card.isim}</h4><span>{isUpgraded ? 'Güçlendirildi' : `${cost} altın`}</span>
+              <h4 title={preview ? `${preview.manaBedeli} enerji · ${describeCard(preview)}` : describeCard(card)}>{card.isim}</h4><span>{isUpgraded ? 'Güçlendirildi' : !preview ? 'Yükseltme yok' : `${cost} altın`}</span>
               <button onClick={() => upgradeCard(card.id)} className="button button--upgrade" disabled={!canUpgrade} type="button" aria-label={isUpgraded ? `${card.isim} zaten yükseltilmiş` : `${card.isim} kartını ${cost} altınla yükselt`}>
-                {isUpgraded ? 'Yükseltildi' : canUpgrade ? 'Yükselt' : 'Yetersiz altın'}
+                {isUpgraded ? 'Yükseltildi' : !preview ? 'Yükseltme yok' : canUpgrade ? 'Yükselt' : 'Yetersiz altın'}
               </button>
             </div>;
           })}
@@ -95,7 +102,7 @@ export const ShopPanel: React.FC = () => {
       <div className="shop-action shop-action--purify">
         <span className="shop-action__icon" aria-hidden="true">✦</span>
         <div><p className="eyebrow">Ritüel</p><h3>Desteyi arındır</h3><p>Lanetli kartları tamamen yok eder · 120 altın</p></div>
-        <button onClick={purifyDeck} className="button button--shop" disabled={gold < 120} type="button">Arındır</button>
+        <button onClick={purifyDeck} className="button button--shop" disabled={gold < 120 || curseCount === 0 || curseCount === deck.length} type="button">Arındır</button>
       </div>
       <div className="shop-footer">
         <p>Hazır olduğunda bir sonraki savaşa geç.</p>

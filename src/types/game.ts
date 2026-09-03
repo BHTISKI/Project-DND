@@ -29,16 +29,8 @@ export type CardEffect =
   | { kind: "draw"; amount: number }
   | { kind: "energy"; amount: number }
   | { kind: "skip"; target?: "enemy" }
-  | { kind: "exhaust" }
-  | { kind: "retain"; amount?: number }
-  | { kind: "ethereal" }
-  | { kind: "duplicate" }
-  | { kind: "xAttack"; multiplier: number }
-  | { kind: "blockIfAttacked"; amount: number }
-  | { kind: "strength"; amount: number }
-  | { kind: "weak"; amount: number }
-  | { kind: "trash"; amount?: number; target?: "player" | "enemy" }
-  | { kind: "trade"; trashAmount?: number; drawAmount?: number; target?: "player" | "enemy" }
+  | { kind: "trash"; amount?: number; target?: "player" }
+  | { kind: "trade"; trashAmount?: number; drawAmount?: number; target?: "player" }
   | { kind: "advantage"; value?: number; target?: "player" | "enemy" }
   | { kind: "disadvantage"; value?: number; target?: "player" | "enemy" }
 
@@ -69,13 +61,14 @@ export type EnemyIntentType = "attack" | "defend" | "special"
 
 export type EnemyBehaviorId = "opportunist" | "paranoid" | "desperation" | "standard"
 export type PlayerSignal = "none" | "no-block" | "parry" | "retaliation"
-export type EnemyActionKind = "attack" | "critical-execution" | "poison" | "heal" | "pass" | "desperation-attack"
+export type EnemyActionKind = "attack" | "critical-execution" | "poison" | "heal" | "pass" | "desperation-attack" | "defend" | "weaken" | "magic"
 
 export interface EnemyAction {
   kind: EnemyActionKind
   damage?: number
   ignoresBlock?: boolean
   poison?: number
+  block?: number
 }
 
 export interface EnemyTelegraph {
@@ -90,6 +83,8 @@ export interface EnemyIntent {
   estimatedDamage?: number
   estimatedBlock?: number
   estimatedHeal?: number
+  criticalDamage?: number
+  warning?: string
   effectKey?: string
   telegraph?: EnemyTelegraph
   action?: EnemyAction

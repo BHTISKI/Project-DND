@@ -113,15 +113,15 @@ describe('BattleStats', () => {
     const weakenedStatus = { id: 'weakened' as const, stacks: 1, duration: 2 };
     useGameStore.setState({ ...useGameStore.getState(), playerStatuses: [poisonedStatus, weakenedStatus] });
     render(<BattleStats />);
-    expect(screen.getByText(/Zehirli · 2 stack · 3 tur/i)).toBeInTheDocument();
-    expect(screen.getByText(/Güçsüz · 1 stack · 2 tur/i)).toBeInTheDocument();
+    expect(screen.getByText(/Zehirli · 2 yük · 3 tur/i)).toBeInTheDocument();
+    expect(screen.getByText(/Güçsüz · 1 yük · 2 tur/i)).toBeInTheDocument();
   });
 
   it('displays enemy status effects', () => {
     const vulnerableStatus = { id: 'vulnerable' as const, stacks: 1, duration: 2 };
     useGameStore.setState({ ...useGameStore.getState(), enemyStatuses: [vulnerableStatus] });
     render(<BattleStats />);
-    expect(screen.getByText(/Savunmasız · 1 stack · 2 tur/i)).toBeInTheDocument();
+    expect(screen.getByText(/Savunmasız · 1 yük · 2 tur/i)).toBeInTheDocument();
   });
 
   it('displays enemy intent attack', () => {
@@ -129,7 +129,7 @@ describe('BattleStats', () => {
     useGameStore.setState({ ...useGameStore.getState(), enemyIntent: attackIntent, enemyIntentValue: 5 });
     render(<BattleStats />);
     expect(screen.getByText(/Saldıracak/i)).toBeInTheDocument();
-    expect(screen.getByText(/5 tahmini hasar/i)).toBeInTheDocument();
+    expect(screen.getByText(/5 hasar/i)).toBeInTheDocument();
     expect(screen.getByText(/⚔/i)).toBeInTheDocument(); // attack icon
   });
 

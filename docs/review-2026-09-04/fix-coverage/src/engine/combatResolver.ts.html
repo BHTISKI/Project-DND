@@ -1,0 +1,940 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/engine/combatResolver.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/engine</a> combatResolver.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">90.82% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>188/207</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">80.51% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>219/272</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>20/20</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">93.71% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>164/175</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line high'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a>
+<a name='L225'></a><a href='#L225'>225</a>
+<a name='L226'></a><a href='#L226'>226</a>
+<a name='L227'></a><a href='#L227'>227</a>
+<a name='L228'></a><a href='#L228'>228</a>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a>
+<a name='L245'></a><a href='#L245'>245</a>
+<a name='L246'></a><a href='#L246'>246</a>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a>
+<a name='L272'></a><a href='#L272'>272</a>
+<a name='L273'></a><a href='#L273'>273</a>
+<a name='L274'></a><a href='#L274'>274</a>
+<a name='L275'></a><a href='#L275'>275</a>
+<a name='L276'></a><a href='#L276'>276</a>
+<a name='L277'></a><a href='#L277'>277</a>
+<a name='L278'></a><a href='#L278'>278</a>
+<a name='L279'></a><a href='#L279'>279</a>
+<a name='L280'></a><a href='#L280'>280</a>
+<a name='L281'></a><a href='#L281'>281</a>
+<a name='L282'></a><a href='#L282'>282</a>
+<a name='L283'></a><a href='#L283'>283</a>
+<a name='L284'></a><a href='#L284'>284</a>
+<a name='L285'></a><a href='#L285'>285</a>
+<a name='L286'></a><a href='#L286'>286</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">132x</span>
+<span class="cline-any cline-yes">132x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">57x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">61x</span>
+<span class="cline-any cline-yes">61x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">43x</span>
+<span class="cline-any cline-yes">47x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43x</span>
+<span class="cline-any cline-yes">43x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43x</span>
+<span class="cline-any cline-yes">63x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">42x</span>
+<span class="cline-any cline-yes">43x</span>
+<span class="cline-any cline-yes">43x</span>
+<span class="cline-any cline-yes">43x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { GameState } from '../state/store';
+import type { Card, Character, EnemyIntent, StatusEffect } from '../types/game';
+import { sampleCardDefs } from '../types/game';
+import { decideEnemyBehavior, actionFromIntent } from './enemyBehavior';
+import { generateEnemyIntent } from './enemyArchetypes';
+import { resolveAttackRoll, calculateDamage } from './combatMath';
+import { rollDie } from './dice';
+import { ageStatuses, addStatus, poisonTick, statusValue, statusNames } from './statuses';
+import { drawFromPiles } from './cardPiles';
+import { generateRandomId } from '../utils/id';
+export { chooseArchetype, createEnemy, generateEnemyIntent } from './enemyArchetypes';
+&nbsp;
+export function rollAttackDie(advantage: number, disadvantage: number, rng: () =&gt; number = Math.random): number {
+  const first = rollDie(20, rng);
+  if (advantage &gt; disadvantage) return Math.max(first, rollDie(20, rng));
+  if (disadvantage &gt; advantage) return Math.min(first, rollDie(20, rng));
+  return first;
+}
+export function rollEffectDie(die: string | undefined, fallback = 4): number {
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (!die || die === 'sabit') <span class="cstat-no" title="statement not covered" >return fallback;</span>
+  return rollDie(Number(die.replace(/^d/, '')));
+}
+export function damageWithStatuses(amount: number, attacker: StatusEffect[], target: StatusEffect[]): number {
+  const modified = Math.max(0, amount + statusValue(attacker, 'empowered') - statusValue(attacker, 'weakened'));
+  return Math.ceil(modified * (1 + 0.25 * statusValue(target, 'vulnerable')));
+}
+export function hitCharacter(character: Character, block: number, amount: number, ignoresBlock = false) {
+  const absorbed = ignoresBlock ? <span class="branch-0 cbranch-no" title="branch not covered" >0 : M</span>ath.min(block, Math.max(0, amount));
+  const damage = Math.max(0, amount - absorbed) * (character.staggered ? 2 : 1);
+  const denge = character.staggered ? 0 : Math.min(character.maksimumDenge ?? 10, (character.denge ?? 0) + damage);
+  return {
+    character: { ...character, mevcutCan: Math.max(0, character.mevcutCan - damage), denge,
+      staggered: character.staggered ? false : denge &gt;= (character.maksimumDenge ?? 10) },
+    block: block - absorbed, damage, absorbed,
+  };
+}
+function cursedCard(name: string): Card {
+  const def = sampleCardDefs.find(c =&gt; c.isim === name);
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (!def) <span class="cstat-no" title="statement not covered" >throw new Error('Bilinmeyen lanet: ' + name);</span>
+  return { ...def, id: generateRandomId() };
+}
+export function drawCardsState(state: GameState, count: number): GameState {
+  const { drawn, ...piles } = drawFromPiles(state, count);
+  let next = { ...state, ...piles };
+  const broken = drawn.filter(c =&gt; c.isim === 'Kırık Ruh').length;
+  if (broken) {
+    const maximum = Math.max(1, state.player.maksimumCan - broken * 2);
+    const energy = Math.max(1, state.maxEnergy - broken * 2);
+    next = { ...next, maxEnergy: energy, currentEnergy: Math.min(next.currentEnergy, energy),
+      player: { ...next.player, maksimumCan: maximum, mevcutCan: Math.min(next.player.mevcutCan, maximum) },
+      battleLogs: [...next.battleLogs, `Kırık Ruh: maksimum can ve enerji ${broken * 2} azaldı.`] };
+  }
+  return next;
+}
+&nbsp;
+export function refreshEnemyIntent(state: GameState): GameState {
+  if (state.gamePhase !== 'combat' || state.enemy.mevcutCan &lt;= 0) return state;
+  const block = state.playerBlock + statusValue(state.playerStatuses, 'fortified');
+  const signal = state.lastPlayerSignal === 'parry' || state.lastPlayerSignal === 'retaliation'
+    ? state.lastPlayerSignal : block === 0 ? 'no-block' : 'none';
+  const decision = decideEnemyBehavior({
+    behavior: state.enemyBehavior, enemy: state.enemy, player: state.player, playerBlock: block,
+    playerStatuses: state.playerStatuses, previousIntent: state.baseEnemyIntent,
+    lastPlayerSignal: signal, desperationStacks: state.desperationStacks, canLie: state.enemyCanLie,
+    random: () =&gt; state.enemyBehaviorRoll,
+  });
+  const action = decision.action;
+  const attacks = ['attack', 'critical-execution', 'desperation-attack'].includes(action.kind);
+  const incoming = damageWithStatuses(action.damage ?? 0, state.enemyStatuses, state.playerStatuses);
+  const multiplier = state.player.staggered ? <span class="branch-0 cbranch-no" title="branch not covered" >2 : 1</span>;
+  const suppressed = state.enemySkipNextTurn || state.enemy.staggered;
+  const hidden = decision.telegraph.deceptive;
+  const intent: EnemyIntent = {
+    type: suppressed ? 'defend' : decision.telegraph.type,
+    telegraph: suppressed ? { type: 'defend', label: 'Bu tur hamle yapamaz', icon: '◈' } : decision.telegraph,
+    action: suppressed ? { kind: 'pass' } : action,
+    effectKey: suppressed ? 'pass' : action.kind,
+    estimatedDamage: !hidden &amp;&amp; !suppressed &amp;&amp; (attacks || action.kind === 'magic') ? incoming * multiplier : undefined,
+    criticalDamage: !hidden &amp;&amp; !suppressed &amp;&amp; attacks
+      ? damageWithStatuses((action.damage ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) * 2</span>, state.enemyStatuses, state.playerStatuses) * multiplier : undefined,
+    estimatedBlock: !suppressed &amp;&amp; action.kind === 'defend' ? (action.block ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) + s</span>tatusValue(state.enemyStatuses, 'fortified') : undefined,
+    estimatedHeal: !hidden &amp;&amp; !suppressed &amp;&amp; action.kind === 'heal'
+      ? Math.min(action.damage ?? <span class="branch-1 cbranch-no" title="branch not covered" >4, s</span>tate.enemy.maksimumCan - state.enemy.mevcutCan) : undefined,
+    warning: hidden ? 'Niyet belirsiz: farklı bir hamle yapabilir.'
+      : action.ignoresBlock ? <span class="branch-0 cbranch-no" title="branch not covered" >'Blok bu saldırıyı durdurmaz.'</span>
+      : state.enemyBehavior === 'opportunist' ? 'Blok kazanırsan fırsat saldırısı iptal olur.'
+      : state.enemyBehavior === 'paranoid' ? 'Savuşturma kartları bu niyeti değiştirebilir.' : undefined,
+  };
+  return { ...state, enemyIntent: intent, enemyIntentValue: intent.estimatedDamage ?? intent.estimatedBlock ?? intent.estimatedHeal ?? 0 };
+}
+export function prepareEnemyIntent(state: GameState): GameState {
+  const baseEnemyIntent = generateEnemyIntent(state.enemy, state.enemyArchetype, state.baseEnemyIntent).intent;
+  return refreshEnemyIntent({ ...state, baseEnemyIntent, enemyBehaviorRoll: Math.random() });
+}
+&nbsp;
+export function resolveCard(state: GameState, cardId: string): GameState {
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (state.gamePhase !== 'combat' || !state.isPlayerTurn || state.player.mevcutCan &lt;= 0 || state.enemy.mevcutCan &lt;= 0) <span class="cstat-no" title="statement not covered" >return state;</span>
+  const card = state.hand.find(c =&gt; c.id === cardId);
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (!card) <span class="cstat-no" title="statement not covered" >return state;</span>
+  const reason = state.player.staggered ? <span class="branch-0 cbranch-no" title="branch not covered" >'Oyuncu kırıldı; önce turunu bitir.'</span>
+    : card.onDiscardPenalty ? 'Bu lanetli kart oynanamaz.'
+    : state.currentEnergy &lt; card.manaBedeli ? `Yetersiz enerji! ${card.isim} için ${card.manaBedeli} enerji gerekiyor.` : null;
+  if (reason) return { ...state, battleLogs: [...state.battleLogs, reason] };
+  const logs: string[] = [];
+  let s: GameState = { ...state, hand: state.hand.filter(c =&gt; c.id !== cardId),
+    currentEnergy: state.currentEnergy - card.manaBedeli,
+    lastPlayerSignal: card.tags?.includes('parry') ? 'parry' : card.tags?.includes('retaliation') ? <span class="branch-0 cbranch-no" title="branch not covered" >'retaliation' : s</span>tate.lastPlayerSignal };
+  const tag = card.tags?.[0] ?? card.tip;
+  const previous = state.comboChain.at(-1);
+  if (previous &amp;&amp; previous !== tag) s = { ...s, comboCount: s.comboCount + 1,
+    nextDamageBonus: s.nextDamageBonus + (tag === 'attack' ? previous === 'skill' ? <span class="branch-0 cbranch-no" title="branch not covered" >2 : p</span>revious === 'defend' ? <span class="branch-0 cbranch-no" title="branch not covered" >1 : 0</span> : <span class="branch-1 cbranch-no" title="branch not covered" >0) }</span>;
+  s.comboChain = [tag];
+  if (card.apocalypse) {
+    s.apocalypseTurns = card.apocalypse.delay;
+    s.apocalypseHpPercent = card.apocalypse.hpPercent;
+    logs.push(`Kıyamet sayacı: ${card.apocalypse.delay} tur; bedel mevcut canın %${card.apocalypse.hpPercent}'i.`);
+  }
+  for (const effect of card.effects ?? <span class="branch-1 cbranch-no" title="branch not covered" >[]) {</span>
+    switch (effect.kind) {
+      case 'attack':
+      case 'damage': {
+        let critical = false;
+        if (effect.kind === 'attack' &amp;&amp; !effect.ignoresArmor) {
+          const roll = rollAttackDie(s.player.advantageCounter, s.player.disadvantageCounter);
+          const result = resolveAttackRoll(roll, s.player.gucCarpani, s.enemy.zirhSinifi);
+          s.player = { ...s.player, advantageCounter: Math.max(0, s.player.advantageCounter - 1),
+            disadvantageCounter: Math.max(0, s.player.disadvantageCounter - 1) };
+          logs.push(`D20: ${roll} + ${s.player.gucCarpani}, zırh ${s.enemy.zirhSinifi}. ${result.hit ? result.critical ? 'KRİTİK!' : 'İsabet.' : 'Iskaladı.'}`);
+          if (!result.hit) { s.nextDamageBonus = 0; break; }
+          critical = result.critical;
+        }
+        const die = effect.die ?? (card.zarTuru === 'sabit' ? undefined : <span class="branch-1 cbranch-no" title="branch not covered" >card.zarTuru);</span>
+        const base = calculateDamage(die &amp;&amp; die !== 'sabit' ? rollEffectDie(die) : 0, card.baseHasar, s.player.gucCarpani,
+          (effect.damageBonus ?? 0) + s.nextDamageBonus);
+        const damage = damageWithStatuses(base * (critical ? 2 : 1), s.playerStatuses, s.enemyStatuses);
+        const hit = hitCharacter(s.enemy, s.enemyBlock, damage);
+        s = { ...s, enemy: hit.character, enemyBlock: hit.block, nextDamageBonus: 0 };
+        logs.push(`${card.isim} ${hit.damage} hasar verdi. (Blok: ${hit.absorbed})`);
+        break;
+      }
+      case 'block': {
+        const amount = effect.amount ?? rollEffectDie(effect.die);
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (effect.target === 'enemy') <span class="cstat-no" title="statement not covered" >s.enemyBlock += amount; else s</span>.playerBlock += amount;
+        logs.push(`${effect.target === 'enemy' ? <span class="branch-0 cbranch-no" title="branch not covered" >'Düşman' : '</span>Oyuncu'} ${amount} blok kazandı.`);
+        break;
+      }
+      case 'heal': {
+        const target = effect.target ?? 'player';
+        const amount = Math.min(effect.amount ?? rollEffectDie(effect.die), s[target].maksimumCan - s[target].mevcutCan);
+        s[target] = { ...s[target], mevcutCan: s[target].mevcutCan + amount };
+        logs.push(`${effect.target === 'enemy' ? <span class="branch-0 cbranch-no" title="branch not covered" >'Düşman' : '</span>Oyuncu'} ${amount} can iyileştirdi.`);
+        break;
+      }
+      case 'status': {
+        const key = effect.target === 'enemy' ? 'enemyStatuses' : 'playerStatuses';
+        s[key] = addStatus(s[key], { id: effect.status, duration: effect.duration, stacks: effect.stacks ?? 1, value: effect.value ?? 1 });
+        logs.push(`${statusNames[effect.status]}: ${effect.duration} tur.`);
+        break;
+      }
+      case 'draw': {
+        const before = s.hand.length;
+        s = drawCardsState(s, effect.amount);
+        logs.push(`${s.hand.length - before} kart çekildi.`);
+        break;
+      }
+      case 'energy':
+        // maxEnergy is the turn refill, not a cap on card-generated energy.
+        s.currentEnergy += effect.amount;
+        logs.push(`${effect.amount} enerji kazanıldı.`);
+        break;
+      case 'skip':
+        s.enemySkipNextTurn = true;
+        logs.push('Düşman sonraki turunu atlayacak.');
+        break;
+      case 'advantage':
+      case 'disadvantage': {
+        const target = effect.target ?? <span class="branch-1 cbranch-no" title="branch not covered" >'player';</span>
+        const key = effect.kind === 'advantage' ? 'advantageCounter' : 'disadvantageCounter';
+        s[target] = { ...s[target], [key]: s[target][key] + (effect.value ?? <span class="branch-1 cbranch-no" title="branch not covered" >1) }</span>;
+        logs.push(`${effect.value ?? <span class="branch-1 cbranch-no" title="branch not covered" >1} </span>${effect.kind === 'advantage' ? 'avantaj' : 'dezavantaj'} uygulandı.`);
+        break;
+      }
+<span class="branch-10 cbranch-no" title="branch not covered" >      case 'trash':</span>
+      case 'trade': {
+        const amount = effect.kind === 'trash' ? <span class="branch-0 cbranch-no" title="branch not covered" >effect.amount ?? 1 : e</span>ffect.trashAmount ?? <span class="branch-1 cbranch-no" title="branch not covered" >1;</span>
+        const removed = s.deck.slice(0, amount);
+        s.deck = s.deck.slice(removed.length);
+        logs.push(`${removed.length} kart kalıcı olarak kaldırıldı${removed.length ? ': ' + removed.map(c =&gt; c.isim).join(', ') : <span class="branch-1 cbranch-no" title="branch not covered" >''}.</span>`);
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (effect.kind === 'trade') {
+          const before = s.hand.length;
+          s = drawCardsState(s, effect.drawAmount ?? <span class="branch-1 cbranch-no" title="branch not covered" >1)</span>;
+          logs.push(`${s.hand.length - before} kart çekildi.`);
+        }
+        break;
+      }
+<span class="branch-12 cbranch-no" title="branch not covered" >      default: {</span>
+        const unsupported: never = <span class="cstat-no" title="statement not covered" >effect;</span>
+<span class="cstat-no" title="statement not covered" >        throw new Error('Desteklenmeyen kart etkisi: ' + JSON.stringify(unsupported));</span>
+      }
+    }
+  }
+  if (card.onPlayPenalty) {
+    s.deck = [...s.deck, cursedCard('Kırık Ruh')];
+    logs.push('Şeytanın Kılıcı yerini Kırık Ruh kartına bıraktı.');
+  } else s.discardPile = [...s.discardPile, card];
+  s.battleLogs = [...s.battleLogs, logs.join(' ')];
+  s.playerDialog = [{ text: `${card.isim} kartını oynadım!`, timestamp: Date.now() }];
+  return refreshEnemyIntent(s);
+}
+&nbsp;
+export function resolveTurn(state: GameState, finish: (s: GameState) =&gt; GameState): GameState {
+  if (state.gamePhase !== 'combat' || !state.isPlayerTurn) return state;
+  let s = finish(state);
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (s.gamePhase !== 'combat') <span class="cstat-no" title="statement not covered" >return s;</span>
+  // A player's stagger consumes this turn, then clears even if the enemy passes.
+  const wasStaggered = s.player.staggered;
+  s = { ...s, playerBlock: s.playerBlock + statusValue(s.playerStatuses, 'fortified') };
+  const cursed = s.hand.filter(c =&gt; c.onDiscardPenalty);
+  const penalty = cursed.reduce((sum, c) =&gt; sum + (c.onDiscardPenalty?.amount ?? <span class="branch-1 cbranch-no" title="branch not covered" >0), 0</span>);
+  s = { ...s, hand: [], deck: [...s.deck, ...cursed.filter(c =&gt; c.onDiscardPenalty?.returnToDeck)],
+    discardPile: [...s.discardPile, ...state.hand.filter(c =&gt; !c.onDiscardPenalty?.returnToDeck)],
+    player: { ...s.player, mevcutCan: Math.max(0, s.player.mevcutCan - penalty) } };
+  if (penalty) s.battleLogs = [...s.battleLogs, `Lanet bedeli: ${penalty} saf hasar.`];
+  s = finish(s);
+  if (s.gamePhase !== 'combat') return s;
+  if (s.apocalypseTurns !== null) {
+    s.apocalypseTurns -= 1;
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (s.apocalypseTurns &lt;= 0) {
+      const damage = Math.ceil(s.player.mevcutCan * s.apocalypseHpPercent / 100);
+      s = { ...s, player: { ...s.player, mevcutCan: Math.max(0, s.player.mevcutCan - damage) },
+        apocalypseTurns: null, battleLogs: [...s.battleLogs, `Kıyamet Mührü: ${damage} saf hasar.`] };
+    }
+  }
+  s = finish(s);
+  if (s.gamePhase !== 'combat') return s;
+  const enemyTick = poisonTick(s.enemyStatuses, 'enemy', s.enemy);
+  s = finish({ ...s, enemy: enemyTick.character, battleLogs: [...s.battleLogs, ...enemyTick.log] });
+  if (s.gamePhase !== 'combat') return s;
+  // Resolve the published action; never roll another decision here.
+  const action = actionFromIntent(state.enemyIntent);
+  const skipped = state.enemySkipNextTurn || state.enemy.staggered;
+  s.enemyBlock = 0;
+  if (skipped) {
+    s = { ...s, enemy: { ...s.enemy, denge: state.enemy.staggered ? 0 : <span class="branch-1 cbranch-no" title="branch not covered" >s.enemy.denge, s</span>taggered: false },
+      battleLogs: [...s.battleLogs, 'Düşman turunu atladı.'] };
+  } else if (['attack', 'critical-execution', 'desperation-attack', 'magic'].includes(action.kind)) {
+    const magical = action.kind === 'magic';
+    const attack = magical ? <span class="branch-0 cbranch-no" title="branch not covered" >{ hit: true, critical: false, roll: 0 }</span>
+      : resolveAttackRoll(rollAttackDie(s.enemy.advantageCounter, s.enemy.disadvantageCounter), s.enemy.gucCarpani, s.player.zirhSinifi);
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (!magical) s.enemy = { ...s.enemy, advantageCounter: Math.max(0, s.enemy.advantageCounter - 1),
+      disadvantageCounter: Math.max(0, s.enemy.disadvantageCounter - 1) };
+    if (attack.hit) {
+      const amount = damageWithStatuses((action.damage ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) * (a</span>ttack.critical ? <span class="branch-0 cbranch-no" title="branch not covered" >2 : 1</span>), s.enemyStatuses, s.playerStatuses);
+      const hit = hitCharacter(s.player, s.playerBlock, amount, action.ignoresBlock);
+      s = { ...s, player: hit.character, playerBlock: hit.block,
+        battleLogs: [...s.battleLogs, `${attack.critical ? <span class="branch-0 cbranch-no" title="branch not covered" >'KRİTİK! ' : '</span>'}Başarılı saldırı: Düşman ${hit.damage} hasar vurdu. (Blok: ${hit.absorbed})`] };
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (hit.damage &gt; 0 &amp;&amp; Math.random() &lt; 0.3) <span class="cstat-no" title="statement not covered" >s.deck = [...s.deck, cursedCard('Körlük Mührü')];</span>
+    } else s.battleLogs = [...s.battleLogs, `Düşman ıskaladı. (D20: ${attack.roll})`];
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (action.kind === 'desperation-attack') <span class="cstat-no" title="statement not covered" >s.desperationStacks += 1;</span>
+  } else <span class="missing-if-branch" title="if path not taken" >I</span>if (action.kind === 'defend') {
+<span class="cstat-no" title="statement not covered" >    s.enemyBlock = (action.block ?? 0) + statusValue(s.enemyStatuses, 'fortified');</span>
+<span class="cstat-no" title="statement not covered" >    s.battleLogs = [...s.battleLogs, `Düşman ${s.enemyBlock} blok kazandı.`];</span>
+  } else <span class="missing-if-branch" title="if path not taken" >I</span>if (action.kind === 'heal') {
+    const amount = <span class="cstat-no" title="statement not covered" >Math.min(action.damage ?? 4, s.enemy.maksimumCan - s.enemy.mevcutCan);</span>
+<span class="cstat-no" title="statement not covered" >    s.enemy = { ...s.enemy, mevcutCan: s.enemy.mevcutCan + amount };</span>
+<span class="cstat-no" title="statement not covered" >    s.battleLogs = [...s.battleLogs, `Düşman ${amount} can iyileştirdi.`];</span>
+  } else <span class="missing-if-branch" title="if path not taken" >I</span>if (action.kind === 'poison') {
+<span class="cstat-no" title="statement not covered" >    s.playerStatuses = addStatus(s.playerStatuses, { id: 'poisoned', duration: 3, stacks: action.poison ?? 2, value: 1 });</span>
+<span class="cstat-no" title="statement not covered" >    s.battleLogs = [...s.battleLogs, 'Düşman zehir uyguladı.'];</span>
+  } else <span class="missing-if-branch" title="if path not taken" >I</span>if (action.kind === 'weaken') {
+<span class="cstat-no" title="statement not covered" >    s.playerStatuses = addStatus(s.playerStatuses, { id: 'weakened', duration: 2, stacks: 1, value: 1 });</span>
+<span class="cstat-no" title="statement not covered" >    s.battleLogs = [...s.battleLogs, 'Düşman oyuncuyu güçsüzleştirdi.'];</span>
+  } else s.battleLogs = [...s.battleLogs, 'Düşman geri çekildi.'];
+  s = finish(s);
+  if (s.gamePhase !== 'combat') return s;
+  const playerTick = poisonTick(s.playerStatuses, 'player', s.player);
+  s = finish({ ...s, player: playerTick.character, battleLogs: [...s.battleLogs, ...playerTick.log] });
+  if (s.gamePhase !== 'combat') return s;
+  s = { ...s, player: wasStaggered ? { ...s.player, denge: 0, staggered: false } : s.player,
+    playerStatuses: ageStatuses(s.playerStatuses), enemyStatuses: ageStatuses(s.enemyStatuses),
+    playerBlock: 0, enemySkipNextTurn: false, currentEnergy: s.maxEnergy, isPlayerTurn: true,
+    comboChain: [], comboCount: 0, nextDamageBonus: 0, lastPlayerSignal: 'none', round: s.round + 1,
+    enemyDialog: [{ text: skipped ? 'Bu tur hamle yapamıyorum.' : 'Hamlemi yaptım. Sıra sende.', timestamp: Date.now() }] };
+  return prepareEnemyIntent(drawCardsState(s, s.drawCount));
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-09-03T21:53:00.121Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

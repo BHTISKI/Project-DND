@@ -18,6 +18,7 @@ export const Hand: React.FC<HandProps> = ({ draggedCardId = null, onDragStart = 
   const isPlayerTurn = useGameStore((s) => s.isPlayerTurn);
   const gamePhase = useGameStore((s) => s.gamePhase);
   const currentEnergy = useGameStore((s) => s.currentEnergy);
+  const canAct = useGameStore(s => !s.player.staggered && s.player.mevcutCan > 0 && s.enemy.mevcutCan > 0);
   const [deniedCardId, setDeniedCardId] = useState<string | null>(null);
 
   const handlePlay = (card: Card) => {
@@ -37,11 +38,13 @@ export const Hand: React.FC<HandProps> = ({ draggedCardId = null, onDragStart = 
       ) : (
         <>
           {hand.map((card, index) => {
-            const playable = isPlayerTurn && gamePhase === 'combat' && !card.onDiscardPenalty && currentEnergy >= card.manaBedeli;
+            const reason = !isPlayerTurn || gamePhase !== 'combat' ? 'Oyuncu turu değil' : !canAct ? 'Bu tur hamle yapılamaz' : card.onDiscardPenalty ? 'Lanetli kart oynanamaz' : currentEnergy < card.manaBedeli ? 'Yeterli enerji yok' : '';
+            const playable = reason === '';
             return (
               <div
                 key={card.id}
                 className="card-hit-area"
+                role="listitem"
                 onPointerDown={() => {
                   if (!playable) {
                     setDeniedCardId(card.id);
@@ -54,9 +57,10 @@ export const Hand: React.FC<HandProps> = ({ draggedCardId = null, onDragStart = 
                   style={{ '--draw-delay': `${index * 65}ms` } as React.CSSProperties}
                   onPlay={handlePlay}
                   isPlayable={playable}
+                  unavailableReason={reason}
                   isDragging={draggedCardId === card.id}
                   denied={deniedCardId === card.id}
-                  isDraggable={true}
+                  isDraggable={playable}
                   onDragStart={onDragStart}
                   onDragEnd={onDragEnd}
                 />

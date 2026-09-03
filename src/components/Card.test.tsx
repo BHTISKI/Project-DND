@@ -1,7 +1,7 @@
 // Bu dosya src/components/Card.test.tsx için ilgili kodları içerir.
 // Card bileşeni testleri: render ve kullanıcı etkileşimleri
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { cleanup } from '@testing-library/react';
 import { CardComponent } from './Card';
@@ -77,7 +77,7 @@ describe('Card', () => {
 
     const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
     await userEvent.click(button);
-    expect(onPlay).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onPlay).toHaveBeenCalledTimes(1));
     expect(onPlay).toHaveBeenCalledWith(baseCard);
   });
 
@@ -97,6 +97,8 @@ describe('Card', () => {
     const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
     await userEvent.dblClick(button);
 
+    expect(onPlay).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(button).toHaveClass('zoomed');
     expect(button).toHaveAttribute('aria-pressed', 'true');
     expect(button).toHaveTextContent('ENERJİ');
@@ -140,9 +142,7 @@ describe('Card', () => {
     expect(screen.getByText(/Sıradan/i, { selector: '.card-rarity' })).toBeInTheDocument();
 
     rerender(<CardComponent card={legendaryCard} onPlay={onPlay} isPlayable={true} />);
-    // legendary rarity label? In the component, rarityLabel is only defined for rare/unbalanced, else 'Sıradan'
-    // So legendary will show as 'Sıradan'
-    expect(screen.getByText(/Sıradan/i, { selector: '.card-rarity' })).toBeInTheDocument();
+    expect(screen.getByText(/Efsanevi/i, { selector: '.card-rarity' })).toBeInTheDocument();
   });
 
   it('applies the card theme visual class', () => {
@@ -161,7 +161,7 @@ describe('Card', () => {
     const drawCard = { ...baseCard, effects: [{ kind: 'draw' as const, amount: 2 }] };
     const energyCard = { ...baseCard, effects: [{ kind: 'energy' as const, amount: 1 }] };
     const statusCard = { ...baseCard, effects: [{ kind: 'status' as const, status: 'vulnerable' as const, duration: 1 }] };
-    const trashCard = { ...baseCard, effects: [{ kind: 'trash' as const, amount: 2, target: 'enemy' as const }] };
+    const trashCard = { ...baseCard, effects: [{ kind: 'trash' as const, amount: 2, target: 'player' as const }] };
     const tradeCard = { ...baseCard, effects: [{ kind: 'trade' as const, trashAmount: 1, drawAmount: 2, target: 'player' as const }] };
     const skipCard = { ...baseCard, effects: [{ kind: 'skip' as const, target: 'enemy' as const }] };
 
@@ -169,7 +169,7 @@ describe('Card', () => {
     expect(screen.getByText(/5 can yenile/i, { selector: '.card-effect' })).toBeInTheDocument();
 
     rerender(<CardComponent card={blockDieCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/4 blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
+    expect(screen.getByText(/d8 \(1–8\) blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
 
     rerender(<CardComponent card={blockAmountCard} onPlay={onPlay} isPlayable={true} />);
     expect(screen.getByText(/3 blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
@@ -181,13 +181,13 @@ describe('Card', () => {
     expect(screen.getByText(/1 enerji kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
 
     rerender(<CardComponent card={statusCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/vulnerable uygula/i, { selector: '.card-effect' })).toBeInTheDocument();
+    expect(screen.getByText(/Savunmasız uygula/i, { selector: '.card-effect' })).toBeInTheDocument();
 
     rerender(<CardComponent card={trashCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/2 kartı düşmanın desteleden kaldır/i, { selector: '.card-effect' })).toBeInTheDocument();
+    expect(screen.getByText(/2 kartı kalıcı kaldır/i, { selector: '.card-effect' })).toBeInTheDocument();
 
     rerender(<CardComponent card={tradeCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/1 kart oyuncunun desteleden kaldır, 2 kart çek/i, { selector: '.card-effect' })).toBeInTheDocument();
+    expect(screen.getByText(/1 kartı kalıcı kaldır, 2 kart çek/i, { selector: '.card-effect' })).toBeInTheDocument();
 
     rerender(<CardComponent card={skipCard} onPlay={onPlay} isPlayable={true} />);
     expect(screen.getByText(/düşmanın turunu atlat/i, { selector: '.card-effect' })).toBeInTheDocument();

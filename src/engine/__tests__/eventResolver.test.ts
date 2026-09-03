@@ -36,7 +36,7 @@ describe('EventResolver', () => {
 
   it('stacks weakened up to three stacks', () => {
     const state = makeGameState({
-      enemyStatuses: [{
+      pendingEnemyStatuses: [{
         id: 'weakened',
         duration: 2,
         stacks: 2,
@@ -47,8 +47,8 @@ describe('EventResolver', () => {
 
     const result = EventResolver.resolveEvent(state, 2);
 
-    expect(result.enemyStatuses[0].stacks).toBe(3);
-    expect(result.enemyStatuses[0].duration).toBe(3);
+    expect(result.pendingEnemyStatuses[0].stacks).toBe(3);
+    expect(result.pendingEnemyStatuses[0].duration).toBe(2);
   });
 
   it('uses deterministic random removal', async () => {
@@ -61,7 +61,7 @@ describe('EventResolver', () => {
       EventResolver.resolveEvent(state, 1),
     );
 
-    expect(result.hand).toHaveLength(1);
-    expect(result.discardPile).toHaveLength(1);
+    expect(result.hand).toEqual([makeCard('a')]);
+    expect(result.discardPile).toHaveLength(0);
   });
 });

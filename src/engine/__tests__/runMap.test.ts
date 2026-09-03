@@ -17,7 +17,7 @@ describe('runMap', () => {
 
   it('forces boss on every third floor', async () => {
     await withMockRandom([0.5, 0.7, 0.9], () => {
-      const nodes = generateAvailableNodes(2, null);
+      const nodes = generateAvailableNodes(3, null);
 
       expect(nodes.some((node) => node.type === 'boss')).toBe(true);
     });
@@ -56,7 +56,7 @@ describe('runMap', () => {
   });
 
   it('ensures node types are valid', async () => {
-    const validTypes = ['combat', 'event', 'rest', 'boss', 'shop'];
+    const validTypes = ['combat', 'event', 'rest', 'boss', 'shop', 'elite'];
     await withMockRandom([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], () => {
       const nodes = generateAvailableNodes(0, null);
       nodes.forEach(node => {
@@ -66,24 +66,21 @@ describe('runMap', () => {
   });
 
   it('ensures boss nodes only appear on floors that are multiples of 3', async () => {
-    // Test floor 0 (should not have boss)
     await withMockRandom([0, 0, 0, 0, 0], () => {
       const nodes = generateAvailableNodes(0, null);
       const hasBoss = nodes.some(node => node.type === 'boss');
       expect(hasBoss).toBe(false);
     });
 
-    // Test floor 2 (should have boss, as per the earlier test)
     await withMockRandom([0.5, 0.7, 0.9], () => {
-      const nodes = generateAvailableNodes(2, null);
+      const nodes = generateAvailableNodes(3, null);
       const hasBoss = nodes.some(node => node.type === 'boss');
       expect(hasBoss).toBe(true);
     });
 
-    // Test floor 3 (should not have boss? Actually, every third floor: 0-indexed, floor 2 is the third floor? Let's clarify: the test for floor 2 (which is the third floor if counting from 0: 0,1,2) has boss. So floor 5 (index 5) should also have boss.
     // We'll test floor 5 (which is the sixth floor, but index 5) should have boss if every third floor starting from floor 2? Actually, the rule might be: boss on floors 2, 5, 8, ... (i.e., floor % 3 == 2)
     await withMockRandom([0, 0, 0, 0, 0], () => {
-      const nodes = generateAvailableNodes(5, null);
+      const nodes = generateAvailableNodes(6, null);
       const hasBoss = nodes.some(node => node.type === 'boss');
       expect(hasBoss).toBe(true);
     });

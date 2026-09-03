@@ -39,6 +39,11 @@ export function makePlayer(partial: Partial<Character> = {}): Character {
 
 export function makeGameState(partial: Partial<GameState>): GameState {
   const defaults: GameState = {
+    baseEnemyIntent: null,
+    enemyBehaviorRoll: 0.5,
+    pendingEnemyStatuses: [],
+    pendingPlayerSkip: false,
+    apocalypseHpPercent: 50,
     // Player
     player: makePlayer(),
     // Enemy
@@ -70,7 +75,7 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     rewardOptions: [] as Card[],
     draftOptions: [] as Card[],
     draftPicks: 0,
-    draftBudget: 5,
+    draftBudget: 6,
     starterDraftComplete: false,
     apocalypseTurns: null,
     enemyBehavior: 'standard',
@@ -89,6 +94,13 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     comboChain: [] as string[],
     comboCount: 0,
     nextDamageBonus: 0,
+    // Missing fields
+    playerName: '',
+    playerDialog: [] as { text: string; timestamp: number }[],
+    enemyDialog: [] as { text: string; timestamp: number }[],
+    setPlayerName: (_name: string) => {},
+    addPlayerDialog: (_text: string) => {},
+    addEnemyDialog: (_text: string) => {},
     // RunMapState fields
     currentNode: null as NodeType | null,
     availableNodes: [] as Array<{ type: NodeType; id: string }>,

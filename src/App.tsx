@@ -1,7 +1,7 @@
 // Bu dosya src\App.tsx için ilgili kodları içerir.
 // Ana uygulama bileşeni: oyun durumu, UI bileşenlerini birleştirir ve oyun döngüsünü yönetir.
 // Ana uygulama bileşeni: oyun durumu, UI bileşenlerini birleştirir ve oyun döngüsünü yönetir.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from './state/store';
 import { BattleStats } from './components/BattleStats';
 import { CombatControls } from './components/CombatControls';
@@ -61,6 +61,9 @@ function App() {
   const [isLogOpen, setIsLogOpen] = useState(false);
   // Drag and drop state
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
+  const enemyHp = useGameStore(s => s.enemy.mevcutCan);
+  const enemyId = useGameStore(s => s.enemy.id);
+  const previousEnemy = useRef({ hp: enemyHp, id: enemyId, phase: gamePhase });
   const [impactPulse, setImpactPulse] = useState(false);
   const [floatingText, setFloatingText] = useState<string | null>(null);
 
@@ -90,11 +93,12 @@ function App() {
     }
   }, [initializeGame, playerName]);
   useEffect(() => {
-    const latest = battleLogs[battleLogs.length - 1] ?? '';
-    if (!latest || !/hasar|denge|kırıldı/i.test(latest)) return;
-    const match = latest.match(/(\d+) (?:hasar|denge)/i);
+    const previous = previousEnemy.current;
+    previousEnemy.current = { hp: enemyHp, id: enemyId, phase: gamePhase };
+    const damage = previous.hp - enemyHp;
+    if (previous.id !== enemyId || previous.phase !== 'combat' || gamePhase !== 'combat' || damage <= 0) return;
     const startTimer = window.setTimeout(() => {
-      setFloatingText(match ? `-${match[1]} ${latest.includes('denge') ? 'DENGE' : 'HASAR'}` : latest.includes('kırıldı') ? 'KIRILDI!' : 'DARBE!');
+      setFloatingText(`-${damage} HASAR`);
       setImpactPulse(true);
     }, 0);
     const clearTimer = window.setTimeout(() => { setFloatingText(null); setImpactPulse(false); }, 700);
@@ -102,7 +106,7 @@ function App() {
       window.clearTimeout(startTimer);
       window.clearTimeout(clearTimer);
     };
-  }, [battleLogs]);
+  }, [enemyHp, enemyId, gamePhase]);
 
   const combatTitle = gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'deckBuild' ? 'Desteni hazırla' : gamePhase === 'mapSelection' ? 'Yolunu seç' : gamePhase === 'victory' ? 'Zafer!' : gamePhase === 'gameOver' ? 'Oyun Bitti' : gamePhase === 'shop' ? 'Gezgin kampı' : 'Mola';
   const isCombatBoardVisible = gamePhase !== 'mapSelection' && gamePhase !== 'deckBuild';
@@ -114,7 +118,7 @@ function App() {
   return (
     <div className={`app app--${gamePhase}${impactPulse ? ' screen-shake' : ''}`}>
       <div className="app-title">DND Oyunu</div>
-      <div className="title-row"><h2 className="title">{combatTitle}</h2>{gamePhase === 'combat' && <span className="round-badge">ROUND {round}</span>}</div>
+      <div className="title-row"><h2 className="title">{combatTitle}</h2>{gamePhase === 'combat' && <span className="round-badge">TUR {round}</span>}</div>
       <DialogBubble />
       <div className="top-zone">
         <div className={`battle-participants${impactPulse ? ' battle-participants--impact' : ''}`}>
@@ -148,7 +152,7 @@ function App() {
             </div>
           )}
           {gamePhase === 'gameOver' && (
-            <div className="terminal-message terminal-message--loss"><span className="terminal-icon" aria-hidden="true">×</span><div><span className="terminal-kicker">Run sona erdi</span><strong>Oyun Bitti</strong><p>Bu savaşta yenildin. Bir sonraki macera için yeniden hazırlan.</p><button onClick={restartGame} className="button button--primary" type="button">Yeni Oyun Başlat</button></div></div>
+            <div className="terminal-message terminal-message--loss"><span className="terminal-icon" aria-hidden="true">×</span><div><span className="terminal-kicker">Macera sona erdi</span><strong>Oyun Bitti</strong><p>Bu savaşta yenildin. Bir sonraki macera için yeniden hazırlan.</p><button onClick={restartGame} className="button button--primary" type="button">Yeni Oyun Başlat</button></div></div>
           )}
           {gamePhase === 'event' && <PhaseChoices phase="event" onChoose={resolveEvent} />}
           {gamePhase === 'rest' && <PhaseChoices phase="rest" onChoose={resolveRest} />}

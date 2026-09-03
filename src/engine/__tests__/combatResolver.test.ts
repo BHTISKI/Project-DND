@@ -40,7 +40,7 @@ describe('combatResolver', () => {
       const result = generateEnemyIntent(enemy, 'goblin');
 
       expect(result.intent.type).toBe('attack');
-      expect(result.value).toBe(4.5);
+      expect(result.value).toBe(5);
       expect(result.block).toBe(0);
     });
   });
@@ -51,7 +51,7 @@ describe('combatResolver', () => {
       const result = generateEnemyIntent(enemy, 'goblin');
 
       expect(result.intent.type).toBe('defend');
-      expect(result.block).toBe(4);
+      expect(result.block).toBe(2);
     });
   });
 });

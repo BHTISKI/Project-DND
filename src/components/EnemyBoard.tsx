@@ -36,8 +36,11 @@ export const EnemyBoard: React.FC = () => {
         <span className="intent-card__kicker">Sıradaki hamle</span>
         <span className="intent-card__icon" aria-hidden="true">{intentIcon}</span>
         <strong>{intentLabel}</strong>
-        {estimatedValue !== undefined && <small>{estimatedValue} {enemyIntent?.type === 'defend' ? 'blok' : enemyIntent?.type === 'special' && enemyIntent.estimatedHeal ? 'iyileşme' : 'hasar'}</small>}
+        {estimatedValue !== undefined && <small>{estimatedValue} {enemyIntent?.type === 'defend' ? 'blok' : enemyIntent?.estimatedHeal !== undefined ? 'iyileşme' : 'hasar'}</small>}
         {telegraph?.deceptive && <small className="intent-card__hint">Niyet belirsiz</small>}
+        {enemyIntent?.criticalDamage !== undefined && <small>Doğal 20: {enemyIntent.criticalDamage} hasar</small>}
+        {enemyIntent?.estimatedDamage !== undefined && <small>Blok öncesi{enemyIntent.criticalDamage !== undefined ? ' · D20 ile isabet' : ''}</small>}
+        {enemyIntent?.warning && <small className="intent-card__hint">{enemyIntent.warning}</small>}
       </div>
     </section>
   );
