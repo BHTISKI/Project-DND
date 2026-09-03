@@ -3,5 +3,8 @@
 // Yardımcı: rastgele ID üretimi için generateRandomId fonksiyonu
 // Yardımcı: rastgele ID üretimi için generateRandomId fonksiyonu
 export function generateRandomId(): string {
-  return Math.random().toString(36).substr(2, 9);
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
 }

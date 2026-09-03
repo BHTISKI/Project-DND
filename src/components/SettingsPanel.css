@@ -1,0 +1,115 @@
+.settings-panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.settings-panel__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+}
+.settings-panel__content {
+  position: relative;
+  background: var(--panel, #1a1a24);
+  color: var(--ink, #e0d7c8);
+  border: 2px solid #a68c78;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.settings-panel__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--ink, #e0d7c8);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.settings-panel__close:hover {
+  opacity: 0.8;
+}
+.settings-panel h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: var(--paper, #c4b8a2);
+}
+.settings-group {
+  margin-bottom: 1.5rem;
+}
+.settings-group h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: var(--paper, #c4b8a2);
+}
+.settings-group label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.settings-group label input {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+.settings-group label span {
+  font-variant-numeric: tabular-nums;
+}
+.button {
+  --border: 2px solid #a68c78;
+  --background: #e0d7c8;
+  --color: #3e2723;
+  --hover-bg: #d4c9b8;
+  --active-bg: #c8bdaa;
+  --shadow: 0 2px 4px rgba(0,0,0,0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border: var(--border);
+  background: var(--background);
+  color: var(--color);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.1s;
+}
+.button:hover:not(:disabled) {
+  background: var(--hover-bg);
+  transform: translateY(-1px);
+}
+.button:active:not(:disabled) {
+  background: var(--active-bg);
+  transform: translateY(0);
+}
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.button--primary {
+  --background: #a68c78;
+  --color: #faf3e0;
+  --hover-bg: #8f7866;
+  --active-bg: #796655;
+}
+.button--primary:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.button--primary:active:not(:disabled) {
+  background: var(--active-bg);
+}

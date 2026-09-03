@@ -13,6 +13,11 @@ export interface Card {
   tags?: string[]
   theme?: string
   effects?: CardEffect[]
+  agirlik?: number
+  isCursed?: boolean
+  onDiscardPenalty?: { kind: 'pureDamage'; amount: number; returnToDeck?: boolean }
+  onPlayPenalty?: 'replace-with-broken-soul'
+  apocalypse?: { delay: number; hpPercent: number }
 }
 
 export type CardEffect =
@@ -55,9 +60,30 @@ export interface Character {
   gucCarpani: number
   advantageCounter: number
   disadvantageCounter: number
+  denge?: number
+  maksimumDenge?: number
+  staggered?: boolean
 }
 
 export type EnemyIntentType = "attack" | "defend" | "special"
+
+export type EnemyBehaviorId = "opportunist" | "paranoid" | "desperation" | "standard"
+export type PlayerSignal = "none" | "no-block" | "parry" | "retaliation"
+export type EnemyActionKind = "attack" | "critical-execution" | "poison" | "heal" | "pass" | "desperation-attack"
+
+export interface EnemyAction {
+  kind: EnemyActionKind
+  damage?: number
+  ignoresBlock?: boolean
+  poison?: number
+}
+
+export interface EnemyTelegraph {
+  type: EnemyIntentType
+  label: string
+  icon: string
+  deceptive?: boolean
+}
 
 export interface EnemyIntent {
   type: EnemyIntentType
@@ -65,9 +91,11 @@ export interface EnemyIntent {
   estimatedBlock?: number
   estimatedHeal?: number
   effectKey?: string
+  telegraph?: EnemyTelegraph
+  action?: EnemyAction
 }
 
-export type EnemyArchetypeId = "goblin" | "guardian" | "mage"
+export type EnemyArchetypeId = "goblin" | "guardian" | "mage" | "assassin" | "knight"
 
 export type NodeType = "combat" | "elite" | "shop" | "event" | "rest" | "boss"
 
@@ -79,8 +107,13 @@ export interface RunMapState {
 }
 
 export const sampleCardDefs: Omit<Card, 'id'>[] = [
+  { isim: 'Şeytanın Kılıcı', tip: 'saldırı', manaBedeli: 0, baseHasar: 25, zarTuru: 'sabit', rarity: 'legendary', theme: 'blood', tags: ['attack', 'cursed'], isCursed: true, onPlayPenalty: 'replace-with-broken-soul', effects: [{ kind: 'attack', damageBonus: 0 }] },
+  { isim: 'Patlamaya Hazır Mühür', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'sabit', rarity: 'rare', theme: 'fate', tags: ['skill', 'cursed'], isCursed: true, apocalypse: { delay: 2, hpPercent: 50 }, effects: [{ kind: 'energy', amount: 3 }, { kind: 'draw', amount: 3 }] },
+  { isim: 'Körlük Mührü', tip: 'yetenek', manaBedeli: 0, baseHasar: 0, zarTuru: 'sabit', rarity: 'common', theme: 'shadow', tags: ['curse'], isCursed: true, onDiscardPenalty: { kind: 'pureDamage', amount: 5, returnToDeck: true }, effects: [{ kind: 'status', status: 'weakened', duration: 1, target: 'player' }] },
+  { isim: 'Kırık Ruh', tip: 'yetenek', manaBedeli: 0, baseHasar: 0, zarTuru: 'sabit', rarity: 'common', theme: 'shadow', tags: ['curse'], isCursed: true, effects: [{ kind: 'status', status: 'weakened', duration: 1, target: 'player' }] },
   { isim: 'Hızlı Saldırı', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'common', isUpgraded: false, tags: ['attack'], effects: [{ kind: 'attack', die: 'd4' }] },
   { isim: 'Kalkan Sihri', tip: 'savunma', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'common', isUpgraded: false, tags: ['defend'], effects: [{ kind: 'block', die: 'd4' }] },
+  { isim: 'Ayna Duruşu', tip: 'savunma', manaBedeli: 1, baseHasar: 0, zarTuru: 'd6', rarity: 'uncommon', isUpgraded: false, tags: ['defend', 'parry'], effects: [{ kind: 'block', die: 'd6' }] },
   { isim: 'Ateş Topu', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd6', rarity: 'common', isUpgraded: false, tags: ['skill', 'attack'], effects: [{ kind: 'damage', die: 'd6', ignoresArmor: true, damageBonus: 2 }] },
   { isim: 'Buhar Nefesi', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd8', rarity: 'uncommon', isUpgraded: false, tags: ['skill', 'heal'], effects: [{ kind: 'heal', die: 'd8' }] },
   { isim: 'Zayıflatıcı Lanet', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', isUpgraded: false, tags: ['skill', 'control'], effects: [{ kind: 'status', status: 'weakened', duration: 2, value: 1, target: 'enemy' }] },

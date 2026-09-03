@@ -5,5 +5,14 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/testUtils/setup.ts'],
     reporter: 'dot',
+    coverage: {
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.test.tsx',
+        'src/testUtils/**/*',
+      ],
+      clear: false,
+    },
   },
 });

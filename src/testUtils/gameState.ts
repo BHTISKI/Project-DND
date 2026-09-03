@@ -3,7 +3,7 @@
 // Test yardımcıları: oyun durumu ve kart oluşturucu fonksiyonlar (makeGameState, makeCard, makePlayer)
 // Test yardımcıları: oyun durumu ve kart oluşturucu fonksiyonlar (makeGameState, makeCard, makePlayer)
 import type { GameState } from '../state/store';
-import type { Card, Character, NodeType } from '../types/game';
+import type { Card, Character, NodeType, StatusEffect } from '../types/game';
 
 export type { GameState, Card, Character };
 
@@ -54,6 +54,7 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     },
     // Game state
     isPlayerTurn: true,
+    round: 1,
     maxEnergy: 3,
     currentEnergy: 3,
     deck: [] as Card[],
@@ -67,6 +68,15 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     initialized: false,
     gamePhase: 'mapSelection' as const,
     rewardOptions: [] as Card[],
+    draftOptions: [] as Card[],
+    draftPicks: 0,
+    draftBudget: 5,
+    starterDraftComplete: false,
+    apocalypseTurns: null,
+    enemyBehavior: 'standard',
+    enemyCanLie: false,
+    lastPlayerSignal: 'none',
+    desperationStacks: 0,
     playerBlock: 0,
     enemyBlock: 0,
     enemySkipNextTurn: false,
@@ -74,8 +84,8 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     enemyIntent: null,
     enemyIntentValue: 0,
     enemyArchetype: 'goblin' as const,
-    playerStatuses: [] as any[], // We'll leave as any[] for simplicity, but we can define a proper type if needed
-    enemyStatuses: [] as any[],
+    playerStatuses: [] as StatusEffect[],
+    enemyStatuses: [] as StatusEffect[],
     comboChain: [] as string[],
     comboCount: 0,
     nextDamageBonus: 0,
@@ -94,11 +104,16 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     applyDamage: (_target: 'player' | 'enemy', _amount: number) => {},
     addRewardCardToDeck: (_cardId: string) => {},
     skipReward: () => {},
+    buyCard: (_cardId: string) => {},
     healPlayer: () => {},
     removeCardFromDeck: (_cardId: string) => {},
     upgradeCard: (_cardId: string) => {},
     startNextCombat: () => {},
     selectNode: (_nodeId: string) => {},
+    resolveEvent: (_choiceIndex: number) => {},
+    resolveRest: (_choiceIndex: number) => {},
+    chooseDraftCard: (_cardId: string) => {},
+    purifyDeck: () => {},
   };
 
   return { ...defaults, ...partial };

@@ -18,6 +18,13 @@ describe('combatResolver', () => {
     expect(chooseArchetype(3)).toBe('goblin');
   });
 
+  it('introduces the assassin and knight after the starter rotation', () => {
+    expect(chooseArchetype(5)).toBe('assassin');
+    expect(chooseArchetype(6)).toBe('knight');
+    expect(createEnemy('assassin', 1).isim).toBe('Gölge Suikastçısı');
+    expect(createEnemy('knight', 1).isim).toBe('Kara Şövalye');
+  });
+
   it('creates a scaled enemy', () => {
     const enemy = createEnemy('guardian', 3);
 
