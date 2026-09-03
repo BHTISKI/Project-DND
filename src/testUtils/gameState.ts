@@ -44,6 +44,7 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     pendingEnemyStatuses: [],
     pendingPlayerSkip: false,
     apocalypseHpPercent: 50,
+    exhaustedPile: [],
     // Player
     player: makePlayer(),
     // Enemy

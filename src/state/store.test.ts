@@ -536,19 +536,18 @@ describe('Store actions', () => {
 
   describe('endTurn', () => {
     it('should process enemy attack and reduce player HP', () => {
-      // InitializeGame consumes: shuffle of sampleCardDefs (length 28 -> 27 random calls) + generateEnemyIntent (1 random call) = 28 random calls.
-      // Then in endTurn, attack roll is the next random call, damage roll after that if hit.
-      // We want attack roll = 0.5 (->11), damage roll = 0.0 (->1).
-      const dummyValues = Array(28).fill(0.5); // any value, we'll use 0.5 for simplicity
-      setupMockRandom([...dummyValues, 0.5, 0.0]);
+      // Fix the published attack and roll independently of catalog size / shuffle calls.
+      setupMockRandom([0.5]);
       useGameStore.getState().initializeGame();
       // Ensure we are in combat and player turn
       useGameStore.setState({
         ...useGameStore.getState(),
         gamePhase: 'combat',
         isPlayerTurn: true,
-        player: { ...useGameStore.getState().player, mevcutCan: 5 },
+        player: { ...useGameStore.getState().player, mevcutCan: 10 },
         enemy: { ...useGameStore.getState().enemy, mevcutCan: 5 },
+        enemyIntent: { type: 'attack', action: { kind: 'attack', damage: 4 } },
+        hand: [],
       });
       const stateBefore = useGameStore.getState();
       console.log('Before:', JSON.stringify({

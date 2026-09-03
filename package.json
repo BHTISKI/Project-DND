@@ -9,6 +9,7 @@
     "lint": "oxlint --format json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "simulate": "node scripts/runSimulation.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

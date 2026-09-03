@@ -13,6 +13,7 @@ import { generateAvailableNodes } from '../engine/runMap';
 import { encounterReward } from '../engine/rewards';
 import { allCards, removeOwnedCard, updateOwnedCard } from '../engine/cardPiles';
 import { canChooseDraftCard } from '../engine/draft';
+import { restoreExhausted } from '../mechanics/exhaust';
 
 export { calculateUpgradeCost, enhanceEffect, getCardWeight, shuffle } from '../utils/game';
 export { loadMetaState, saveMetaState } from './persistence';
@@ -39,6 +40,7 @@ export interface GameState extends RunMapState {
   deck: Card[];
   hand: Card[];
   discardPile: Card[];
+  exhaustedPile: Card[];
   // Number of cards to draw at start of turn
   drawCount: number;
   // Gold for shop
@@ -125,7 +127,7 @@ function initialRun() {
   return {
     player: { ...defaultPlayer }, enemy: createEnemy('goblin', 0), playerName: '',
     isPlayerTurn: true, round: 1, maxEnergy: 3, currentEnergy: 3, drawCount: 5,
-    deck: [] as Card[], hand: [] as Card[], discardPile: [] as Card[],
+    deck: [] as Card[], hand: [] as Card[], discardPile: [] as Card[], exhaustedPile: [] as Card[],
     gold: 50, metaGold: 0, metaVictories: 0, battleLogs: [] as string[], initialized: false,
     gamePhase: 'mapSelection' as const, rewardOptions: [] as Card[], draftOptions: [] as Card[],
     draftPicks: 0, draftBudget: 6, starterDraftComplete: false, apocalypseTurns: null as number | null, apocalypseHpPercent: 50,
@@ -148,7 +150,7 @@ function resetCombatPlayer(player: Character): Character {
 }
 function mapAfter(state: GameState, advance: boolean): GameState {
   const runFloor = state.runFloor + (advance ? 1 : 0);
-  return { ...state, gamePhase: 'mapSelection', runFloor, availableNodes: generateAvailableNodes(runFloor),
+  return { ...state, ...restoreExhausted(state), gamePhase: 'mapSelection', runFloor, availableNodes: generateAvailableNodes(runFloor),
     currentNode: null, nodeType: null, enemyIntent: null, enemyIntentValue: 0, baseEnemyIntent: null,
     player: resetCombatPlayer(state.player), playerBlock: 0, enemyBlock: 0, enemySkipNextTurn: false,
     playerStatuses: [], enemyStatuses: [], apocalypseTurns: null, comboChain: [], comboCount: 0, nextDamageBonus: 0,
@@ -179,7 +181,7 @@ function beginCombat(state: GameState): GameState {
   const combined = shuffle(allCards(state));
   let next = drawCardsState({
     ...state, gamePhase: 'combat', player: resetCombatPlayer(state.player),
-    enemy: { ...state.enemy, denge: 0, staggered: false }, deck: combined, hand: [], discardPile: [],
+    enemy: { ...state.enemy, denge: 0, staggered: false }, deck: combined, hand: [], discardPile: [], exhaustedPile: [],
     playerStatuses: [], enemyStatuses: [...state.pendingEnemyStatuses], pendingEnemyStatuses: [],
     playerBlock: 0, enemyBlock: 0, enemySkipNextTurn: false, baseEnemyIntent: null,
     currentEnergy: state.maxEnergy, round: 1, isPlayerTurn: true,
@@ -283,7 +285,8 @@ export const useGameStore = create<GameState>((set) => {
       if (cursed.length === cards.length) return log(state, 'Arınma desteni tamamen boşaltamaz.');
       if (state.gold < 120) return log(state, 'Arınma için 120 altın gerekiyor.');
       return log({ ...state, gold: state.gold - 120, deck: state.deck.filter(c => !c.isCursed),
-        hand: state.hand.filter(c => !c.isCursed), discardPile: state.discardPile.filter(c => !c.isCursed) },
+        hand: state.hand.filter(c => !c.isCursed), discardPile: state.discardPile.filter(c => !c.isCursed),
+        exhaustedPile: state.exhaustedPile.filter(c => !c.isCursed) },
         `${cursed.length} lanetli kart kaldırıldı. (120 altın)`);
     }),
     startNextCombat: () => update(state => state.gamePhase === 'shop' ? mapAfter(state, state.currentNode === 'shop') : state),

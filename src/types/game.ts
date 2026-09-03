@@ -18,6 +18,9 @@ export interface Card {
   onDiscardPenalty?: { kind: 'pureDamage'; amount: number; returnToDeck?: boolean }
   onPlayPenalty?: 'replace-with-broken-soul'
   apocalypse?: { delay: number; hpPercent: number }
+  retain?: boolean
+  exhaust?: boolean
+  finisher?: { threshold: number; damage: number }
 }
 
 export type CardEffect =
@@ -134,5 +137,8 @@ export const sampleCardDefs: Omit<Card, 'id'>[] = [
   { isim: 'Alev Fısıltısı', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', theme: 'fire', tags: ['skill', 'advantage'], effects: [{ kind: 'advantage', value: 1, target: 'player' }, { kind: 'status', status: 'weakened', duration: 1, value: 1, target: 'player' }] },
   { isim: 'Kötümserin Bakışı', tip: 'yetenek', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'uncommon', theme: 'fate', tags: ['skill', 'disadvantage', 'draw'], effects: [{ kind: 'disadvantage', value: 1, target: 'enemy' }, { kind: 'draw', amount: 1 }] },
   { isim: 'Dönüşüm Müzikçisi', tip: 'yetenek', manaBedeli: 2, baseHasar: 0, zarTuru: 'd6', rarity: 'uncommon', theme: 'transmutation', tags: ['skill', 'trade'], effects: [{ kind: 'trade', trashAmount: 1, drawAmount: 2 }] },
+  { isim: 'Sabırlı Muhafız', tip: 'savunma', manaBedeli: 1, baseHasar: 0, zarTuru: 'sabit', rarity: 'common', theme: 'armor', tags: ['defend'], retain: true, effects: [{ kind: 'block', amount: 3 }] },
+  { isim: 'Son Kıvılcım', tip: 'yetenek', manaBedeli: 0, baseHasar: 0, zarTuru: 'sabit', rarity: 'uncommon', theme: 'fire', tags: ['skill'], exhaust: true, effects: [{ kind: 'energy', amount: 1 }] },
+  { isim: 'Zincir Darbesi', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', rarity: 'common', theme: 'lightning', tags: ['attack'], finisher: { threshold: 2, damage: 3 }, effects: [{ kind: 'attack', die: 'd4' }] },
 ]
 

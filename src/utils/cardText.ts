@@ -35,6 +35,9 @@ export function describeCard(card: Card): string {
   if (card.onPlayPenalty) parts.push('Oynanınca kalıcı olarak Kırık Ruh ile değişir.');
   if (card.isim === 'Kırık Ruh') parts.push('Her çekilişte maksimum can ve enerji 2 azalır (en az 1).');
   if (card.apocalypse) parts.push(`${card.apocalypse.delay} tur içinde savaş bitmezse mevcut canının %${card.apocalypse.hpPercent} kadarı kaybolur.`);
+  if (card.retain && !card.onDiscardPenalty) parts.push('Elde tut: oynanmazsa sonraki tur elinde kalır; bir çekiş yerini kullanır.');
+  if (card.exhaust) parts.push('Tükenir: oynanınca bu savaşta tekrar çekilmez; savaş sonunda geri döner.');
+  if (card.finisher) parts.push(`Bitirici ${card.finisher.threshold}: bu kart dahil, bu tur ${card.finisher.threshold} tür değişiminde ilk saldırıya +${card.finisher.damage} hasar.`);
   return parts.join(' · ') || 'Bu kartın bir etkisi yok.';
 }
 export function cardDamageText(card: Card): string {

@@ -8,6 +8,9 @@ import { rollDie } from './dice';
 import { ageStatuses, addStatus, poisonTick, statusValue, statusNames } from './statuses';
 import { drawFromPiles } from './cardPiles';
 import { generateRandomId } from '../utils/id';
+import { retainHand } from '../mechanics/retain';
+import { routePlayedCard } from '../mechanics/exhaust';
+import { advanceCombo, cardCategory, finisherBonus } from '../mechanics/finisher';
 export { chooseArchetype, createEnemy, generateEnemyIntent } from './enemyArchetypes';
 
 export function rollAttackDie(advantage: number, disadvantage: number, rng: () => number = Math.random): number {
@@ -105,11 +108,13 @@ export function resolveCard(state: GameState, cardId: string): GameState {
   let s: GameState = { ...state, hand: state.hand.filter(c => c.id !== cardId),
     currentEnergy: state.currentEnergy - card.manaBedeli,
     lastPlayerSignal: card.tags?.includes('parry') ? 'parry' : card.tags?.includes('retaliation') ? 'retaliation' : state.lastPlayerSignal };
-  const tag = card.tags?.[0] ?? card.tip;
+  const tag = cardCategory(card);
   const previous = state.comboChain.at(-1);
-  if (previous && previous !== tag) s = { ...s, comboCount: s.comboCount + 1,
+  if (previous && previous !== tag) s = { ...s, comboCount: advanceCombo(s.comboCount, previous, tag),
     nextDamageBonus: s.nextDamageBonus + (tag === 'attack' ? previous === 'skill' ? 2 : previous === 'defend' ? 1 : 0 : 0) };
   s.comboChain = [tag];
+  let finisherDamage = finisherBonus(card, s.comboCount);
+  if (finisherDamage) logs.push(`Bitirici: +${finisherDamage} hasar (kombo ${s.comboCount}).`);
   if (card.apocalypse) {
     s.apocalypseTurns = card.apocalypse.delay;
     s.apocalypseHpPercent = card.apocalypse.hpPercent;
@@ -119,6 +124,8 @@ export function resolveCard(state: GameState, cardId: string): GameState {
     switch (effect.kind) {
       case 'attack':
       case 'damage': {
+        const bonus = finisherDamage;
+        finisherDamage = 0;
         let critical = false;
         if (effect.kind === 'attack' && !effect.ignoresArmor) {
           const roll = rollAttackDie(s.player.advantageCounter, s.player.disadvantageCounter);
@@ -131,7 +138,7 @@ export function resolveCard(state: GameState, cardId: string): GameState {
         }
         const die = effect.die ?? (card.zarTuru === 'sabit' ? undefined : card.zarTuru);
         const base = calculateDamage(die && die !== 'sabit' ? rollEffectDie(die) : 0, card.baseHasar, s.player.gucCarpani,
-          (effect.damageBonus ?? 0) + s.nextDamageBonus);
+          (effect.damageBonus ?? 0) + s.nextDamageBonus + bonus);
         const damage = damageWithStatuses(base * (critical ? 2 : 1), s.playerStatuses, s.enemyStatuses);
         const hit = hitCharacter(s.enemy, s.enemyBlock, damage);
         s = { ...s, enemy: hit.character, enemyBlock: hit.block, nextDamageBonus: 0 };
@@ -202,7 +209,10 @@ export function resolveCard(state: GameState, cardId: string): GameState {
   if (card.onPlayPenalty) {
     s.deck = [...s.deck, cursedCard('Kırık Ruh')];
     logs.push('Şeytanın Kılıcı yerini Kırık Ruh kartına bıraktı.');
-  } else s.discardPile = [...s.discardPile, card];
+  } else {
+    s = { ...s, ...routePlayedCard(s, card) };
+    if (card.exhaust) logs.push(`${card.isim} tükendi; savaş sonunda geri döner.`);
+  }
   s.battleLogs = [...s.battleLogs, logs.join(' ')];
   s.playerDialog = [{ text: `${card.isim} kartını oynadım!`, timestamp: Date.now() }];
   return refreshEnemyIntent(s);
@@ -215,12 +225,14 @@ export function resolveTurn(state: GameState, finish: (s: GameState) => GameStat
   // A player's stagger consumes this turn, then clears even if the enemy passes.
   const wasStaggered = s.player.staggered;
   s = { ...s, playerBlock: s.playerBlock + statusValue(s.playerStatuses, 'fortified') };
-  const cursed = s.hand.filter(c => c.onDiscardPenalty);
+  const { retained, discarded } = retainHand(s.hand);
+  const cursed = discarded.filter(c => c.onDiscardPenalty);
   const penalty = cursed.reduce((sum, c) => sum + (c.onDiscardPenalty?.amount ?? 0), 0);
-  s = { ...s, hand: [], deck: [...s.deck, ...cursed.filter(c => c.onDiscardPenalty?.returnToDeck)],
-    discardPile: [...s.discardPile, ...state.hand.filter(c => !c.onDiscardPenalty?.returnToDeck)],
+  s = { ...s, hand: retained, deck: [...s.deck, ...cursed.filter(c => c.onDiscardPenalty?.returnToDeck)],
+    discardPile: [...s.discardPile, ...discarded.filter(c => !c.onDiscardPenalty?.returnToDeck)],
     player: { ...s.player, mevcutCan: Math.max(0, s.player.mevcutCan - penalty) } };
   if (penalty) s.battleLogs = [...s.battleLogs, `Lanet bedeli: ${penalty} saf hasar.`];
+  if (retained.length) s.battleLogs = [...s.battleLogs, `Elde tutuldu: ${retained.map(c => c.isim).join(', ')}.`];
   s = finish(s);
   if (s.gamePhase !== 'combat') return s;
   if (s.apocalypseTurns !== null) {
@@ -281,5 +293,5 @@ export function resolveTurn(state: GameState, finish: (s: GameState) => GameStat
     playerBlock: 0, enemySkipNextTurn: false, currentEnergy: s.maxEnergy, isPlayerTurn: true,
     comboChain: [], comboCount: 0, nextDamageBonus: 0, lastPlayerSignal: 'none', round: s.round + 1,
     enemyDialog: [{ text: skipped ? 'Bu tur hamle yapamıyorum.' : 'Hamlemi yaptım. Sıra sende.', timestamp: Date.now() }] };
-  return prepareEnemyIntent(drawCardsState(s, s.drawCount));
+  return prepareEnemyIntent(drawCardsState(s, Math.max(0, s.drawCount - retained.length)));
 }

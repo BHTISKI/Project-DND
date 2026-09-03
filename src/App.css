@@ -1523,3 +1523,10 @@ html, body, #root {
 .dialog-bubble { padding: 10px 14px; border: 1px solid var(--teal); border-radius: 8px; background: #202020ed; color: var(--ink); font-size: .86rem; }
 .dialog-bubble--enemy { border-color: var(--red); }
 button:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+/* Compact, readable feedback for the desktop card mechanics. */
+.mechanic-status { color: #dacdb6; font-size: 13px; line-height: 1.5; padding: 8px 16px; }
+.mechanic-status p { margin: 0; }
+.mechanic-status strong { color: #f3cf86; }
+.mechanic-status summary { cursor: pointer; margin-top: 4px; }
+.mechanic-status ul { margin: 6px 0; padding-left: 20px; }
+.mechanic-status summary:focus-visible { outline: 2px solid #f3cf86; outline-offset: 3px; }

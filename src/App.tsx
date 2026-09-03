@@ -6,6 +6,7 @@ import { useGameStore } from './state/store';
 import { BattleStats } from './components/BattleStats';
 import { CombatControls } from './components/CombatControls';
 import { Hand } from './components/Hand';
+import { MechanicStatus } from './components/MechanicStatus';
 import { ShopPanel } from './components/ShopPanel';
 import { BattleLogDrawer } from './components/BattleLogDrawer';
 import { EnemyBoard } from './components/EnemyBoard';
@@ -174,6 +175,7 @@ function App() {
         {/* Only show hand in combat phase */}
         {gamePhase === 'combat' && <>
           <div className="player-bar"><BattleStats side="player" /></div>
+          <MechanicStatus />
           <Hand draggedCardId={draggedCardId} onDragStart={handleDragStart} onDragEnd={handleDragEnd} />
         </>}
       </div>
