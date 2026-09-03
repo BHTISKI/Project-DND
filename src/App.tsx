@@ -13,6 +13,8 @@ import { DeckBuild, MapSelection, PhaseChoices, RewardCards } from './components
 import { classifyLog } from './components/appView';
 import { useShallow } from 'zustand/react/shallow';
 import './App.css';
+import NameInput from './components/NameInput';
+import DialogBubble from './components/DialogBubble';
 
 function App() {
   const {
@@ -34,6 +36,7 @@ function App() {
     initializeGame,
     playCard,
     round,
+    playerName,
   } = useGameStore(useShallow((state) => ({
     restartGame: state.restartGame,
     gamePhase: state.gamePhase,
@@ -53,6 +56,7 @@ function App() {
     initializeGame: state.initializeGame,
     playCard: state.playCard,
     round: state.round,
+    playerName: state.playerName,
   })));
   const [isLogOpen, setIsLogOpen] = useState(false);
   // Drag and drop state
@@ -80,7 +84,11 @@ function App() {
     e.preventDefault(); // allow drop
   };
 
-  useEffect(() => { initializeGame(); }, [initializeGame]);
+  useEffect(() => {
+    if (playerName) {
+      initializeGame();
+    }
+  }, [initializeGame, playerName]);
   useEffect(() => {
     const latest = battleLogs[battleLogs.length - 1] ?? '';
     if (!latest || !/hasar|denge|kırıldı/i.test(latest)) return;
@@ -99,10 +107,15 @@ function App() {
   const combatTitle = gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'deckBuild' ? 'Desteni hazırla' : gamePhase === 'mapSelection' ? 'Yolunu seç' : gamePhase === 'victory' ? 'Zafer!' : gamePhase === 'gameOver' ? 'Oyun Bitti' : gamePhase === 'shop' ? 'Gezgin kampı' : 'Mola';
   const isCombatBoardVisible = gamePhase !== 'mapSelection' && gamePhase !== 'deckBuild';
 
+  if (!playerName) {
+    return <NameInput onNameSubmit={() => {}} />;
+  }
+
   return (
     <div className={`app app--${gamePhase}${impactPulse ? ' screen-shake' : ''}`}>
       <div className="app-title">DND Oyunu</div>
       <div className="title-row"><h2 className="title">{combatTitle}</h2>{gamePhase === 'combat' && <span className="round-badge">ROUND {round}</span>}</div>
+      <DialogBubble />
       <div className="top-zone">
         <div className={`battle-participants${impactPulse ? ' battle-participants--impact' : ''}`}>
           {gamePhase === 'combat' ? <div className="enemy-stack"><EnemyBoard /><BattleStats side="enemy" /></div> : <BattleStats />}

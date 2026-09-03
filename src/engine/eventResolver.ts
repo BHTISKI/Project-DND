@@ -4,6 +4,7 @@
 // Mantık: olay düğümleri (şans, şeye, bağış) sonuçlarını üretir
 import type { GameState } from '../state/store';
 import type { Card } from '../types/game';
+import { useGameStore } from '../state/store';
 
 export class EventResolver {
   static resolveEvent(gameState: GameState, choiceIndex: number): GameState {
@@ -17,6 +18,11 @@ export class EventResolver {
         const healAmount = Math.min(4, state.player.maksimumCan - state.player.mevcutCan);
 
         if (state.gold >= healCost && healAmount > 0) {
+          // Add enemy dialog for healing event
+          setTimeout(() => {
+            useGameStore.getState().addEnemyDialog('Bir iyiliş energie hissediyorum...');
+          }, 100);
+
           return {
             ...state,
             gold: state.gold - healCost,
@@ -64,6 +70,10 @@ export class EventResolver {
           const removeIndex = Math.floor(Math.random() * hand.length);
           const [removedCard] = hand.splice(removeIndex, 1);
           discardPile = [...discardPile, removedCard];
+          // Add enemy dialog for card trick event
+          setTimeout(() => {
+            useGameStore.getState().addEnemyDialog('Eski bir kartın fısıldadığını duyuyorum...');
+          }, 100);
 
           return {
             ...state,
@@ -112,6 +122,11 @@ export class EventResolver {
         }
 
         // Player skips next turn (we'll handle this in game logic)
+        // Add enemy dialog for debuff event
+        setTimeout(() => {
+          useGameStore.getState().addEnemyDialog('Senin başarıtın kırmıyor! Ben daha güçlü olacağım.');
+        }, 100);
+
         return {
           ...state,
           enemyStatuses,
@@ -123,6 +138,11 @@ export class EventResolver {
 
       default:
         // Default choice - small gold reward
+        // Add enemy dialog for fortunate find event
+        setTimeout(() => {
+          useGameStore.getState().addEnemyDialog('Bir hazinenin yakından olduğunu hissediyorum!');
+        }, 100);
+
         return {
           ...state,
           gold: state.gold + 15,

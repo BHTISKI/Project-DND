@@ -105,6 +105,7 @@ export interface GameState extends RunMapState {
   // Meta progression (persistent between runs)
   metaGold: number;
   metaVictories: number;
+  playerName: string;
   // Battle logs
   battleLogs: string[];
   // Game initialization flag
@@ -140,6 +141,9 @@ export interface GameState extends RunMapState {
   comboChain: string[];
   comboCount: number;
   nextDamageBonus: number;
+  // Dialogs
+  playerDialog: { text: string; timestamp: number }[];
+  enemyDialog: { text: string; timestamp: number }[];
   // Actions
   initializeGame: () => void;
   restartGame: () => void;
@@ -162,6 +166,9 @@ export interface GameState extends RunMapState {
   resolveRest: (choiceIndex: number) => void;
   chooseDraftCard: (cardId: string) => void;
   purifyDeck: () => void;
+  setPlayerName: (name: string) => void;
+  addPlayerDialog: (text: string) => void;
+  addEnemyDialog: (text: string) => void;
 }
 
 
@@ -239,6 +246,9 @@ export const useGameStore = create<GameState>((set) => ({
   gold: 50, // starting gold
   metaGold: 0,
   metaVictories: 0,
+      playerName: '',
+      playerDialog: [],
+      enemyDialog: [],
   battleLogs: [],
   initialized: false,
   playerBlock: 0,
@@ -273,7 +283,7 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => {
       if (state.initialized) return state;
       const deck = createInitialDeck();
-      const player = { ...defaultPlayer };
+      const player = { ...defaultPlayer, isim: state.playerName || 'Ero' };
       const enemy = { ...defaultEnemy };
       // draw initial hand
       const hand = deck.slice(0, state.drawCount);
@@ -400,6 +410,32 @@ export const useGameStore = create<GameState>((set) => ({
       const currentDecision = behaviorIntent(enemy, state.enemyBehavior, player, playerBlock, turnSignal, state.desperationStacks, state.enemyCanLie);
       const enemyAction = currentDecision.intent.action;
       const desperationStacks = currentDecision.decisionStacks;
+      // Add enemy dialog based on intent
+      setTimeout(() => {
+        let dialogText = '';
+        switch (enemyAction?.kind as any) {
+          case 'attack':
+          case 'critical-execution':
+          case 'desperation-attack':
+            dialogText = 'S saldırıyorum!';
+            break;
+          case 'defend':
+            dialogText = 'Savunmaya hazırlanıyorum!';
+            break;
+          case 'heal':
+            dialogText = 'Canımı iyileştiriyorum!';
+            break;
+          case 'poison':
+            dialogText = 'Zehir bırakıyorum!';
+            break;
+          case 'pass':
+            dialogText = 'Bu turu atlayacağım.';
+            break;
+          default:
+            dialogText = 'Bir şeyler yapıyorum...';
+        }
+        useGameStore.getState().addEnemyDialog(dialogText);
+      }, 100);
 
       if (cursedCards.length > 0) {
         const penalty = cursedCards.reduce((sum, card) => sum + (card.onDiscardPenalty?.amount ?? 0), 0);
@@ -439,7 +475,7 @@ export const useGameStore = create<GameState>((set) => ({
       } else if (enemy.mevcutCan > 0 && state.gamePhase === 'combat') {
         // Process enemy intent
         const archetype = enemyArchetypes[state.enemyArchetype];
-        switch (enemyAction?.kind) {
+        switch (enemyAction?.kind as any) {
           case 'attack':
           case 'critical-execution':
           case 'desperation-attack': {
@@ -817,6 +853,10 @@ export const useGameStore = create<GameState>((set) => ({
         const newMetaVictories = state.metaVictories + 1;
         const newMetaGold = state.metaGold + 10;
         saveMetaState(newMetaGold, newMetaVictories);
+        // Add player dialog for victory
+        setTimeout(() => {
+          useGameStore.getState().addPlayerDialog(`Hayırlısın! Düşmani yendin!`);
+        }, 100);
         return {
           ...state,
           hand: newHand,
@@ -850,6 +890,11 @@ export const useGameStore = create<GameState>((set) => ({
           apocalypseTurns,
         };
       }
+
+      // Add player dialog for card play
+      setTimeout(() => {
+        useGameStore.getState().addPlayerDialog(`${card.isim} kartını oynadım!`);
+      }, 100);
 
       return {
         ...state,
@@ -1015,6 +1060,24 @@ export const useGameStore = create<GameState>((set) => ({
         battleLogs: [...state.battleLogs, `Mühürler yakıldı. ${cursedCount} lanetli kart desteden silindi. (-${cost} altın)`],
       };
     });
+  },
+
+  addPlayerDialog: (text: string) => {
+    set(state => ({
+      playerDialog: [...state.playerDialog, { text, timestamp: Date.now() }]
+        .filter(entry => Date.now() - entry.timestamp < 5000)
+    }));
+  },
+
+  addEnemyDialog: (text: string) => {
+    set(state => ({
+      enemyDialog: [...state.enemyDialog, { text, timestamp: Date.now() }]
+        .filter(entry => Date.now() - entry.timestamp < 5000)
+    }));
+  },
+
+  setPlayerName: (name: string) => {
+    set({ playerName: name });
   },
 
   // Start next combat after shop (reset enemy to default or scaled?)

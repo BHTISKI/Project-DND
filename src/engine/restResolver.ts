@@ -3,6 +3,7 @@
 // Mantık: dinlenme düğümleri için HP iyileşmesi ve blok yönetimi
 // Mantık: dinlenme düğümleri için HP iyileşmesi ve blok yönetimi
 import type { GameState } from '../state/store';
+import { useGameStore } from '../state/store';
 
 export class RestResolver {
   static resolveRest(gameState: GameState, choiceIndex: number): GameState {
@@ -15,6 +16,11 @@ export class RestResolver {
 
         if (state.gold >= healCost) {
           const newHp = Math.min(state.player.maksimumCan, state.player.mevcutCan + healAmount);
+          // Add player dialog for heal choice
+          setTimeout(() => {
+            useGameStore.getState().addPlayerDialog('Bir dinlenme yapmam lazım, canımı toparlayayım.');
+          }, 100);
+
           return {
             ...state,
             gold: state.gold - healCost,
@@ -54,6 +60,10 @@ export class RestResolver {
         const removeIndex = Math.floor(Math.random() * state.deck.length);
         const deckCopy = [...state.deck];
         const [removedCard] = deckCopy.splice(removeIndex, 1);
+        // Add player dialog for card removal choice
+        setTimeout(() => {
+          useGameStore.getState().addPlayerDialog(`${removedCard.isim} kartı bu destede işime yaramıyor, çıkarıyorum.`);
+        }, 100);
 
         return {
           ...state,

@@ -5,6 +5,7 @@
 import type { GameState } from '../state/store';
 import type { Card, Character } from '../types/game';
 import { generateRandomId } from '../utils/id';
+import { useGameStore } from '../state/store';
 
 export class BossResolver {
   static initializeBoss(gameState: GameState): GameState {
@@ -41,6 +42,10 @@ export class BossResolver {
         `BOSS SALDIRISI: ${bossEnemy.isim} pojawi!`
       ]
     };
+    // Add enemy dialog for boss appearance
+    setTimeout(() => {
+      useGameStore.getState().addEnemyDialog(`Ben ${bossEnemy.isim}! Senin halt yoktur!`);
+    }, 100);
   }
 
   static checkBossVictory(gameState: GameState): { isVictory: boolean; newState: GameState } {
@@ -74,6 +79,10 @@ export class BossResolver {
           ]
         }
       };
+      // Add player dialog for boss victory
+      setTimeout(() => {
+        useGameStore.getState().addPlayerDialog('İnanılmaz! Bossu yendim! Bu zafer bana güç verdi.');
+      }, 100);
     }
 
     return { isVictory: false, newState: state };
