@@ -11,9 +11,10 @@ import { EventResolver, eventChoices } from '../engine/eventResolver';
 import { upgradedCard } from '../utils/game';
 import { describeCard } from '../utils/cardText';
 import { SeededRNG } from '../utils/rng';
+import { recoverPostureOnTurnEnd } from '../mechanics/posture';
 
 function card(id: string, effects: CardEffect[], cost = 0): Card {
-  return { ...makeCard(id), zarTuru: 'sabit', manaBedeli: cost, effects };
+  return { ...makeCard(id),  manaBedeli: cost, effects };
 }
 function catalog(name: string): Card {
   return { ...sampleCardDefs.find(c => c.isim === name)!, id: name };
@@ -21,7 +22,7 @@ function catalog(name: string): Card {
 function state(partial: Partial<GameState> = {}) {
   useGameStore.setState({ ...useGameStore.getInitialState(), initialized: true, gamePhase: 'combat',
     playerName: 'Ero', player: makePlayer({ mevcutCan: 100, maksimumCan: 100 }),
-    enemy: { ...makePlayer({ mevcutCan: 100, maksimumCan: 100, zirhSinifi: 10 }), id: 'enemy', isim: 'Düşman' },
+    enemy: { ...makePlayer({ mevcutCan: 100, maksimumCan: 100}), id: 'enemy', isim: 'Düşman' },
     enemyBehavior: 'standard', enemyIntent: { type: 'defend', action: { kind: 'pass' } },
     baseEnemyIntent: { type: 'attack', estimatedDamage: 4 }, ...partial }, true);
   return useGameStore.getState();
@@ -32,7 +33,7 @@ afterEach(() => vi.restoreAllMocks());
 describe('reported combat regressions', () => {
   it.each(sampleCardDefs.map(def => [def.isim, def] as const))('resolves catalog card %s without invalid state or duplicated cards', (name, def) => {
     const s = state({ currentEnergy: 20, deck: [card('draw-a', []), card('draw-b', [])],
-      hand: [{ ...def, id: name }], enemy: makePlayer({ mevcutCan: 100, maksimumCan: 100, zirhSinifi: 0 }) });
+      hand: [{ ...def, id: name }], enemy: makePlayer({ mevcutCan: 100, maksimumCan: 100}) });
     expect(() => s.playCard(name)).not.toThrow();
     const next = useGameStore.getState();
     expect(Number.isFinite(next.player.mevcutCan)).toBe(true);
@@ -85,7 +86,6 @@ describe('reported combat regressions', () => {
     useGameStore.getState().playCard('shield');
     const before = useGameStore.getState();
     expect(before.enemyIntent?.estimatedDamage).toBe(4);
-    expect(before.enemyIntent?.criticalDamage).toBe(8);
     before.endTurn();
     expect(useGameStore.getState().player.mevcutCan).toBe(99);
   });
@@ -105,29 +105,18 @@ describe('reported combat regressions', () => {
       enemyStatuses: [{ id: 'fortified', duration: 2, stacks: 2, value: 1 }] }));
     expect(defend.enemyIntent?.estimatedBlock).toBe(6);
   });
-  it('applies AC misses and consumes one advantage charge', () => {
-    const s = state({ hand: [card('hit', [{ kind: 'attack', damageBonus: 4 }])],
-      player: makePlayer({ advantageCounter: 1 }), enemy: makePlayer({ zirhSinifi: 30 }) });
-    vi.mocked(Math.random).mockReturnValueOnce(0.1).mockReturnValueOnce(0.8);
+  it('applies the published fixed value for player attacks', () => {
+    const s = state({ hand: [card('hit', [{ kind: 'attack', damageBonus: 4 }])] });
     s.playCard('hit');
-    expect(useGameStore.getState().enemy.mevcutCan).toBe(10);
-    expect(useGameStore.getState().player.advantageCounter).toBe(0);
+    expect(useGameStore.getState().enemy.mevcutCan).toBe(94);
   });
-  it('natural 20 bypasses high AC and doubles damage', () => {
-    const s = state({ hand: [card('hit', [{ kind: 'attack', damageBonus: 4 }])], enemy: makePlayer({ mevcutCan: 100, maksimumCan: 100, zirhSinifi: 100 }) });
-    vi.mocked(Math.random).mockReturnValue(0.99);
-    s.playCard('hit');
-    expect(useGameStore.getState().enemy.mevcutCan).toBe(88);
-  });
-  it('consumes enemy disadvantage and uses the lower D20', () => {
-    const s = state({ enemy: makePlayer({ disadvantageCounter: 1 }), enemyIntent: { type: 'attack', action: { kind: 'attack', damage: 4 } } });
-    vi.mocked(Math.random).mockReturnValueOnce(0.99).mockReturnValueOnce(0);
+  it('applies the published fixed value for enemy attacks', () => {
+    const s = state({ enemyIntent: { type: 'attack', action: { kind: 'attack', damage: 4 } } });
     s.endTurn();
-    expect(useGameStore.getState().player.mevcutCan).toBe(100);
-    expect(useGameStore.getState().enemy.disadvantageCounter).toBe(0);
+    expect(useGameStore.getState().player.mevcutCan).toBe(96);
   });
   it('applies player weakened to damage and fortified to incoming block', () => {
-    const s = state({ hand: [card('magic', [{ kind: 'damage', die: 'sabit', damageBonus: 4 }])],
+    const s = state({ hand: [card('magic', [{ kind: 'damage', damageBonus: 4 }])],
       playerStatuses: [{ id: 'weakened', duration: 2, stacks: 1, value: 2 }, { id: 'fortified', duration: 2, stacks: 1, value: 3 }],
       enemyIntent: { type: 'attack', action: { kind: 'attack', damage: 4 } } });
     s.playCard('magic');
@@ -136,20 +125,22 @@ describe('reported combat regressions', () => {
     expect(useGameStore.getState().player.mevcutCan).toBe(99);
   });
   it('adds consecutive blocks and preserves unused enemy block', () => {
-    const s = state({ hand: [card('one', [{ kind: 'block', amount: 4 }]), card('two', [{ kind: 'block', amount: 3 }]), card('hit', [{ kind: 'damage', die: 'sabit' }])], enemyBlock: 10 });
+    const s = state({ hand: [card('one', [{ kind: 'block', amount: 4 }]), card('two', [{ kind: 'block', amount: 3 }]), card('hit', [{ kind: 'damage',}])], enemyBlock: 10 });
     s.playCard('one'); useGameStore.getState().playCard('two');
     expect(useGameStore.getState().playerBlock).toBe(7);
     useGameStore.getState().playCard('hit');
     expect(useGameStore.getState().enemyBlock).toBe(8);
     expect(useGameStore.getState().enemy.mevcutCan).toBe(100);
   });
-  it('clears stagger posture after the bonus hit or skipped turn', () => {
-    const hit = hitCharacter(makePlayer({ denge: 10, staggered: true }), 0, 2);
-    expect(hit.damage).toBe(4); expect(hit.character.denge).toBe(0); expect(hit.character.staggered).toBe(false);
-    const s = state({ player: makePlayer({ denge: 10, staggered: true }), enemy: makePlayer({ denge: 10, staggered: true }) });
-    s.endTurn();
-    expect(useGameStore.getState().player.denge).toBe(0);
-    expect(useGameStore.getState().enemy.denge).toBe(0);
+  it('keeps HP hits independent from posture and resets Broken posture to half', () => {
+    const broken = makePlayer({ currentPosture: 100, isBroken: true });
+    const hit = hitCharacter(broken, 0, 2);
+    expect(hit.damage).toBe(2);
+    expect(hit.character.currentPosture).toBe(100);
+    expect(hit.character.isBroken).toBe(true);
+    const recovered = recoverPostureOnTurnEnd(hit.character);
+    expect(recovered.currentPosture).toBe(50);
+    expect(recovered.isBroken).toBe(false);
   });
   it('allows gained energy over the refill so 4-energy cards can be played', () => {
     const s = state({ hand: [card('charge', [{ kind: 'energy', amount: 3 }], 1), catalog('Yıldırımın Çarpması')] });
@@ -245,7 +236,7 @@ describe('reported map, shop and restart regressions', () => {
   });
   it('restarts with full base energy, health and no stale dialogs or statuses', () => {
     const s = state({ gamePhase: 'gameOver', playerName: 'Deneme', maxEnergy: 1, currentEnergy: 0,
-      player: makePlayer({ mevcutCan: 0, maksimumCan: 2, staggered: true }), pendingPlayerSkip: true,
+      player: makePlayer({ mevcutCan: 0, maksimumCan: 2, currentPosture: 100, isBroken: true }), pendingPlayerSkip: true,
       playerDialog: [{ text: 'old', timestamp: Date.now() }], enemyStatuses: [{ id: 'poisoned', stacks: 3, duration: 3 }] });
     s.restartGame();
     const next = useGameStore.getState();
@@ -253,10 +244,10 @@ describe('reported map, shop and restart regressions', () => {
     expect(next.maxEnergy).toBe(3); expect(next.currentEnergy).toBe(3);
     expect(next.playerDialog).toEqual([]); expect(next.enemyStatuses).toEqual([]); expect(next.pendingPlayerSkip).toBe(false);
   });
-  it('describes actual dice, rarity effects and delayed costs', () => {
-    expect(describeCard(catalog('Buhar Nefesi'))).toContain('d8 (1–8)');
+  it('describes fixed values, status effects and delayed costs', () => {
+    expect(describeCard(catalog('Buhar Nefesi'))).toContain('5 can yenile');
     expect(describeCard(catalog('Patlamaya Hazır Mühür'))).toContain('%50');
-    expect(describeCard(catalog('Alev Fısıltısı'))).toContain('avantaj');
+    expect(describeCard(catalog('Alev Fısıltısı'))).toContain('Güçlü');
   });
   it('seeded RNG covers both halves of [0,1) and zero seeds do not get stuck', () => {
     const rng = new SeededRNG(0); const values = Array.from({ length: 100 }, () => rng.random());

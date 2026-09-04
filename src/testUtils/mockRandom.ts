@@ -1,6 +1,5 @@
 // Bu dosya src/testUtils/mockRandom.ts için ilgili kodları içerir.
 // Rastgele sayı üretimini taklit eden mock fonksiyonlar
-// Rastgele sayı üretimini taklit eden mock fonksiyonlar
 let originalRandom: typeof Math.random = Math.random;
 let mockValues: number[] = [];
 let mockIndex = 0;

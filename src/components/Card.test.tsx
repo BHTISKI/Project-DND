@@ -14,8 +14,7 @@ describe('Card', () => {
     tip: 'saldırı',
     manaBedeli: 2,
     baseHasar: 3,
-    zarTuru: 'd6',
-    effects: [{ kind: 'attack' as const, die: 'd6' }],
+    effects: [{ kind: 'attack' as const, amount: 4 }],
     isUpgraded: false,
     rarity: 'common',
     tags: ['attack'],
@@ -39,8 +38,8 @@ describe('Card', () => {
     // mana: check the aria-label of the card-mana strong element
     const manaStrong = screen.getByText(/2/i, { selector: '.card-mana' });
     expect(manaStrong).toHaveAttribute('aria-label', '2 mana');
-    // effect text (attack d6 -> "Zırha karşı saldır")
-    expect(screen.getByText(/Zırha karşı saldır/i, { selector: '.card-effect' })).toBeInTheDocument();
+    // fixed attack value plus the printed base damage
+    expect(screen.getByText(/Saldırı: 7 \+ Hasar bonusu hasar/i, { selector: '.card-effect' })).toBeInTheDocument();
     // upgraded indicator should not be present
     expect(screen.queryByText(/↑/i)).not.toBeInTheDocument();
     // card should be enabled (not disabled)
@@ -156,7 +155,7 @@ describe('Card', () => {
     const onPlay = vi.fn();
     // heal effect
     const healCard = { ...baseCard, effects: [{ kind: 'heal' as const, amount: 5 }] };
-    const blockDieCard = { ...baseCard, effects: [{ kind: 'block' as const, die: 'd8' }] };
+    const fixedBlockCard = { ...baseCard, effects: [{ kind: 'block' as const, amount: 5 }] };
     const blockAmountCard = { ...baseCard, effects: [{ kind: 'block' as const, amount: 3 }] };
     const drawCard = { ...baseCard, effects: [{ kind: 'draw' as const, amount: 2 }] };
     const energyCard = { ...baseCard, effects: [{ kind: 'energy' as const, amount: 1 }] };
@@ -168,8 +167,8 @@ describe('Card', () => {
     const { rerender } = render(<CardComponent card={healCard} onPlay={onPlay} isPlayable={true} />);
     expect(screen.getByText(/5 can yenile/i, { selector: '.card-effect' })).toBeInTheDocument();
 
-    rerender(<CardComponent card={blockDieCard} onPlay={onPlay} isPlayable={true} />);
-    expect(screen.getByText(/d8 \(1–8\) blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
+    rerender(<CardComponent card={fixedBlockCard} onPlay={onPlay} isPlayable={true} />);
+    expect(screen.getByText(/5 blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();
 
     rerender(<CardComponent card={blockAmountCard} onPlay={onPlay} isPlayable={true} />);
     expect(screen.getByText(/3 blok kazan/i, { selector: '.card-effect' })).toBeInTheDocument();

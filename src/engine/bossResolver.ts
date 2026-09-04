@@ -1,5 +1,6 @@
 import type { GameState } from '../state/store';
 import { encounterReward } from './rewards';
+import { initialPosture } from '../mechanics/posture';
 
 export class BossResolver {
   static initializeBoss(state: GameState): GameState {
@@ -7,8 +8,7 @@ export class BossResolver {
     return {
       ...state,
       enemy: { ...enemy, mevcutCan: enemy.maksimumCan * 2, maksimumCan: enemy.maksimumCan * 2,
-        zirhSinifi: enemy.zirhSinifi + 2, gucCarpani: enemy.gucCarpani + 1,
-        advantageCounter: 0, disadvantageCounter: 0, denge: 0, staggered: false },
+        hasarBonusu: enemy.hasarBonusu + 1, ...initialPosture(state.enemyArchetype, 'boss') },
       enemyIntent: null, enemyIntentValue: 0, enemyBlock: 0,
       currentEnergy: state.maxEnergy, playerBlock: 0, enemyStatuses: [],
       battleLogs: [...state.battleLogs, `Boss karşılaşması: ${enemy.isim} ortaya çıktı!`],

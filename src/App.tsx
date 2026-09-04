@@ -1,6 +1,5 @@
 // Bu dosya src\App.tsx için ilgili kodları içerir.
 // Ana uygulama bileşeni: oyun durumu, UI bileşenlerini birleştirir ve oyun döngüsünü yönetir.
-// Ana uygulama bileşeni: oyun durumu, UI bileşenlerini birleştirir ve oyun döngüsünü yönetir.
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from './state/store';
 import { BattleStats } from './components/BattleStats';
@@ -16,6 +15,7 @@ import { useShallow } from 'zustand/react/shallow';
 import './App.css';
 import NameInput from './components/NameInput';
 import DialogBubble from './components/DialogBubble';
+import { SettingsControl } from './components/SettingsControl';
 
 function App() {
   const {
@@ -60,6 +60,8 @@ function App() {
     playerName: state.playerName,
   })));
   const [isLogOpen, setIsLogOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(!playerName);
+  const { saveStatus, retrySave } = useGameStore(useShallow(s => ({ saveStatus: s.saveStatus, retrySave: s.retrySave })));
   // Drag and drop state
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const enemyHp = useGameStore(s => s.enemy.mevcutCan);
@@ -94,6 +96,15 @@ function App() {
     }
   }, [initializeGame, playerName]);
   useEffect(() => {
+    if (saveStatus !== 'error' && saveStatus !== 'conflict') return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [saveStatus]);
+  useEffect(() => {
     const previous = previousEnemy.current;
     previousEnemy.current = { hp: enemyHp, id: enemyId, phase: gamePhase };
     const damage = previous.hp - enemyHp;
@@ -112,13 +123,21 @@ function App() {
   const combatTitle = gamePhase === 'combat' ? 'Hamleni seç' : gamePhase === 'deckBuild' ? 'Desteni hazırla' : gamePhase === 'mapSelection' ? 'Yolunu seç' : gamePhase === 'victory' ? 'Zafer!' : gamePhase === 'gameOver' ? 'Oyun Bitti' : gamePhase === 'shop' ? 'Gezgin kampı' : 'Mola';
   const isCombatBoardVisible = gamePhase !== 'mapSelection' && gamePhase !== 'deckBuild';
 
-  if (!playerName) {
-    return <NameInput onNameSubmit={() => {}} />;
+  if (isMenuOpen || !playerName) {
+    return <><NameInput onEnterGame={() => { setIsMenuOpen(false); setIsLogOpen(false); setDraggedCardId(null); }} /><SettingsControl /></>;
   }
 
   return (
-    <div className={`app app--${gamePhase}${impactPulse ? ' screen-shake' : ''}`}>
-      <div className="app-title">DND Oyunu</div>
+    <><div className={`app app--${gamePhase}${impactPulse ? ' screen-shake' : ''}`}>
+      <header className="session-bar">
+        <div className="app-title">Makara</div>
+        <div className="session-actions">
+          <span className="save-status" role="status">{saveStatus === 'saved' ? 'Kaydedildi' : saveStatus === 'error' || saveStatus === 'conflict' ? 'Kaydedilemedi' : ''}</span>
+          <button type="button" className="menu-button" onClick={() => setIsMenuOpen(true)}>Menü</button>
+        </div>
+      </header>
+      {saveStatus === 'error' && <div className="save-warning" role="alert"><span>İlerleme kaydedilemedi. Sayfayı kapatmadan önce tekrar dene.</span><button type="button" onClick={retrySave}>Tekrar kaydet</button></div>}
+      {saveStatus === 'conflict' && <div className="save-warning" role="alert"><span>Kayıt başka bir sekmede değişti. Bu sekmedeki ilerleme kaydedilmiyor.</span><button type="button" onClick={() => setIsMenuOpen(true)}>Güncel kayda dön</button></div>}
       <div className="title-row"><h2 className="title">{combatTitle}</h2>{gamePhase === 'combat' && <span className="round-badge">TUR {round}</span>}</div>
       <DialogBubble />
       <div className="top-zone">
@@ -179,7 +198,7 @@ function App() {
           <Hand draggedCardId={draggedCardId} onDragStart={handleDragStart} onDragEnd={handleDragEnd} />
         </>}
       </div>
-    </div>
+    </div><SettingsControl /></>
   );
 }
 

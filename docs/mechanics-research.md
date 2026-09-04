@@ -1,6 +1,6 @@
 # Kart mekaniği araştırması — 4 Eylül 2026
 
-Beş birincil tasarım/kural yazısı incelendi. Aşağıdakiler kendi özetlerimizdir; kaynaklardaki oyun kurallarının birebir aktarımı değil, project-dnd için uyarlama önerileridir. Puanlar oyuncu araştırması sonucu değildir.
+Beş birincil tasarım/kural yazısı incelendi. Aşağıdakiler kendi özetlerimizdir; kaynaklardaki oyun kurallarının birebir aktarımı değil, Makara için uyarlama önerileridir. Puanlar oyuncu araştırması sonucu değildir.
 
 ## Değerlendirme
 

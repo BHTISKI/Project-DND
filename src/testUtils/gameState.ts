@@ -1,9 +1,8 @@
 // Bu dosya src/testUtils/gameState.ts için ilgili kodları içerir.
-// Test yardımcıları: oyun durumu ve kart oluşturucu fonksiyonlar
-// Test yardımcıları: oyun durumu ve kart oluşturucu fonksiyonlar (makeGameState, makeCard, makePlayer)
 // Test yardımcıları: oyun durumu ve kart oluşturucu fonksiyonlar (makeGameState, makeCard, makePlayer)
 import type { GameState } from '../state/store';
 import type { Card, Character, NodeType, StatusEffect } from '../types/game';
+import { initialPosture } from '../mechanics/posture';
 
 export type { GameState, Card, Character };
 
@@ -15,7 +14,6 @@ export function makeCard(isim: string, id: string = isim): Card {
     tip: 'yetenek' as const,
     manaBedeli: 0,
     baseHasar: 0,
-    zarTuru: 'd4',
     rarity: 'common',
     isUpgraded: false,
     tags: [],
@@ -29,16 +27,19 @@ export function makePlayer(partial: Partial<Character> = {}): Character {
     isim: 'Ero',
     mevcutCan: 10,
     maksimumCan: 10,
-    zirhSinifi: 12,
-    gucCarpani: 2,
-    advantageCounter: 0,
-    disadvantageCounter: 0,
+    hasarBonusu: 2,
+    ...initialPosture(),
   };
   return { ...defaults, ...partial };
 }
 
 export function makeGameState(partial: Partial<GameState>): GameState {
   const defaults: GameState = {
+    saveStatus: 'idle',
+    saveCursor: null,
+    startNewGame: () => false,
+    resumeGame: () => false,
+    retrySave: () => {},
     baseEnemyIntent: null,
     enemyBehaviorRoll: 0.5,
     pendingEnemyStatuses: [],
@@ -53,10 +54,8 @@ export function makeGameState(partial: Partial<GameState>): GameState {
       isim: 'Goblin',
       mevcutCan: 7,
       maksimumCan: 7,
-      zirhSinifi: 11,
-      gucCarpani: 1,
-      advantageCounter: 0,
-      disadvantageCounter: 0,
+      hasarBonusu: 1,
+      ...initialPosture('goblin'),
     },
     // Game state
     isPlayerTurn: true,
@@ -95,6 +94,10 @@ export function makeGameState(partial: Partial<GameState>): GameState {
     comboChain: [] as string[],
     comboCount: 0,
     nextDamageBonus: 0,
+    postureComboCount: 0,
+    pendingParry: false,
+    playerGuardPostureCost: 0,
+    enemyGuardPostureCost: 0,
     // Missing fields
     playerName: '',
     playerDialog: [] as { text: string; timestamp: number }[],

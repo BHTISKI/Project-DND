@@ -1,12 +1,33 @@
 import type { Card, EnemyArchetypeId } from '../src/types/game';
 import { sampleCardDefs } from '../src/types/game';
 import { useGameStore, finishEncounter } from '../src/state/store';
-import { createEnemy, prepareEnemyIntent, drawCardsState, resolveCard, resolveTurn } from '../src/engine/combatResolver';
+import { prepareEnemyIntent, drawCardsState, resolveCard, resolveTurn } from '../src/engine/combatResolver';
+import { createEnemy } from '../src/engine/enemyArchetypes';
 import { SeededRNG } from '../src/utils/rng';
 import { shuffle } from '../src/utils/game';
 import { advanceCombo, cardCategory, finisherBonus } from '../src/mechanics/finisher';
+import { cardUnavailableReason, isMeleeAction, isMeleeCard } from '../src/mechanics/posture';
 
 export type SimulationMode = 'baseline' | 'with-mechanics';
+
+type SimulationResult = {
+  seed: number;
+  archetype: EnemyArchetypeId;
+  tier: number;
+  outcome: 'win' | 'loss' | 'timeout';
+  turns: number;
+  steps: number;
+  plays: number;
+  decisionPoints: number;
+  meanLegalChoices: number;
+  distinctVisitedStates: number;
+  retainedCardTurns: number;
+  exhaustPlays: number;
+  finisherActivations: number;
+  postureBreaks: number;
+  executeUses: number;
+};
+
 const archetypes: EnemyArchetypeId[] = ['goblin', 'guardian', 'mage', 'assassin', 'knight'];
 const names = ['Hızlı Saldırı', 'Kalkan Sihri', 'Kanlı Elçi', 'Ateş Topu', 'Rüzgarın Sesli', 'Taktik Hazırlık', 'Zayıflatıcı Lanet', 'Sabırlı Muhafız', 'Son Kıvılcım', 'Zincir Darbesi'];
 
@@ -14,7 +35,7 @@ const names = ['Hızlı Saldırı', 'Kalkan Sihri', 'Kanlı Elçi', 'Ateş Topu'
 export function runSimulation(mode: SimulationMode, games = 100) {
   if (!Number.isInteger(games) || games < 1 || games > 10000) throw new RangeError('games must be 1..10000');
   const originalRandom = Math.random;
-  const results = [];
+  const results: SimulationResult[] = [];
   try {
     for (let game = 0; game < games; game++) {
       const seed = 20260904 + game;
@@ -35,13 +56,16 @@ export function runSimulation(mode: SimulationMode, games = 100) {
         deck: shuffle(deck), hand: [], discardPile: [], exhaustedPile: [],
       }, 5));
       let steps = 0, choiceCount = 0, decisionPoints = 0, plays = 0, held = 0, exhausted = 0, finishers = 0;
+      let postureBreaks = 0, executeUses = 0;
       const states = new Set<string>();
       while (state.gamePhase === 'combat' && state.round <= 30 && steps < 300) {
         steps++;
         states.add(JSON.stringify([state.round, state.player.mevcutCan, state.enemy.mevcutCan, state.currentEnergy,
           state.hand.map(c => c.isim), state.playerBlock, state.enemyBlock, state.comboCount,
-          state.playerStatuses, state.enemyStatuses, state.exhaustedPile.map(c => c.isim)]));
-        const playable = state.player.staggered ? [] : state.hand.filter(c => !c.onDiscardPenalty && c.manaBedeli <= state.currentEnergy);
+          state.playerStatuses, state.enemyStatuses, state.exhaustedPile.map(c => c.isim),
+          state.player.currentPosture, state.enemy.currentPosture, state.player.isBroken, state.enemy.isBroken,
+          state.postureComboCount, state.pendingParry, state.playerGuardPostureCost, state.enemyGuardPostureCost]));
+        const playable = state.hand.filter(c => cardUnavailableReason(state, c) === '');
         choiceCount += playable.length + 1; // End turn is always a legal choice.
         if (playable.length) decisionPoints++;
         // Simple stochastic policy: sometimes hold retained defense; otherwise pick a legal card.
@@ -49,19 +73,26 @@ export function runSimulation(mode: SimulationMode, games = 100) {
         const shouldEnd = !candidates.length || choiceRng.random() < 0.08;
         if (shouldEnd) {
           held += state.hand.filter(c => c.retain && !c.onDiscardPenalty).length;
-          state = resolveTurn(state, finishEncounter);
+          const before = state;
+          if (before.player.isBroken && before.enemyIntent?.action && isMeleeAction(before.enemyIntent.action)) executeUses++;
+          state = resolveTurn(before, finishEncounter);
+          postureBreaks += Number(!before.player.isBroken && state.player.isBroken) + Number(!before.enemy.isBroken && state.enemy.isBroken);
         } else {
           const selected = candidates[Math.floor(choiceRng.random() * candidates.length)];
           if (finisherBonus(selected, advanceCombo(state.comboCount, state.comboChain.at(-1), cardCategory(selected)))) finishers++;
           if (selected.exhaust) exhausted++;
           plays++;
-          state = finishEncounter(resolveCard(state, selected.id));
+          const before = state;
+          if (before.enemy.isBroken && isMeleeCard(selected)) executeUses++;
+          state = finishEncounter(resolveCard(before, selected.id));
+          postureBreaks += Number(!before.player.isBroken && state.player.isBroken) + Number(!before.enemy.isBroken && state.enemy.isBroken);
         }
       }
       results.push({ seed, archetype, tier,
         outcome: state.gamePhase === 'gameOver' ? 'loss' : state.gamePhase !== 'combat' ? 'win' : 'timeout',
         turns: state.round, steps, plays, decisionPoints, meanLegalChoices: choiceCount / steps,
-        distinctVisitedStates: states.size, retainedCardTurns: held, exhaustPlays: exhausted, finisherActivations: finishers });
+        distinctVisitedStates: states.size, retainedCardTurns: held, exhaustPlays: exhausted, finisherActivations: finishers,
+        postureBreaks, executeUses });
     }
   } finally { Math.random = originalRandom; }
   const mean = (key: 'turns' | 'plays' | 'decisionPoints' | 'meanLegalChoices' | 'distinctVisitedStates') =>
@@ -76,5 +107,7 @@ export function runSimulation(mode: SimulationMode, games = 100) {
       averageLegalChoices: mean('meanLegalChoices'), averageDistinctVisitedStates: mean('distinctVisitedStates'),
       retainedCardTurns: results.reduce((sum, r) => sum + r.retainedCardTurns, 0),
       exhaustPlays: results.reduce((sum, r) => sum + r.exhaustPlays, 0),
-      finisherActivations: results.reduce((sum, r) => sum + r.finisherActivations, 0) }, results };
+      finisherActivations: results.reduce((sum, r) => sum + r.finisherActivations, 0),
+      postureBreaks: results.reduce((sum, r) => sum + r.postureBreaks, 0),
+      executeUses: results.reduce((sum, r) => sum + r.executeUses, 0) }, results };
 }

@@ -1,34 +1,29 @@
 // Bu dosya src/components/BattleStats.tsx için ilgili kodları içerir.
-// Bileşen: oyunun temel istatistiklerini (can, blok, zirh, vs.) gösterir
-// Bileşen: oyunun temel istatistiklerini (can, blok, zirh, vs.) gösterir
+// Bileşen: oyunun temel savaş istatistiklerini gösterir
 import React from 'react';
 import { useGameStore } from '../state/store';
 import type { EnemyIntent } from '../types/game';
+import type { Character } from '../types/game';
 import { useShallow } from 'zustand/react/shallow';
+import { PostureBar } from './PostureBar';
 
 interface FighterPanelProps {
   kind: 'player' | 'enemy';
-  name: string;
-  health: number;
-  maxHealth: number;
-  strength: number;
-  armor: number;
+  fighter: Character;
   block: number;
-  posture: number;
-  maxPosture: number;
-  staggered: boolean;
   statuses: Array<{ id: string; stacks: number; duration: number }>;
   statusLabel: (status: { id: string; stacks: number; duration: number }) => string;
   intent?: React.ReactNode;
   energy?: React.ReactNode;
 }
 
-function FighterPanel({ kind, name, health, maxHealth, strength, armor, block, posture, maxPosture, staggered, statuses, statusLabel, intent, energy }: FighterPanelProps) {
+function FighterPanel({ kind, fighter, block, statuses, statusLabel, intent, energy }: FighterPanelProps) {
+  const { isim: name, mevcutCan: health, maksimumCan: maxHealth, hasarBonusu: damageBonus } = fighter;
   const healthPercent = Math.max(0, (health / maxHealth) * 100);
   const isPlayer = kind === 'player';
 
   return (
-    <article className={`fighter fighter--${kind}${healthPercent <= 30 ? ' fighter--low-health' : ''}`}>
+    <article className={`fighter fighter--${kind}${healthPercent <= 30 ? ' fighter--low-health' : ''}${fighter.isBroken ? ' fighter--broken' : ''}`}>
       <div className={`fighter-avatar fighter-avatar--${kind}`} aria-label={isPlayer ? 'Oyuncu afişi' : 'Düşman afişi'}>
         {isPlayer ? <img src="/assets/Oyuncu.png" alt="Oyuncu avatar" className="fighter-avatar-img" /> :
           <img src="/assets/düşman.png" alt={`${name} avatar`} className="fighter-avatar-img" />}
@@ -43,14 +38,10 @@ function FighterPanel({ kind, name, health, maxHealth, strength, armor, block, p
             %{Math.round(healthPercent)}
           </div>
         </div>
-        <div className={`posture-bar${staggered ? ' posture-bar--broken' : ''}`} role="progressbar" aria-label={`${isPlayer ? 'Oyuncu' : 'Düşman'} denge`} aria-valuenow={posture} aria-valuemin={0} aria-valuemax={maxPosture}>
-          <span style={{ width: `${(posture / maxPosture) * 100}%` }} />
-        </div>
-        <small className="posture-label">{staggered ? 'KIRILDI · 2x HASAR' : `DENGE ${posture} / ${maxPosture}`}</small>
+        <PostureBar character={fighter} owner={isPlayer ? 'Oyuncu' : 'Düşman'} />
         <div className="fighter-stats">
-          <span className="stat-item"><b>+{strength}</b><small>GÜÇ</small></span>
+          <span className="stat-item"><b>+{damageBonus}</b><small>HASAR</small></span>
           <span className="stat-item block-value"><b>{block}</b><small>BLOK</small></span>
-          <span className="stat-item"><b>{armor}</b><small>ZIRH</small></span>
         </div>
         {statuses.length > 0 && <div className="status-row" aria-label={`${isPlayer ? 'Oyuncu' : 'Düşman'} etkileri`}>{statuses.map((status) => <span key={status.id} className={`status-chip${isPlayer ? '' : ' status-chip--enemy'}`} title={statusLabel(status)}>{statusLabel(status)}</span>)}</div>}
         {intent}
@@ -64,7 +55,7 @@ function getIntentDetails(value: EnemyIntent | null | undefined) {
   if (!value) return { type: '', valueText: '' };
 
   const valueText = value.estimatedDamage !== undefined
-    ? `${value.estimatedDamage} hasar${value.criticalDamage !== undefined ? ` · kritik ${value.criticalDamage}` : ''}`
+    ? `${value.estimatedDamage} hasar`
     : value.estimatedBlock !== undefined
       ? `${value.estimatedBlock} blok`
       : value.estimatedHeal !== undefined
@@ -121,19 +112,19 @@ export const BattleStats: React.FC<BattleStatsProps> = ({ side = 'all' }) => {
   const intentClass = intentIsAttack ? 'attack' : intentIsDefend ? 'defend' : 'special';
   const displayedIntentValue = valueText || (intentIsDefend && enemyBlock > 0 ? `${enemyBlock} blok` : intentType === 'special' && enemyIntentValue > 0 ? `${enemyIntentValue} tahmini iyileşme` : '');
   const statusLabel = (status: { id: string; stacks: number; duration: number }) => {
-    const labels: Record<string, string> = { poisoned: 'Zehirli', vulnerable: 'Savunmasız', weakened: 'Güçsüz', empowered: 'Güçlü', fortified: 'Tahkimli' };
+    const labels: Record<string, string> = { poisoned: 'Zehirli', vulnerable: 'Savunmasız', weakened: 'Güçsüz', empowered: 'Güçlü', fortified: 'Tahkimli', postureExposed: 'Duruş açığı' };
     return `${labels[status.id] ?? status.id} · ${status.stacks} yük · ${status.duration} tur`;
   };
 
   return (
     <>
-      {(side === 'all' || side === 'player') && <FighterPanel kind="player" name={player.isim} health={player.mevcutCan} maxHealth={player.maksimumCan} strength={player.gucCarpani} armor={player.zirhSinifi} block={playerBlock} posture={player.denge ?? 0} maxPosture={player.maksimumDenge ?? 10} staggered={player.staggered ?? false} statuses={playerStatuses} statusLabel={statusLabel} energy={<div className="energy-display" aria-label={`${currentEnergy} / ${maxEnergy} enerji`}>
+      {(side === 'all' || side === 'player') && <FighterPanel kind="player" fighter={player} block={playerBlock} statuses={playerStatuses} statusLabel={statusLabel} energy={<div className="energy-display" aria-label={`${currentEnergy} / ${maxEnergy} enerji`}>
           <small>ENERJİ</small>
           <span>{currentEnergy} <b>/ {maxEnergy}</b></span>
           <span className="energy-pips" aria-hidden="true">{Array.from({ length: maxEnergy }, (_, index) => <i key={index} className={index < currentEnergy ? 'energy-pip energy-pip--full' : 'energy-pip'} />)}</span>
         </div>} />}
 
-      {(side === 'all' || side === 'enemy') && <FighterPanel kind="enemy" name={enemy.isim} health={enemy.mevcutCan} maxHealth={enemy.maksimumCan} strength={enemy.gucCarpani} armor={enemy.zirhSinifi} block={enemyBlock} posture={enemy.denge ?? 0} maxPosture={enemy.maksimumDenge ?? 10} staggered={enemy.staggered ?? false} statuses={enemyStatuses} statusLabel={statusLabel} intent={<div key={`${intentType}-${displayedIntentValue}`} className={`enemy-intent enemy-intent--${intentClass}`} aria-live="polite">
+      {(side === 'all' || side === 'enemy') && <FighterPanel kind="enemy" fighter={enemy} block={enemyBlock} statuses={enemyStatuses} statusLabel={statusLabel} intent={<div key={`${intentType}-${displayedIntentValue}`} className={`enemy-intent enemy-intent--${intentClass}`} aria-live="polite">
             <span className="enemy-intent__icon" aria-hidden="true">{telegraph?.icon ?? (intentIsAttack ? '⚔' : intentIsDefend ? '◈' : '✦')}</span>
             <span><b>Düşman niyeti</b><strong>{intentLabel}</strong></span>
             {displayedIntentValue && <small>{displayedIntentValue}</small>}

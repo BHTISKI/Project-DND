@@ -2,7 +2,7 @@ import type { Character, StatusEffect, StatusId } from '../types/game';
 
 export const statusNames: Record<StatusId, string> = {
   vulnerable: 'Savunmasız', weakened: 'Güçsüz', poisoned: 'Zehirli',
-  fortified: 'Tahkimli', empowered: 'Güçlü',
+  fortified: 'Tahkimli', empowered: 'Güçlü', postureExposed: 'Duruş açığı',
 };
 
 export function addStatus(statuses: StatusEffect[], effect: StatusEffect): StatusEffect[] {
@@ -29,8 +29,4 @@ export function poisonTick(statuses: StatusEffect[], target: 'player' | 'enemy',
     character: { ...character, mevcutCan: Math.max(0, character.mevcutCan - damage) },
     log: damage > 0 ? [`${target === 'player' ? 'Oyuncu' : 'Düşman'} zehirden ${damage} hasar aldı.`] : [],
   };
-}
-
-export function tickStatuses(statuses: StatusEffect[], target: 'player' | 'enemy', character: Character) {
-  return { ...poisonTick(statuses, target, character), statuses: ageStatuses(statuses) };
 }

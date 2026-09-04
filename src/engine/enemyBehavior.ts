@@ -29,7 +29,7 @@ export function decideEnemyBehavior(context: EnemyBehaviorContext): EnemyDecisio
   };
   const base = actionFromIntent(context.previousIntent);
   if (context.behavior === 'opportunist' && context.lastPlayerSignal === 'no-block' && base.kind === 'attack')
-    return { action: { kind: 'critical-execution', damage: (base.damage ?? 4) + 2 },
+    return { action: { kind: 'execution', damage: (base.damage ?? 4) + 2 },
       telegraph: { type: 'attack', label: 'Fırsat saldırısı', icon: '⚔' }, nextDesperationStacks: stacks };
   if (context.behavior === 'paranoid' && ['parry', 'retaliation'].includes(context.lastPlayerSignal)) {
     const poison = random() < 0.5;

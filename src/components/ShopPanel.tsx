@@ -1,6 +1,5 @@
 // Bu dosya src/components/ShopPanel.tsx için ilgili kodları içerir.
 // Bileşen: dükkan paneli, kart satın alma ve upgrades
-// Bileşen: dükkan paneli, kart satın alma ve upgrades
 import React from 'react';
 import { useGameStore } from '../state/store';
 import { sampleCardDefs } from '../types/game';

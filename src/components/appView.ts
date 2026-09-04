@@ -10,7 +10,6 @@ export const nodeInfo: Record<NodeType, { icon: string; label: string; detail: s
 };
 
 export function classifyLog(message: string): { className: string; icon: string; label: string } {
-  if (message.includes('KRİTİK')) return { className: 'log-entry--critical', icon: '✦', label: 'Kritik' };
   if (message.includes('hasar') || message.includes('saldırı') || message.includes('vuruldu')) return { className: 'log-entry--attack', icon: '⚔', label: 'Saldırı' };
   if (message.includes('blok') || message.includes('savun')) return { className: 'log-entry--defense', icon: '◈', label: 'Savunma' };
   if (message.includes('iyileş')) return { className: 'log-entry--heal', icon: '✚', label: 'Şifa' };

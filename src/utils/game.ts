@@ -2,12 +2,8 @@
 // Moved from src/state/store.ts to reduce store complexity
 import type { Card, CardEffect } from "../types/game";
 import type { IRNG } from './rng';
+import { isMeleeCard, POSTURE_CONFIG } from '../mechanics/posture';
 
-function upgradeDie(die: string | undefined): string | undefined {
-  if (!die || !/^d\d+$/.test(die)) return die;
-  const sides = Number(die.slice(1));
-  return `d${sides + 2}`;
-}
 
 export function calculateUpgradeCost(rarity: Card["rarity"] | undefined, victoryCount: number): number {
   const baseCost = rarity === "legendary" ? 120 : rarity === "rare" ? 80 : rarity === "uncommon" ? 60 : 40;
@@ -27,23 +23,8 @@ export function enhanceEffect(effect: CardEffect): CardEffect {
         damageBonus: (effect.damageBonus ?? 0) + 2,
       };
     case "block":
-      if (effect.amount !== undefined) {
-        return {
-          ...effect,
-          amount: (effect.amount ?? 0) + 2,
-        };
-      } else {
-        return { ...effect, die: upgradeDie(effect.die) };
-      }
     case "heal":
-      if (effect.amount !== undefined) {
-        return {
-          ...effect,
-          amount: (effect.amount ?? 0) + 2,
-        };
-      } else {
-        return { ...effect, die: upgradeDie(effect.die) };
-      }
+      return { ...effect, amount: effect.amount + 2 };
     case "status":
       return {
         ...effect,
@@ -81,7 +62,8 @@ export function shuffle<T>(array: T[], rng?: IRNG): T[] {
 export function upgradedCard(card: Card): Card | null {
   if (card.isUpgraded || card.onDiscardPenalty) return null;
   const effects = card.effects?.map(enhanceEffect) ?? [];
-  if (JSON.stringify(effects) !== JSON.stringify(card.effects ?? [])) return { ...card, effects, isUpgraded: true };
+  const postureDamage = isMeleeCard(card) && (card.postureDamage ?? 0) > 0 ? card.postureDamage! + POSTURE_CONFIG.card.upgradeBonus : card.postureDamage;
+  if (JSON.stringify(effects) !== JSON.stringify(card.effects ?? []) || postureDamage !== card.postureDamage) return { ...card, effects, postureDamage, isUpgraded: true };
   if (card.manaBedeli > 0) return { ...card, manaBedeli: card.manaBedeli - 1, isUpgraded: true };
   return null;
 }

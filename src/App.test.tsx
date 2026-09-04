@@ -7,6 +7,7 @@ import App from './App';
 import { useGameStore } from './state/store';
 import { setupMockRandom, resetMockRandom } from './testUtils';
 import { cleanup } from '@testing-library/react';
+import { initialPosture } from './mechanics/posture';
 
 describe('App', () => {
   beforeEach(() => {
@@ -16,8 +17,8 @@ describe('App', () => {
       playerName: 'Ero',
       initialized: false,
       gamePhase: 'mapSelection', // will be overwritten by initializeGame, but we set a default
-      player: { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 },
-      enemy: { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 },
+      player: { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 2, ...initialPosture() },
+      enemy: { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 1, ...initialPosture('goblin') },
       isPlayerTurn: true,
       maxEnergy: 3,
       currentEnergy: 3,
@@ -57,7 +58,7 @@ describe('App', () => {
     // wait for initializeGame to run (useEffect)
     await screen.findByText(/Bölüm 1/i);
     expect(screen.getByText(/Kader Günlüğü/i)).toBeInTheDocument();
-    expect(screen.getByText(/DND Oyunu/i)).toBeInTheDocument();
+    expect(screen.getByText(/Makara/i)).toBeInTheDocument();
     // "Destek hazırlanıyor..." log entry
     expect(screen.getByText(/Deste hazırlandı/i, { selector: '.log-drawer__body *' })).toBeInTheDocument();
     // map selection buttons should be visible
@@ -99,7 +100,7 @@ describe('App', () => {
     await userEvent.click(screen.getAllByRole('button', { name: /Desteye ekle/i })[0]);
     // now in combat, we need to have a card that can kill the enemy
     // Set up state for guaranteed victory
-    setupMockRandom([0.9]); // high roll for die if needed
+    setupMockRandom([0.9]); // deterministic combat setup
     // Set state for guaranteed victory
     useGameStore.setState({
       initialized: true,
@@ -110,7 +111,7 @@ describe('App', () => {
       maxEnergy: 3,
       currentEnergy: 3,
       deck: [],
-      hand: [{ id: 'card-1', isim: 'Test Kartı', tip: 'saldırı', manaBedeli: 1, baseHasar: 100, zarTuru: 'd4', effects: [{ kind: 'attack', die: 'd4' }] }],
+      hand: [{ id: 'card-1', isim: 'Test Kartı', tip: 'saldırı', manaBedeli: 1, baseHasar: 100,  effects: [{ kind: 'attack', amount: 3 }] }],
       discardPile: [],
       drawCount: 5,
       gold: 50,
@@ -162,7 +163,7 @@ describe('App', () => {
       maxEnergy: 3,
       currentEnergy: 0,
       deck: [],
-      hand: [{ id: 'card-1', isim: 'Test Kartı', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, zarTuru: 'd4', effects: [{ kind: 'attack', die: 'd4' }] }],
+      hand: [{ id: 'card-1', isim: 'Test Kartı', tip: 'saldırı', manaBedeli: 1, baseHasar: 0,  effects: [{ kind: 'attack', amount: 3 }] }],
       discardPile: [],
       drawCount: 5,
       gold: 30,

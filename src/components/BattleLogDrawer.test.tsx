@@ -10,10 +10,7 @@ describe('BattleLogDrawer', () => {
   const mockClassify = vi.fn((message: string) => {
     const lowerMessage = message.toLocaleLowerCase('tr');
     let result;
-    if (lowerMessage.includes('kritik')) {
-      result = { className: 'log-entry--critical', icon: '✦', label: 'Kritik' };
-    }
-    else if (lowerMessage.includes('hasar') || lowerMessage.includes('saldırı') || lowerMessage.includes('vuruldu')) {
+    if (lowerMessage.includes('hasar') || lowerMessage.includes('saldırı') || lowerMessage.includes('vuruldu')) {
       result = { className: 'log-entry--attack', icon: '⚔', label: 'Saldırı' };
     }
     else if (lowerMessage.includes('blok') || lowerMessage.includes('savun')) {
@@ -101,7 +98,6 @@ describe('BattleLogDrawer', () => {
 
   it('applies correct classification to messages', () => {
     const messages = [
-      'KRİTİK hasar!',
       'Düşmanı vuruldu', // changed from vurdun to vuruldu to match mockClassify
       'Blok başarılı',
       'Canınız iyileşti',
@@ -119,7 +115,6 @@ describe('BattleLogDrawer', () => {
     // index 3: Canınız iyileşti -> heal
     // index 4: Blok başarılı -> defense
     // index 5: Düşmanı vuruldu -> attack
-    // index 6: KRİTİK hasar! -> critical
 
     // Helper to check that an element has the base class and optionally a specific class
     const hasBaseClass = (el: Element) => el.classList.contains('log-entry');
@@ -127,7 +122,6 @@ describe('BattleLogDrawer', () => {
 
     // Normal mesaj: only base class
     expect(hasBaseClass(logEntries[0])).toBe(true);
-    expect(hasSpecificClass(logEntries[0], 'critical')).toBe(false);
     expect(hasSpecificClass(logEntries[0], 'attack')).toBe(false);
     expect(hasSpecificClass(logEntries[0], 'defense')).toBe(false);
     expect(hasSpecificClass(logEntries[0], 'heal')).toBe(false);
@@ -137,7 +131,6 @@ describe('BattleLogDrawer', () => {
     // Oyun bitti.: base + gameover
     expect(hasBaseClass(logEntries[1])).toBe(true);
     expect(hasSpecificClass(logEntries[1], 'gameover')).toBe(true);
-    expect(hasSpecificClass(logEntries[1], 'critical')).toBe(false);
     expect(hasSpecificClass(logEntries[1], 'attack')).toBe(false);
     expect(hasSpecificClass(logEntries[1], 'defense')).toBe(false);
     expect(hasSpecificClass(logEntries[1], 'heal')).toBe(false);
@@ -146,7 +139,6 @@ describe('BattleLogDrawer', () => {
     // Zafer kazandınız!: base + victory
     expect(hasBaseClass(logEntries[2])).toBe(true);
     expect(hasSpecificClass(logEntries[2], 'victory')).toBe(true);
-    expect(hasSpecificClass(logEntries[2], 'critical')).toBe(false);
     expect(hasSpecificClass(logEntries[2], 'attack')).toBe(false);
     expect(hasSpecificClass(logEntries[2], 'defense')).toBe(false);
     expect(hasSpecificClass(logEntries[2], 'heal')).toBe(false);
@@ -155,7 +147,6 @@ describe('BattleLogDrawer', () => {
     // Canınız iyileşti: base + heal
     expect(hasBaseClass(logEntries[3])).toBe(true);
     expect(hasSpecificClass(logEntries[3], 'heal')).toBe(true);
-    expect(hasSpecificClass(logEntries[3], 'critical')).toBe(false);
     expect(hasSpecificClass(logEntries[3], 'attack')).toBe(false);
     expect(hasSpecificClass(logEntries[3], 'defense')).toBe(false);
     expect(hasSpecificClass(logEntries[3], 'victory')).toBe(false);
@@ -164,7 +155,6 @@ describe('BattleLogDrawer', () => {
     // Blok başarılı: base + defense
     expect(hasBaseClass(logEntries[4])).toBe(true);
     expect(hasSpecificClass(logEntries[4], 'defense')).toBe(true);
-    expect(hasSpecificClass(logEntries[4], 'critical')).toBe(false);
     expect(hasSpecificClass(logEntries[4], 'attack')).toBe(false);
     expect(hasSpecificClass(logEntries[4], 'heal')).toBe(false);
     expect(hasSpecificClass(logEntries[4], 'victory')).toBe(false);
@@ -173,20 +163,10 @@ describe('BattleLogDrawer', () => {
     // Düşmanı vuruldu: base + attack
     expect(hasBaseClass(logEntries[5])).toBe(true);
     expect(hasSpecificClass(logEntries[5], 'attack')).toBe(true);
-    expect(hasSpecificClass(logEntries[5], 'critical')).toBe(false);
     expect(hasSpecificClass(logEntries[5], 'defense')).toBe(false);
     expect(hasSpecificClass(logEntries[5], 'heal')).toBe(false);
     expect(hasSpecificClass(logEntries[5], 'victory')).toBe(false);
     expect(hasSpecificClass(logEntries[5], 'gameover')).toBe(false);
-
-    // KRİTİK hasar!: base + critical
-    expect(hasBaseClass(logEntries[6])).toBe(true);
-    expect(hasSpecificClass(logEntries[6], 'critical')).toBe(true);
-    expect(hasSpecificClass(logEntries[6], 'attack')).toBe(false);
-    expect(hasSpecificClass(logEntries[6], 'defense')).toBe(false);
-    expect(hasSpecificClass(logEntries[6], 'heal')).toBe(false);
-    expect(hasSpecificClass(logEntries[6], 'victory')).toBe(false);
-    expect(hasSpecificClass(logEntries[6], 'gameover')).toBe(false);
   });
 
   it('shows empty state when no messages', () => {

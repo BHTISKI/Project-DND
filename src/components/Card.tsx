@@ -7,11 +7,11 @@ import { cardBlockText, cardDamageText, describeCard, rarityName } from '../util
 interface CardProps {
   card: Card; onPlay: (card: Card) => void; isPlayable?: boolean; style?: React.CSSProperties;
   isDraggable?: boolean; onDragStart?: (id: string) => void; onDragEnd?: () => void;
-  isDragging?: boolean; denied?: boolean; unavailableReason?: string; mechanicHint?: string;
+  isDragging?: boolean; denied?: boolean; unavailableReason?: string; mechanicHint?: string; executeReady?: boolean;
 }
 export const CardComponent: React.FC<CardProps> = ({
   card, onPlay, isPlayable = true, style, isDraggable = false,
-  onDragStart = () => undefined, onDragEnd = () => undefined, isDragging = false, denied = false, unavailableReason, mechanicHint,
+  onDragStart = () => undefined, onDragEnd = () => undefined, isDragging = false, denied = false, unavailableReason, mechanicHint, executeReady = false,
 }) => {
   const [zoomed, setZoomed] = useState(false);
   const pendingClick = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -42,7 +42,7 @@ export const CardComponent: React.FC<CardProps> = ({
   const inspect = () => { cancel(); setZoomed(true); };
   return <>
     <button type="button"
-      className={`card game-card game-card--${card.tip} game-card--${card.rarity ?? 'common'} game-card--theme-${card.theme ?? card.tip}${card.theme ? ' game-card--' + card.theme : ''}${isPlayable ? '' : ' game-card--disabled'}${zoomed ? ' zoomed' : ''}${isDragging ? ' card--dragging' : ''}${denied ? ' denied-shake' : ''}`}
+      className={`card game-card game-card--${card.tip} game-card--${card.rarity ?? 'common'} game-card--theme-${card.theme ?? card.tip}${card.theme ? ' game-card--' + card.theme : ''}${isPlayable ? '' : ' game-card--disabled'}${executeReady ? ' game-card--execute-ready' : ''}${zoomed ? ' zoomed' : ''}${isDragging ? ' card--dragging' : ''}${denied ? ' denied-shake' : ''}`}
       aria-pressed={zoomed}
       aria-label={`${card.isim}, ${label}, ${card.manaBedeli} mana, ${damage} hasar, ${isPlayable ? card.isim + ' oynanabilir' : card.isim + ' için ' + reason.toLocaleLowerCase('tr')}${mechanicHint ? ', ' + mechanicHint : ''}`}
       disabled={!isPlayable} style={style} draggable={isDraggable && isPlayable}
@@ -71,7 +71,7 @@ export const CardComponent: React.FC<CardProps> = ({
         <button ref={closeRef} type="button" onClick={() => setZoomed(false)} aria-label="Kart incelemesini kapat">×</button>
         <p>{rarityName(card.rarity)} · {label} · {card.manaBedeli} enerji</p><h2>{card.isim}</h2><p>{description}</p>
         {mechanicHint && <p>{mechanicHint}</p>}
-        <p>Saldırılar D20 + Güç ile zırha ulaşmalıdır. Doğal 1 ıskalar, doğal 20 kritik vurur. Hasara durum etkileri ve blok uygulanır.</p>
+        <p>Kartlarda yazan sabit değerler hasar bonusu, durum etkileri ve blokla birlikte uygulanır.</p>
         <button type="button" disabled={!isPlayable} onClick={() => { setZoomed(false); onPlay(card); }}>{isPlayable ? 'Kartı oyna' : reason}</button>
       </div>
     </div>, document.body)}

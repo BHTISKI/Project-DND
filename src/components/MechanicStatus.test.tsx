@@ -9,7 +9,7 @@ beforeEach(() => {
   vi.spyOn(Math, 'random').mockReturnValue(0.5);
   const initial = useGameStore.getInitialState();
   useGameStore.setState({ ...initial, initialized: true, gamePhase: 'combat',
-    enemy: { ...initial.enemy, mevcutCan: 100, maksimumCan: 100, maksimumDenge: 200 },
+enemy: { ...initial.enemy, mevcutCan: 100, maksimumCan: 100, maxPosture: 200 },
     enemyIntent: { type: 'defend', action: { kind: 'pass' } },
     hand: ['Son Kıvılcım', 'Sabırlı Muhafız', 'Zincir Darbesi'].map(name => ({ ...sampleCardDefs.find(c => c.isim === name)!, id: name })) });
 });
@@ -35,5 +35,11 @@ describe('visible mechanic feedback', () => {
     expect(screen.getByRole('button', { name: /^Sabırlı Muhafız, / })).toBeInTheDocument();
     expect(screen.getByText('Oynamazsan elinde kalır')).toBeInTheDocument();
     expect(screen.getByText('Kombo 0')).toBeInTheDocument();
+  });
+  it('announces prepared Parry and the next posture momentum', () => {
+    useGameStore.setState({ pendingParry: true, postureComboCount: 2 });
+    render(<MechanicStatus />);
+    expect(screen.getByText(/Savuşturma hazır/)).toBeInTheDocument();
+    expect(screen.getByText(/Sonraki yakın saldırı 1,25× denge/)).toBeInTheDocument();
   });
 });

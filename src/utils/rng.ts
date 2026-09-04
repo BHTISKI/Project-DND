@@ -2,12 +2,6 @@ export interface IRNG {
   random(): number;
 }
 
-export class DefaultRNG implements IRNG {
-  random(): number {
-    return Math.random();
-  }
-}
-
 export class SeededRNG implements IRNG {
   private seed: number;
 

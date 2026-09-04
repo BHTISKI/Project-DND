@@ -8,6 +8,7 @@ import { useGameStore } from '../state/store';
 import { setupMockRandom, resetMockRandom } from '../testUtils';
 import { cleanup } from '@testing-library/react';
 import type { Card } from '../types/game';
+import { initialPosture } from '../mechanics/posture';
 
 describe('Hand', () => {
   const baseCard: Card = {
@@ -16,8 +17,7 @@ describe('Hand', () => {
     tip: 'saldırı',
     manaBedeli: 1,
     baseHasar: 1,
-    zarTuru: 'd4',
-    effects: [{ kind: 'attack', die: 'd4' }],
+    effects: [{ kind: 'attack', amount: 3 }],
     isUpgraded: false,
     rarity: 'common',
     tags: ['attack'],
@@ -29,8 +29,8 @@ describe('Hand', () => {
       initialized: true,
       gamePhase: 'combat',
       isPlayerTurn: true,
-      player: { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 },
-      enemy: { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 },
+      player: { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 2, ...initialPosture() },
+      enemy: { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 1, ...initialPosture('goblin') },
       maxEnergy: 3,
       currentEnergy: 3,
       deck: [],
@@ -71,7 +71,22 @@ describe('Hand', () => {
   it('does not render anything when hand is empty', () => {
     useGameStore.setState({ ...useGameStore.getState(), hand: [] });
     render(<Hand />);
+    expect(screen.getByText('Elinizde kart yok')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Test Kartı (oynanabilir|için)/i })).not.toBeInTheDocument();
+  });
+
+  it('marks the hand inactive outside an active player turn', () => {
+    const { rerender } = render(<Hand />);
+    const hand = screen.getByRole('list', { name: 'Kart eli' });
+    expect(hand).not.toHaveClass('hand-grid--inactive');
+
+    useGameStore.setState({ ...useGameStore.getState(), gamePhase: 'mapSelection' });
+    rerender(<Hand />);
+    expect(hand).toHaveClass('hand-grid--inactive');
+
+    useGameStore.setState({ ...useGameStore.getState(), gamePhase: 'combat', isPlayerTurn: false });
+    rerender(<Hand />);
+    expect(hand).toHaveClass('hand-grid--inactive');
   });
 
   it('only allows playing cards when in combat phase and player turn and has enough energy', async () => {
@@ -118,5 +133,25 @@ describe('Hand', () => {
     // We clear the spy and check that it is not called.
     playCardSpy.mockClear();
     expect(playCardSpy).not.toHaveBeenCalled();
+  });
+
+  it('highlights only eligible melee cards as Execute-ready', () => {
+    useGameStore.setState({
+      enemy: { ...useGameStore.getState().enemy, currentPosture: 70, isBroken: true },
+      hand: [baseCard, { ...baseCard, id: 'ranged', isim: 'Uzaktan Kart', isRanged: true }],
+    });
+    render(<Hand />);
+    expect(screen.getByRole('button', { name: /Test Kartı.*İnfaz hazır/ })).toHaveClass('game-card--execute-ready');
+    expect(screen.getByRole('button', { name: /Uzaktan Kart.*oynanabilir/ })).not.toHaveClass('game-card--execute-ready');
+  });
+
+  it('keeps attacks available while Broken and disables direct block cards', () => {
+    useGameStore.setState({
+      player: { ...useGameStore.getState().player, currentPosture: 100, isBroken: true },
+      hand: [baseCard, { ...baseCard, id: 'guard', isim: 'Guard Kartı', tip: 'yetenek', effects: [{ kind: 'block', amount: 3 }] }],
+    });
+    render(<Hand />);
+    expect(screen.getByRole('button', { name: /Test Kartı.*oynanabilir/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Guard Kartı.*duruşun kırık/ })).toBeDisabled();
   });
 });

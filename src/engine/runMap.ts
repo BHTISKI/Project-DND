@@ -12,12 +12,3 @@ export function generateAvailableNodes(floor: number, _previous: NodeType | null
     return { type, id: `floor-${floor}-${type}-${index}` };
   });
 }
-
-export function updateRunMapAfterNodeCompletion(state: { runFloor: number; currentNode: NodeType | null; nodeType: NodeType | null }, completed: NodeType) {
-  const runFloor = state.runFloor + 1;
-  return { runFloor, currentNode: completed, nodeType: completed, availableNodes: generateAvailableNodes(runFloor) };
-}
-
-export function getEliteRewardBonus(victories: number): number {
-  return Math.floor((20 + victories * 5) * 0.5);
-}

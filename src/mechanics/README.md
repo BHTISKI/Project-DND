@@ -4,7 +4,7 @@
 
 - `retain.ts` / `Card.retain`: `resolveTurn` el temizliğinde kartı korur. Korunan kart sayısı bir sonraki `drawCount` değerinden çıkarılır; sıfırın altına düşmez. Eldeki fazla kartları zorla silmez. `onDiscardPenalty` kartları tutulamaz ve lanet bedeli yine ödenir.
 - `exhaust.ts` / `Card.exhaust`: `resolveCard` sonrası kartı `exhaustedPile` içine koyar. Kart sahibi olmaya devam edilir; çekme/karıştırma bu yığını kullanmaz. Savaş kazanılınca mezarlığa, yeni savaş hazırlanırken ortak desteye döner. Yeniden başlatma yığını temizler. Kalıcı kart değiştirme laneti tükenmeye göre önceliklidir.
-- `finisher.ts` / `Card.finisher`: aynı tur tür değişimi sayısı eşiğe ulaştığında kartın ilk saldırı etkisine basılı hasar bonusunu ekler. Kartın kendi geçişi sayılır. Iskalamada bonus kaybolur; başka karta taşınmaz. Kritik, durum etkileri ve blok normal hasar yolundan uygulanır. Kategori için ilk etiket (`attack`, `defend`, `skill`), etiket yoksa `tip` kullanılır.
+- `finisher.ts` / `Card.finisher`: aynı tur tür değişimi sayısı eşiğe ulaştığında kartın ilk saldırı etkisine basılı hasar bonusunu ekler. Kartın kendi geçişi sayılır. Bonus ilk saldırıda kullanılır ve başka karta taşınmaz. Durum etkileri ve blok normal hasar yolundan uygulanır. Kategori için ilk etiket (`attack`, `defend`, `skill`), etiket yoksa `tip` kullanılır.
 - `MechanicStatus`: görünür kombo sayısı ve tükenen kart listesi. `Hand` hazır/eksik bitirici bilgisini aynı saf yardımcılarla hesaplar. Kart başlıklarının erişilebilir adında da bu bilgi vardır.
 
 | Prototip | Kart | Tasarım hipotezi puanı |

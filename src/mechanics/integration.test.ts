@@ -16,7 +16,7 @@ const card = (name: string): Card => {
 };
 const combat = () => makeGameState({ gamePhase: 'combat', initialized: true,
   player: makePlayer({ mevcutCan: 30, maksimumCan: 30 }),
-  enemy: makePlayer({ id: 'enemy', mevcutCan: 100, maksimumCan: 100, zirhSinifi: 1, maksimumDenge: 200 }),
+enemy: makePlayer({ id: 'enemy', mevcutCan: 100, maksimumCan: 100, maxPosture: 200 }),
   enemyIntent: { type: 'defend', action: { kind: 'pass' } },
 });
 beforeEach(() => { vi.spyOn(Math, 'random').mockReturnValue(0.5); });
@@ -60,7 +60,7 @@ describe('new mechanics through the real combat resolver', () => {
     expect(state.exhaustedPile).toEqual([]);
   });
   it('restores exhausted cards on victory, once, including a lethal exhaust card', () => {
-    const burst = { ...card('Zincir Darbesi'), exhaust: true, effects: [{ kind: 'damage' as const, die: 'sabit', damageBonus: 200 }] };
+    const burst = { ...card('Zincir Darbesi'), exhaust: true, effects: [{ kind: 'damage' as const, damageBonus: 200 }] };
     const next = finishEncounter(resolveCard({ ...combat(), hand: [burst] }, burst.id));
     expect(next.gamePhase).toBe('mapSelection');
     expect(next.exhaustedPile).toEqual([]);
@@ -93,7 +93,7 @@ describe('new mechanics through the real combat resolver', () => {
     let state = { ...combat(), hand: [setup, block, finish] };
     state = resolveCard(resolveCard(state, setup.id), block.id);
     const next = resolveCard(state, finish.id);
-    // d4=3 + strength=2 + existing defend->attack=1 + finisher=3.
+    // 3 sabit hasar + 2 hasar bonusu + tür geçişi 1 + bitirici 3.
     expect(next.enemy.mevcutCan).toBe(91);
     expect(next.comboCount).toBe(2);
     expect(next.battleLogs.join(' ')).toContain('Bitirici: +3');
@@ -106,16 +106,15 @@ describe('new mechanics through the real combat resolver', () => {
     expect(next.enemy.mevcutCan).toBe(95);
     expect(resolveCard(next, plain.id).enemy.mevcutCan).toBe(90);
   });
-  it('consumes a missed finisher bonus and still exhausts missed one-use attacks', () => {
-    vi.mocked(Math.random).mockReturnValue(0);
+  it('applies a finisher bonus and still exhausts one-use attacks', () => {
     const finish = { ...card('Zincir Darbesi'), exhaust: true };
     const next = resolveCard({ ...combat(), hand: [finish], comboCount: 2 }, finish.id);
-    expect(next.enemy.mevcutCan).toBe(100);
+    expect(next.enemy.mevcutCan).toBe(92);
     expect(next.nextDamageBonus).toBe(0);
     expect(next.exhaustedPile).toEqual([finish]);
   });
   it('applies the finisher only to the first attack of a multi-hit card', () => {
-    const finish = { ...card('Zincir Darbesi'), effects: [{ kind: 'damage' as const, die: 'sabit' }, { kind: 'damage' as const, die: 'sabit' }] };
+    const finish = { ...card('Zincir Darbesi'), effects: [{ kind: 'damage' as const,}, { kind: 'damage' as const,}] };
     const next = resolveCard({ ...combat(), hand: [finish], comboCount: 2 }, finish.id);
     expect(next.enemy.mevcutCan).toBe(93); // (2+3) + 2
   });
@@ -130,6 +129,12 @@ describe('new mechanics through the real combat resolver', () => {
     expect(describeCard(card('Zincir Darbesi'))).toContain('Bitirici 2');
     expect(upgradedCard(card('Sabırlı Muhafız'))?.retain).toBe(true);
     expect(upgradedCard(card('Zincir Darbesi'))?.finisher).toEqual({ threshold: 2, damage: 3 });
+    expect(describeCard(card('Ateş Topu'))).toContain('Uzaktan');
+    expect(describeCard(card('Ayna Duruşu'))).toContain('Savuşturma');
+    expect(describeCard(card('Kalkan Sihri'))).toContain('15 kendi denge bedeli');
+    expect(upgradedCard(card('Hızlı Saldırı'))?.postureDamage).toBe(35);
+    expect(upgradedCard(card('Kalkan Sihri'))).toMatchObject({ postureCostOnBlock: 15,
+      effects: [{ kind: 'block', amount: 5 }] });
     expect(cardCategory({ ...makeCard('fallback'), tip: 'savunma' })).toBe('defend');
   });
 });

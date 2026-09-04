@@ -1,6 +1,5 @@
 // Bu dosya src/components/CombatControls.tsx için ilgili kodları içerir.
-// Bileşen: saldırı, blok, özel yetenek seçimi için但onlar
-// Bileşen: saldırı, blok, özel yetenek seçimi için但onlar
+// Bileşen: oyuncunun turunu sonlandırmasını sağlar
 import React from 'react';
 import { useGameStore } from '../state/store';
 

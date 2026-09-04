@@ -1,21 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { decideEnemyBehavior } from '../enemyBehavior';
 import type { Character } from '../../types/game';
+import { initialPosture } from '../../mechanics/posture';
 
 const player: Character = {
-  id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2,
-  advantageCounter: 0, disadvantageCounter: 0, denge: 0, maksimumDenge: 10, staggered: false,
+  id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 2, ...initialPosture(),
 };
 
 const enemy = (health: number): Character => ({
-  id: 'enemy', isim: 'Goblin', mevcutCan: health, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1,
-  advantageCounter: 0, disadvantageCounter: 0, denge: 0, maksimumDenge: 10, staggered: false,
+  id: 'enemy', isim: 'Goblin', mevcutCan: health, maksimumCan: 10, hasarBonusu: 1, ...initialPosture('goblin'),
 });
 
 describe('EnemyBehavior', () => {
   it('punishes a player who ends with zero block', () => {
     const decision = decideEnemyBehavior({ behavior: 'opportunist', enemy: enemy(10), player, playerBlock: 0, playerStatuses: [], previousIntent: null, lastPlayerSignal: 'no-block', desperationStacks: 0, canLie: false });
-    expect(decision.action.kind).toBe('critical-execution');
+    expect(decision.action.kind).toBe('execution');
     expect(decision.action.damage).toBe(6);
     expect(decision.telegraph.label).toBe('Fırsat saldırısı');
   });

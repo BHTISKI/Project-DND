@@ -1,6 +1,5 @@
 // Bu dosya src/testUtils/game.test.tsx için ilgili kodları içerir.
 // Test paketi: oyun akışı ve bileşen etkileşimleri için entegrasyon testleri
-// Test paketi: oyun akışı ve bileşen etkileşimleri için entegrasyon testleri
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
@@ -9,14 +8,15 @@ import { useGameStore } from '../state/store';
 import type { Card } from '../types/game';
 import { createDataTransfer, mockRandom, withMockRandom } from './index';
 import { cleanup } from '@testing-library/react';
+import { initialPosture } from '../mechanics/posture';
 
 // Reset store to initial state before each test
 beforeEach(() => {
   useGameStore.setState({
     ...useGameStore.getInitialState(),
     playerName: 'Ero',
-    player: { id: 'player-1', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 },
-    enemy: { id: 'enemy-0', isim: 'Goblin', mevcutCan: 7, maksimumCan: 7, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 },
+player: { id: 'player-1', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 2, ...initialPosture() },
+enemy: { id: 'enemy-0', isim: 'Goblin', mevcutCan: 7, maksimumCan: 7, hasarBonusu: 1, ...initialPosture('goblin') },
     isPlayerTurn: true,
     maxEnergy: 3,
     currentEnergy: 3,
@@ -54,7 +54,6 @@ const testCard: Card = {
   tip: 'yetenek',
   manaBedeli: 1,
   baseHasar: 0,
-  zarTuru: 'd4',
   rarity: 'rare',
   effects: [{ kind: 'energy', amount: 1 }],
 };
@@ -96,9 +95,8 @@ describe('upgrade system', () => {
       tip: 'saldırı',
       manaBedeli: 1,
       baseHasar: 0,
-      zarTuru: 'd4',
       rarity: 'common',
-      effects: [{ kind: 'attack', die: 'd4' }],
+      effects: [{ kind: 'attack', amount: 3 }],
     };
     // We need to add the card to the deck via state
     useGameStore.setState({
@@ -136,10 +134,9 @@ describe('upgrade system', () => {
       tip: 'saldırı',
       manaBedeli: 1,
       baseHasar: 0,
-      zarTuru: 'd4',
       rarity: 'common',
       isUpgraded: true,
-      effects: [{ kind: 'attack', die: 'd4', damageBonus: 2 }], // already upgraded
+      effects: [{ kind: 'attack', amount: 3, damageBonus: 2 }], // already upgraded
     };
     useGameStore.setState({
       initialized: true,
@@ -169,9 +166,8 @@ describe('upgrade system', () => {
       tip: 'saldırı',
       manaBedeli: 1,
       baseHasar: 0,
-      zarTuru: 'd4',
       rarity: 'rare', // high cost
-      effects: [{ kind: 'attack', die: 'd4' }],
+      effects: [{ kind: 'attack', amount: 3 }],
     };
     useGameStore.setState({
       initialized: true,

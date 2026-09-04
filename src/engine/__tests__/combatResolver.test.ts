@@ -1,14 +1,8 @@
-// Bu dosya src/engine/__tests__/combatResolver.test.ts için ilgili kodları içerir.
-// Test: combatResolver niyet ve hasar hesapları
-// Test: combatResolver niyet ve hasar hesaplar
-// Test: combatResolver niyet ve hasar hesaplar
 import { describe, expect, it } from 'vitest';
-import {
-  chooseArchetype,
-  createEnemy,
-  generateEnemyIntent,
-} from '../combatResolver';
+import { resolveCard } from '../combatResolver';
+import { chooseArchetype, createEnemy, generateEnemyIntent } from '../enemyArchetypes';
 import { withMockRandom } from '../../testUtils/mockRandom';
+import { makeCard, makeGameState, makePlayer } from '../../testUtils/gameState';
 
 describe('combatResolver', () => {
   it('cycles enemy archetypes deterministically', () => {
@@ -30,8 +24,7 @@ describe('combatResolver', () => {
 
     expect(enemy.mevcutCan).toBe(20);
     expect(enemy.maksimumCan).toBe(20);
-    expect(enemy.zirhSinifi).toBe(14);
-    expect(enemy.gucCarpani).toBe(1);
+    expect(enemy.hasarBonusu).toBe(1);
   });
 
   it('generates a deterministic goblin attack intent', async () => {
@@ -53,5 +46,44 @@ describe('combatResolver', () => {
       expect(result.intent.type).toBe('defend');
       expect(result.block).toBe(2);
     });
+  });
+
+  it('adds fixed card damage inputs through the resolver', () => {
+    const card = {
+      ...makeCard('fixed damage', 'fixed'),
+      tip: 'saldırı' as const,
+      baseHasar: 3,
+      effects: [{ kind: 'damage' as const, amount: 4, damageBonus: 1 }],
+    };
+    const state = makeGameState({
+      gamePhase: 'combat',
+      player: makePlayer({ hasarBonusu: 2 }),
+      enemy: makePlayer({ id: 'enemy', mevcutCan: 100, maksimumCan: 100 }),
+      hand: [card],
+      enemyIntent: { type: 'defend', action: { kind: 'pass' } },
+    });
+
+    expect(resolveCard(state, card.id).enemy.mevcutCan).toBe(90);
+  });
+
+  it('clamps a negative damage total to zero through the resolver', () => {
+    const card = {
+      ...makeCard('negative damage', 'negative'),
+      tip: 'saldırı' as const,
+      baseHasar: -5,
+      effects: [{ kind: 'damage' as const, amount: 1 }],
+    };
+    const enemy = makePlayer({ id: 'enemy', mevcutCan: 100, maksimumCan: 100 });
+    const state = makeGameState({
+      gamePhase: 'combat',
+      player: makePlayer({ hasarBonusu: -3 }),
+      enemy,
+      hand: [card],
+      enemyIntent: { type: 'defend', action: { kind: 'pass' } },
+    });
+
+    const next = resolveCard(state, card.id);
+    expect(next.enemy.mevcutCan).toBe(enemy.mevcutCan);
+    expect(next.battleLogs.at(-1)).toContain('0 hasar');
   });
 });

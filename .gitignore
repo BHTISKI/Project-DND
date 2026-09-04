@@ -11,12 +11,19 @@ node_modules
 dist
 dist-ssr
 *.local
+coverage/
+.playwright-mcp/
+.codex/
+*.pid
+oxlint-output.json
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+.obsidian/workspace.json
+.obsidian/graph.json
 *.suo
 *.ntvs*
 *.njsproj

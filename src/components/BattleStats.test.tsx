@@ -7,10 +7,11 @@ import { useGameStore } from '../state/store';
 import { setupMockRandom, resetMockRandom } from '../testUtils';
 import { cleanup } from '@testing-library/react';
 import type { EnemyIntent} from '../types/game';
+import { initialPosture } from '../mechanics/posture';
 
 describe('BattleStats', () => {
-  const basePlayer = { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 };
-  const baseEnemy = { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 };
+  const basePlayer = { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 2, ...initialPosture() };
+  const baseEnemy = { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 1, ...initialPosture('goblin') };
 
   beforeEach(() => {
     useGameStore.setState({
@@ -56,12 +57,11 @@ describe('BattleStats', () => {
     // player
     expect(screen.getByText(/Oyuncu/i)).toBeInTheDocument();
     expect(screen.getByText(/Ero/i)).toBeInTheDocument();
-    screen.debug();
     // Use more specific selectors to avoid extra DOM elements
     const playerHealthRow = screen.getByText(/Oyuncu/i).closest('.fighter--player')!.querySelector('.health-row');
     expect(playerHealthRow).toHaveTextContent(/Can.*10.*10/i);
     const playerStats = screen.getByText(/Oyuncu/i).closest('.fighter--player')!.querySelector('.fighter-stats');
-    expect(playerStats).toHaveTextContent(/\+2\s*GÜÇ/i);
+    expect(playerStats).toHaveTextContent(/\+2\s*HASAR/i);
     expect(playerStats).toHaveTextContent(/0\s*BLOK/i);
     expect(playerStats).not.toHaveTextContent(/AC/i);
     // enemy
@@ -70,7 +70,7 @@ describe('BattleStats', () => {
     const enemyHealthRow = screen.getByText(/Goblin/i).closest('.fighter--enemy')!.querySelector('.health-row');
     expect(enemyHealthRow).toHaveTextContent(/Can.*10.*10/i);
     const enemyStats = screen.getByText(/Goblin/i).closest('.fighter--enemy')!.querySelector('.fighter-stats');
-    expect(enemyStats).toHaveTextContent(/\+1\s*GÜÇ/i);
+    expect(enemyStats).toHaveTextContent(/\+1\s*HASAR/i);
     expect(enemyStats).toHaveTextContent(/0\s*BLOK/i);
     expect(enemyStats).not.toHaveTextContent(/AC/i);
     // energy
@@ -84,7 +84,6 @@ describe('BattleStats', () => {
     // set player HP to 3 (30% of 10)
     useGameStore.setState({ ...useGameStore.getState(), player: { ...basePlayer, mevcutCan: 3 } });
     await Promise.resolve();
-    screen.debug();
     const playerLabel = screen.getByText(/Oyuncu/i);
     const healthRow = playerLabel.parentElement!.querySelector('.health-row')!;
     const strong = healthRow.querySelector('strong')!;
@@ -172,5 +171,21 @@ describe('BattleStats', () => {
     expect(enemyIntentDiv).not.toHaveTextContent(/tahmini hasar/i);
     expect(enemyIntentDiv).not.toHaveTextContent(/blok/i);
     expect(enemyIntentDiv).not.toHaveTextContent(/tahmini iyileşme/i);
+  });
+
+  it('shows numeric, focusable posture with recovery and a non-color Broken label', () => {
+    useGameStore.setState({
+      player: { ...basePlayer, mevcutCan: 5, currentPosture: 72 },
+      enemy: { ...baseEnemy, currentPosture: 70, isBroken: true },
+    });
+    render(<BattleStats />);
+    const playerPosture = screen.getByRole('progressbar', { name: /Oyuncu dengesi/ });
+    expect(playerPosture).toHaveAttribute('aria-valuenow', '72');
+    expect(playerPosture).toHaveAttribute('aria-valuemax', '100');
+    expect(playerPosture).toHaveAttribute('tabindex', '0');
+    expect(playerPosture).toHaveAttribute('title', 'Tur sonu −12');
+    const enemyPosture = screen.getByRole('progressbar', { name: /Düşman dengesi/ });
+    expect(enemyPosture).toHaveClass('posture-bar--broken');
+    expect(screen.getByText(/KIRILDI · İNFAZ AÇIĞI · 70 \/ 70 · İnfaz yapılmazsa 35 \/ 70/)).toBeInTheDocument();
   });
 });

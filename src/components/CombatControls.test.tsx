@@ -7,6 +7,7 @@ import { CombatControls } from './CombatControls';
 import { useGameStore } from '../state/store';
 import { setupMockRandom, resetMockRandom } from '../testUtils';
 import { cleanup } from '@testing-library/react';
+import { initialPosture } from '../mechanics/posture';
 
 describe('CombatControls', () => {
   beforeEach(() => {
@@ -14,8 +15,8 @@ describe('CombatControls', () => {
       initialized: true,
       gamePhase: 'combat',
       isPlayerTurn: true,
-      player: { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 },
-      enemy: { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 },
+      player: { id: 'player', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 2, ...initialPosture() },
+      enemy: { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 1, ...initialPosture('goblin') },
       maxEnergy: 3,
       currentEnergy: 3,
       deck: [],

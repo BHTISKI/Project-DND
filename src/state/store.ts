@@ -14,16 +14,16 @@ import { encounterReward } from '../engine/rewards';
 import { allCards, removeOwnedCard, updateOwnedCard } from '../engine/cardPiles';
 import { canChooseDraftCard } from '../engine/draft';
 import { restoreExhausted } from '../mechanics/exhaust';
-
-export { calculateUpgradeCost, enhanceEffect, getCardWeight, shuffle } from '../utils/game';
-export { loadMetaState, saveMetaState } from './persistence';
-export { chooseArchetype, createEnemy, generateEnemyIntent } from '../engine/enemyArchetypes';
-export { addStatus, statusValue, tickStatuses } from '../engine/statuses';
-export { rollAttackDie } from '../engine/combatResolver';
-export { generateAvailableNodes } from '../engine/runMap';
-export { getRandomRewards } from '../engine/rewards';
+import { readRunSave, writeRunSave } from './runPersistence';
+import type { SaveStatus } from './runPersistence';
+import { initialPosture } from '../mechanics/posture';
 
 export interface GameState extends RunMapState {
+  saveStatus: SaveStatus;
+  saveCursor: string | null;
+  startNewGame: (name: string, expectedCursor: string | null) => boolean;
+  resumeGame: () => boolean;
+  retrySave: () => void;
   baseEnemyIntent: EnemyIntent | null;
   enemyBehaviorRoll: number;
   pendingEnemyStatuses: StatusEffect[];
@@ -84,6 +84,10 @@ export interface GameState extends RunMapState {
   comboChain: string[];
   comboCount: number;
   nextDamageBonus: number;
+  postureComboCount: number;
+  pendingParry: boolean;
+  playerGuardPostureCost: number;
+  enemyGuardPostureCost: number;
   // Dialogs
   playerDialog: { text: string; timestamp: number }[];
   enemyDialog: { text: string; timestamp: number }[];
@@ -115,8 +119,7 @@ export interface GameState extends RunMapState {
 }
 
 const defaultPlayer: Character = {
-  id: 'player-1', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2,
-  advantageCounter: 0, disadvantageCounter: 0, denge: 0, maksimumDenge: 10, staggered: false,
+  id: 'player-1', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 2, ...initialPosture(),
 };
 
 export function createInitialDeck(): Card[] {
@@ -125,6 +128,7 @@ export function createInitialDeck(): Card[] {
 
 function initialRun() {
   return {
+    saveStatus: 'idle' as SaveStatus, saveCursor: null as string | null,
     player: { ...defaultPlayer }, enemy: createEnemy('goblin', 0), playerName: '',
     isPlayerTurn: true, round: 1, maxEnergy: 3, currentEnergy: 3, drawCount: 5,
     deck: [] as Card[], hand: [] as Card[], discardPile: [] as Card[], exhaustedPile: [] as Card[],
@@ -139,6 +143,7 @@ function initialRun() {
     pendingEnemyStatuses: [] as StatusEffect[], pendingPlayerSkip: false,
     currentNode: null as NodeType | null, nodeType: null as NodeType | null, runFloor: 0,
     availableNodes: generateAvailableNodes(0), comboChain: [] as string[], comboCount: 0, nextDamageBonus: 0,
+    postureComboCount: 0, pendingParry: false, playerGuardPostureCost: 0, enemyGuardPostureCost: 0,
     playerDialog: [] as { text: string; timestamp: number }[], enemyDialog: [] as { text: string; timestamp: number }[],
   };
 }
@@ -146,7 +151,7 @@ function log(state: GameState, text: string): GameState {
   return { ...state, battleLogs: [...state.battleLogs, text] };
 }
 function resetCombatPlayer(player: Character): Character {
-  return { ...player, denge: 0, staggered: false, advantageCounter: 0, disadvantageCounter: 0 };
+  return { ...player, currentPosture: 0, isBroken: false };
 }
 function mapAfter(state: GameState, advance: boolean): GameState {
   const runFloor = state.runFloor + (advance ? 1 : 0);
@@ -154,6 +159,7 @@ function mapAfter(state: GameState, advance: boolean): GameState {
     currentNode: null, nodeType: null, enemyIntent: null, enemyIntentValue: 0, baseEnemyIntent: null,
     player: resetCombatPlayer(state.player), playerBlock: 0, enemyBlock: 0, enemySkipNextTurn: false,
     playerStatuses: [], enemyStatuses: [], apocalypseTurns: null, comboChain: [], comboCount: 0, nextDamageBonus: 0,
+    postureComboCount: 0, pendingParry: false, playerGuardPostureCost: 0, enemyGuardPostureCost: 0,
     playerDialog: [], enemyDialog: [], isPlayerTurn: true };
 }
 
@@ -181,11 +187,12 @@ function beginCombat(state: GameState): GameState {
   const combined = shuffle(allCards(state));
   let next = drawCardsState({
     ...state, gamePhase: 'combat', player: resetCombatPlayer(state.player),
-    enemy: { ...state.enemy, denge: 0, staggered: false }, deck: combined, hand: [], discardPile: [], exhaustedPile: [],
+    enemy: { ...state.enemy, currentPosture: 0, isBroken: false }, deck: combined, hand: [], discardPile: [], exhaustedPile: [],
     playerStatuses: [], enemyStatuses: [...state.pendingEnemyStatuses], pendingEnemyStatuses: [],
     playerBlock: 0, enemyBlock: 0, enemySkipNextTurn: false, baseEnemyIntent: null,
     currentEnergy: state.maxEnergy, round: 1, isPlayerTurn: true,
     comboChain: [], comboCount: 0, nextDamageBonus: 0, desperationStacks: 0, lastPlayerSignal: 'none',
+    postureComboCount: 0, pendingParry: false, playerGuardPostureCost: 0, enemyGuardPostureCost: 0,
     apocalypseTurns: null, apocalypseHpPercent: 50, playerDialog: [], enemyDialog: [],
   }, state.drawCount);
   next = prepareEnemyIntent(next);
@@ -196,23 +203,48 @@ function beginCombat(state: GameState): GameState {
   return next;
 }
 
-export const useGameStore = create<GameState>((set) => {
+export const useGameStore = create<GameState>((set, get) => {
   const update = (resolve: (state: GameState) => GameState) => set(state => {
     const next = resolve(state);
-    if (next.metaGold !== state.metaGold || next.metaVictories !== state.metaVictories)
+    if (next === state) return state;
+    if (!next.initialized || !next.playerName) return next;
+    const saved = writeRunSave(next, next.saveCursor);
+    // The run and its earned counters commit together. A stale tab must not update meta either.
+    if (saved.status === 'saved' && (next.metaGold !== state.metaGold || next.metaVictories !== state.metaVictories || state.saveStatus !== 'saved'))
       saveMetaState(next.metaGold, next.metaVictories);
-    return next;
+    return { ...next, saveStatus: saved.status, saveCursor: saved.cursor };
   });
   const startRun = (state: GameState): GameState => {
     const cards = createInitialDeck();
     const meta = loadMetaState();
-    return { ...state, ...initialRun(), ...meta, playerName: state.playerName,
+    const previous = readRunSave();
+    meta.metaGold = Math.max(meta.metaGold, state.metaGold, previous.kind === 'ready' ? previous.run.metaGold : 0);
+    meta.metaVictories = Math.max(meta.metaVictories, state.metaVictories, previous.kind === 'ready' ? previous.run.metaVictories : 0);
+    return { ...state, ...initialRun(), ...meta, saveCursor: state.saveCursor, playerName: state.playerName,
       player: { ...defaultPlayer, isim: state.playerName || 'Ero' }, initialized: true,
       hand: cards.slice(0, 5), deck: cards.slice(5),
       battleLogs: ['Oyun başlatıldı. Deste hazırlandı.'] };
   };
   return {
     ...initialRun(),
+    startNewGame: (name, expectedCursor) => {
+      const playerName = name.trim();
+      if (playerName.length < 2 || playerName.length > 20) return false;
+      const next = startRun({ ...get(), playerName, saveCursor: expectedCursor });
+      const saved = writeRunSave(next, expectedCursor);
+      if (saved.status === 'conflict') return false;
+      set({ ...next, saveStatus: saved.status, saveCursor: saved.cursor });
+      return true;
+    },
+    resumeGame: () => {
+      const saved = readRunSave();
+      if (saved.kind !== 'ready') return false;
+      // Restore the committed turn as-is. Do not draw, reroll, award or initialize again.
+      set({ ...initialRun(), ...saved.run, initialized: true,
+        saveCursor: saved.cursor, saveStatus: saved.cursor ? 'saved' : 'error' });
+      return true;
+    },
+    retrySave: () => update(state => ({ ...state })),
     initializeGame: () => update(state => state.initialized ? state : startRun(state)),
     restartGame: () => update(state => state.gamePhase === 'gameOver' ? startRun(state) : state),
     drawCards: count => update(state => finishEncounter(drawCardsState(state, count))),
@@ -299,7 +331,7 @@ export const useGameStore = create<GameState>((set) => {
       const archetype = chooseArchetype(state.victoryCount);
       const base = createEnemy(archetype, state.runFloor);
       const enemy = node.type === 'elite' ? { ...base, mevcutCan: Math.ceil(base.maksimumCan * 1.5),
-        maksimumCan: Math.ceil(base.maksimumCan * 1.5), zirhSinifi: base.zirhSinifi + 1, gucCarpani: base.gucCarpani + 1 } : base;
+        maksimumCan: Math.ceil(base.maksimumCan * 1.5), hasarBonusu: base.hasarBonusu + 1, ...initialPosture(archetype, 'elite') } : base;
       let encounter: GameState = { ...state, enemy, enemyArchetype: archetype, currentNode: node.type, nodeType: node.type,
         enemyBehavior: node.type === 'elite' || node.type === 'boss' || archetype === 'mage' ? 'paranoid'
           : archetype === 'goblin' || archetype === 'assassin' ? 'opportunist' : 'standard',

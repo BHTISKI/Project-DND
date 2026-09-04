@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { BossResolver } from '../bossResolver';
 import { withMockRandom } from '../../testUtils/mockRandom';
 import { makeGameState } from '../../testUtils/gameState';
+import { initialPosture } from '../../mechanics/posture';
 
 describe('BossResolver', () => {
   it('initializes a stronger boss', async () => {
@@ -24,8 +25,7 @@ describe('BossResolver', () => {
 
     expect(result.enemy.mevcutCan).toBe(result.enemy.maksimumCan);
     expect(result.enemy.maksimumCan).toBeGreaterThan(state.enemy.maksimumCan);
-    expect(result.enemy.zirhSinifi).toBe(state.enemy.zirhSinifi + 2);
-    expect(result.enemy.gucCarpani).toBe(state.enemy.gucCarpani + 1);
+    expect(result.enemy.hasarBonusu).toBe(state.enemy.hasarBonusu + 1);
     expect(result.currentEnergy).toBe(result.maxEnergy);
     expect(result.playerBlock).toBe(0);
     expect(result.enemyStatuses).toEqual([]);
@@ -40,10 +40,8 @@ describe('BossResolver', () => {
         isim: 'Boss',
         mevcutCan: 0,
         maksimumCan: 20,
-        zirhSinifi: 15,
-        gucCarpani: 4,
-        advantageCounter: 0,
-        disadvantageCounter: 0,
+        hasarBonusu: 4,
+        ...initialPosture('knight', 'boss'),
       },
       gold: 10,
       battleLogs: [],

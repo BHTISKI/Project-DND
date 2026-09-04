@@ -1,12 +1,14 @@
 import React from 'react';
 import { useGameStore } from '../state/store';
 import { enemyArchetypes } from '../engine/enemyArchetypes';
+import { isMeleeAction } from '../mechanics/posture';
 
 export const EnemyBoard: React.FC = () => {
   const gamePhase = useGameStore((state) => state.gamePhase);
   const enemy = useGameStore((state) => state.enemy);
   const enemyArchetype = useGameStore((state) => state.enemyArchetype);
   const enemyIntent = useGameStore((state) => state.enemyIntent);
+  const playerBroken = useGameStore((state) => state.player.isBroken);
 
   if (gamePhase !== 'combat' || !enemy) return null;
 
@@ -15,6 +17,7 @@ export const EnemyBoard: React.FC = () => {
   const intentLabel = telegraph?.label ?? (enemyIntent?.type === 'attack' ? 'Saldıracak' : enemyIntent?.type === 'defend' ? 'Savunacak' : 'Özel hamle');
   const intentIcon = telegraph?.icon ?? archetype.icon;
   const estimatedValue = enemyIntent?.estimatedDamage ?? enemyIntent?.estimatedBlock ?? enemyIntent?.estimatedHeal;
+  const executeThreat = playerBroken && !!enemyIntent?.action && isMeleeAction(enemyIntent.action);
 
   return (
     <section className={`enemy-board enemy-board--${archetype.visualTheme}`} aria-label={`${enemy.isim} savaş masası`}>
@@ -38,8 +41,7 @@ export const EnemyBoard: React.FC = () => {
         <strong>{intentLabel}</strong>
         {estimatedValue !== undefined && <small>{estimatedValue} {enemyIntent?.type === 'defend' ? 'blok' : enemyIntent?.estimatedHeal !== undefined ? 'iyileşme' : 'hasar'}</small>}
         {telegraph?.deceptive && <small className="intent-card__hint">Niyet belirsiz</small>}
-        {enemyIntent?.criticalDamage !== undefined && <small>Doğal 20: {enemyIntent.criticalDamage} hasar</small>}
-        {enemyIntent?.estimatedDamage !== undefined && <small>Blok öncesi{enemyIntent.criticalDamage !== undefined ? ' · D20 ile isabet' : ''}</small>}
+        {enemyIntent?.estimatedDamage !== undefined && <small>{executeThreat ? 'Blok işlemez' : 'Blok öncesi'}</small>}
         {enemyIntent?.warning && <small className="intent-card__hint">{enemyIntent.warning}</small>}
       </div>
     </section>

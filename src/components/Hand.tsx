@@ -1,11 +1,11 @@
 // Bu dosya src/components/Hand.tsx için ilgili kodları içerir.
 // Bileşen: eldeki kartları listeler ve etkileşimli kart seçimini sunar
-// Bileşen: eldeki kartları listeler ve etkileşimli kart seçimini sunar
 import React, { useState } from 'react';
 import type { Card } from '../types/game';
 import { useGameStore } from '../state/store';
 import { CardComponent } from './Card';
 import { advanceCombo, cardCategory, finisherBonus } from '../mechanics/finisher';
+import { canExecute, cardUnavailableReason, isMeleeCard } from '../mechanics/posture';
 
 interface HandProps {
   draggedCardId?: string | null;
@@ -21,7 +21,9 @@ export const Hand: React.FC<HandProps> = ({ draggedCardId = null, onDragStart = 
   const currentEnergy = useGameStore((s) => s.currentEnergy);
   const comboCount = useGameStore(s => s.comboCount);
   const previousCategory = useGameStore(s => s.comboChain.at(-1));
-  const canAct = useGameStore(s => !s.player.staggered && s.player.mevcutCan > 0 && s.enemy.mevcutCan > 0);
+  const player = useGameStore(s => s.player);
+  const enemy = useGameStore(s => s.enemy);
+  const pendingParry = useGameStore(s => s.pendingParry);
   const [deniedCardId, setDeniedCardId] = useState<string | null>(null);
 
   const handlePlay = (card: Card) => {
@@ -41,11 +43,13 @@ export const Hand: React.FC<HandProps> = ({ draggedCardId = null, onDragStart = 
       ) : (
         <>
           {hand.map((card, index) => {
-            const reason = !isPlayerTurn || gamePhase !== 'combat' ? 'Oyuncu turu değil' : !canAct ? 'Bu tur hamle yapılamaz' : card.onDiscardPenalty ? 'Lanetli kart oynanamaz' : currentEnergy < card.manaBedeli ? 'Yeterli enerji yok' : '';
+            const reason = cardUnavailableReason({ gamePhase, isPlayerTurn, player, enemy, currentEnergy, pendingParry }, card);
             const playable = reason === '';
             const projectedCombo = advanceCombo(comboCount, previousCategory, cardCategory(card));
             const bonus = finisherBonus(card, projectedCombo);
-            const mechanicHint = card.finisher
+            const executeReady = playable && canExecute(enemy) && isMeleeCard(card);
+            const mechanicHint = executeReady ? 'İnfaz hazır'
+              : card.finisher
               ? bonus ? `Bitirici hazır · +${bonus} hasar` : `Bitirici: kombo ${projectedCombo}/${card.finisher.threshold}`
               : card.retain ? 'Oynamazsan elinde kalır' : card.exhaust ? 'Bu savaşta tek kullanım' : undefined;
             return (
@@ -67,6 +71,7 @@ export const Hand: React.FC<HandProps> = ({ draggedCardId = null, onDragStart = 
                   isPlayable={playable}
                   unavailableReason={reason}
                   mechanicHint={mechanicHint}
+                  executeReady={executeReady}
                   isDragging={draggedCardId === card.id}
                   denied={deniedCardId === card.id}
                   isDraggable={playable}

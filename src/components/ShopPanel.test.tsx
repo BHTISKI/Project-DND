@@ -8,6 +8,7 @@ import { useGameStore } from '../state/store';
 import { setupMockRandom, resetMockRandom } from '../testUtils';
 import { cleanup } from '@testing-library/react';
 import type { Card } from '../types/game';
+import { initialPosture } from '../mechanics/posture';
 
 describe('ShopPanel', () => {
   const baseCardCommon: Card = {
@@ -16,8 +17,7 @@ describe('ShopPanel', () => {
     tip: 'saldırı',
     manaBedeli: 1,
     baseHasar: 2,
-    zarTuru: 'd4',
-    effects: [{ kind: 'attack', die: 'd4' }],
+    effects: [{ kind: 'attack', amount: 3 }],
     isUpgraded: false,
     rarity: 'common',
     tags: ['attack'],
@@ -29,7 +29,6 @@ describe('ShopPanel', () => {
     tip: 'savunma',
     manaBedeli: 2,
     baseHasar: 0,
-    zarTuru: 'd4',
     effects: [{ kind: 'block', amount: 2 }],
     isUpgraded: false,
     rarity: 'uncommon',
@@ -42,7 +41,6 @@ describe('ShopPanel', () => {
     tip: 'yetenek',
     manaBedeli: 0,
     baseHasar: 0,
-    zarTuru: 'd4',
     effects: [{ kind: 'energy', amount: 2 }],
     isUpgraded: false,
     rarity: 'rare',
@@ -55,8 +53,7 @@ describe('ShopPanel', () => {
     tip: 'saldırı',
     manaBedeli: 3,
     baseHasar: 5,
-    zarTuru: 'd6',
-    effects: [{ kind: 'attack', die: 'd6' }],
+    effects: [{ kind: 'attack', amount: 4 }],
     isUpgraded: false,
     rarity: 'legendary',
     tags: ['attack'],
@@ -68,8 +65,7 @@ describe('ShopPanel', () => {
     tip: 'saldırı',
     manaBedeli: 1,
     baseHasar: 2,
-    zarTuru: 'd4',
-    effects: [{ kind: 'attack', die: 'd4' }],
+    effects: [{ kind: 'attack', amount: 3 }],
     isUpgraded: true,
     rarity: 'common',
     tags: ['attack'],
@@ -80,8 +76,8 @@ describe('ShopPanel', () => {
       initialized: true,
       gamePhase: 'shop',
       isPlayerTurn: true,
-      player: { id: 'player', isim: 'Ero', mevcutCan: 6, maksimumCan: 10, zirhSinifi: 12, gucCarpani: 2, advantageCounter: 0, disadvantageCounter: 0 },
-      enemy: { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, zirhSinifi: 11, gucCarpani: 1, advantageCounter: 0, disadvantageCounter: 0 },
+      player: { id: 'player', isim: 'Ero', mevcutCan: 6, maksimumCan: 10, hasarBonusu: 2, ...initialPosture() },
+      enemy: { id: 'enemy', isim: 'Goblin', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 1, ...initialPosture('goblin') },
       maxEnergy: 3,
       currentEnergy: 3,
       deck: [baseCardCommon, baseCardUncommon, baseCardRare, baseCardLegendary, upgradedCard],

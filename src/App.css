@@ -1,4 +1,4 @@
-/* D&D Temalı Oyun UI - Güncellenen Stil */
+/* Makara oyun arayüzü */
 
 /* Kök değişkenler - Koyu tas, antika bronz tonları */
 :root {
@@ -244,6 +244,8 @@ html, body, #root {
   border: 1px solid rgba(255,255,255,0.1);
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
 }
+.posture-meter { min-width: 0; }
+.posture-bar:focus-visible { outline: 2px solid #f3e27a; outline-offset: 2px; }
 .posture-bar span {
   display: block;
   height: 100%;
@@ -280,14 +282,16 @@ html, body, #root {
   );
 }
 .posture-bar--broken span {
-  background: #f3e27a;
-  box-shadow: 0 0 8px var(--gold);
+  background: linear-gradient(90deg, #b94b42, #f3e27a 55%, #b94b42);
+  box-shadow: 0 0 10px rgba(185,75,66,.8);
   animation: posturePulse 1.5s ease-in-out infinite;
 }
 .posture-bar--broken + .posture-label {
-  color: var(--gold);
+  color: #ff8b80;
   font-weight: 700;
 }
+.posture-bar--hit { animation: postureFlash .28s ease-out; }
+.fighter--broken { border-color: #b94b42; box-shadow: 0 0 0 1px rgba(185,75,66,.4), var(--shadow); }
 .posture-label {
   display: block;
   color: var(--muted);
@@ -301,6 +305,9 @@ html, body, #root {
 @keyframes posturePulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+@keyframes postureFlash {
+  45% { filter: brightness(2.2); box-shadow: 0 0 14px rgba(243,226,122,.85); }
 }
 
 /* Enhanced Fighter Panel */
@@ -701,17 +708,12 @@ html, body, #root {
   transform: translateY(-2px) scale(1.03);
 }
 .game-card--disabled { opacity: 0.5; cursor: not-allowed; }
-.card--sending { animation: cardTrajectory .42s cubic-bezier(.2,.8,.2,1) forwards !important; pointer-events: none; }
-.game-card--disabled.shake { animation: deniedShake .34s ease-in-out; }
-
-/* Kart içi metin stilleri */
-.card-title {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--ink);
-  text-align: center;
+.game-card--execute-ready {
+  border-color: #f3e27a;
+  box-shadow: 0 0 0 2px rgba(185,75,66,.62), 0 0 24px rgba(212,175,55,.58);
 }
+.game-card--execute-ready .card-action { color: #fff1a8; background: rgba(126,31,29,.82); }
+/* Kart içi metin stilleri */
 .card-mana {
   font-weight: 700;
   color: var(--gold);
@@ -742,12 +744,6 @@ html, body, #root {
   align-items: center;
   justify-content: center;
 }
-.card-primary-stat {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-align: center;
-  margin: 0.25rem 0;
-}
 .card-action {
   font-size: 0.7rem;
   text-align: center;
@@ -755,31 +751,10 @@ html, body, #root {
   opacity: 0.8;
 }
 
-/* Hover overlay - shows detailed info */
-.card-details-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(30,30,30,0.9);
-  color: var(--ink);
-  padding: 0.75rem;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
 .card-details { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: auto; }
 .card-details > span { display: grid; gap: 3px; min-width: 0; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.12); text-align: center; color: var(--ink); font-size: .75rem; }
 .card-details b { color: var(--muted); font-size: .58rem; letter-spacing: .08em; }
 .card-details strong { color: var(--gold); font-size: 1.1rem; }
-.card-details-overlay > div:first-child { display: flex; justify-content: space-between; }
-.card-details-overlay > div:last-child { margin-top: .5rem; font-size: .85rem; }
-.card.zoomed .card-details-overlay {
-  opacity: 0.9;
-}
 .card:hover:not(.zoomed) { transform: translateY(clamp(-28px, -3vh, -16px)) scale(1.08) rotate(0deg); transform-origin: bottom center; box-shadow: 0 18px 32px rgba(0,0,0,.62); }
 .card.zoomed { transform: translateY(-18px) scale(1.12) !important; transition-duration: .4s; }
 .card:active:not(:disabled) { transition-duration: .16s; transform: translateY(-16px) scale(1.08); }
@@ -788,7 +763,6 @@ html, body, #root {
   0%, 100% { box-shadow: 0 8px 18px rgba(0,0,0,.35), 0 0 0 rgba(212,175,55,0); }
   50% { box-shadow: 0 10px 22px rgba(0,0,0,.42), 0 0 16px rgba(212,175,55,.3); }
 }
-@keyframes cardTrajectory { 0% { transform: translateY(-30px) scale(1.16) rotate(-1deg); } 45% { transform: translate(22px, -76px) scale(1.08) rotate(2deg); } 100% { transform: translate(0, -12px) scale(.92) rotate(0); opacity: .15; } }
 @keyframes deniedShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-4px); } }
 .battle-participants--impact .fighter--enemy { animation: impactFrame .22s ease-out; }
 .floating-combat-text { position: absolute; z-index: 20; top: 34%; left: 50%; color: #f3e27a; font: 700 1.35rem/1 var(--font-title); text-shadow: 0 2px 8px #000; pointer-events: none; animation: floatUp .7s cubic-bezier(.2,.8,.2,1) forwards; }
@@ -1004,10 +978,6 @@ html, body, #root {
   background: var(--panel);
   text-align: center;
 }
-.reward-card--attack { border-color: var(--teal); }
-.reward-card--defense { border-color: #8e44ad; }
-.reward-card--support { border-color: #27ae60; }
-.reward-card--special { border-color: #f1c40f; }
 .reward-rarity {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -1095,18 +1065,6 @@ html, body, #root {
   padding: 4px 8px;
   border-left: 3px solid;
 }
-.log-entry--critical { border-color: var(--gold); background: rgba(212,175,55,0.1); }
-.log-entry--attack   { border-color: var(--teal); background: rgba(108,180,238,0.1); }
-.log-entry--defense  { border-color: #8e44ad; background: rgba(142,68,173,0.1); }
-.log-entry--heal     { border-color: #27ae60; background: rgba(39,174,96,0.1); }
-.log-entry--victory  { border-color: var(--gold); background: rgba(212,175,55,0.2); }
-.log-entry--gameover { border-color: var(--red); background: rgba(185,75,66,0.2); }
-.log-entry {
-  margin: 6px 0;
-  padding: 4px 8px;
-  border-left: 3px solid;
-}
-.log-entry--critical { border-color: var(--gold); background: rgba(212,175,55,0.1); }
 .log-entry--attack   { border-color: var(--teal); background: rgba(108,180,238,0.1); }
 .log-entry--defense  { border-color: #8e44ad; background: rgba(142,68,173,0.1); }
 .log-entry--heal     { border-color: #27ae60; background: rgba(39,174,96,0.1); }
@@ -1120,201 +1078,10 @@ html, body, #root {
   pointer-events: auto;
   z-index: 1000; /* Ensure drop zone is above other elements during drag */
 }
-/* Optional visual hint when dragging over */
-.drop-zone.drag-over {
-  outline: 3px dashed var(--gold);
-  outline-offset: 6px;
-}
-
 /* Fade-in animation */
 @keyframes fadeInUp {
   from { opacity:0; transform: translateY(-10px); }
   to { opacity:1; transform: translateY(0); }
-}
-
-/* Name Input Styles */
-.name-input-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 20px;
-  background-color: var(--stone-bg);
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 1000;
-}
-
-.name-input-box {
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 12px;
-  padding: 32px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: var(--shadow);
-  position: relative;
-  overflow: hidden;
-}
-
-/* Add decorative parchment texture */
-.name-input-box::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 20px),
-    repeating-linear-gradient(-45deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 20px);
-  pointer-events: none;
-  opacity: 0.3;
-}
-
-.name-input-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.name-input-header h2 {
-  color: var(--gold);
-  font-family: var(--font-title);
-  font-size: 1.8rem;
-  margin-bottom: 8px;
-  text-shadow: 0 0 8px rgba(212,175,55,0.5);
-  letter-spacing: 1px;
-}
-
-.name-input-flavor {
-  color: var(--muted);
-  font-style: italic;
-  line-height: 1.5;
-  max-width: 300px;
-  margin: 0 auto;
-  font-size: 0.95rem;
-}
-
-.name-input-error {
-  background: rgba(185,75,66,0.2);
-  border: 1px solid var(--red);
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 20px;
-  color: var(--red);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-}
-
-.name-input-field {
-  margin-bottom: 20px;
-}
-
-.input-label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--ink);
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.name-input {
-  width: 100%;
-  padding: 12px 16px;
-  background: rgba(30,30,30,0.6);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink);
-  font-size: 1rem;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
-}
-
-.name-input:focus {
-  outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(212,175,55,0.2);
-  background: rgba(40,40,40,0.7);
-}
-
-.name-input::placeholder {
-  color: var(--muted);
-  opacity: 0.7;
-}
-
-.name-input.submitting {
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(212,175,55,0); }
-  100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); }
-}
-
-.name-input-button {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--gold), var(--bronze-light));
-  color: #201b12;
-  border: none;
-  border-radius: 6px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.name-input-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-  background: linear-gradient(135deg, var(--bronze-light), var(--gold));
-}
-
-.name-input-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.name-input-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.name-input-footer {
-  margin-top: 24px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.85rem;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  padding-top: 16px;
-}
-
-.name-input-tip {
-  font-style: italic;
-}
-
-/* Responsive adjustments */
-@media (max-width: 480px) {
-  .name-input-box {
-    padding: 24px;
-    margin: 0 16px;
-  }
-
-  .name-input-header h2 {
-    font-size: 1.6rem;
-  }
-
-  .name-input-flavor {
-    font-size: 0.9rem;
-  }
 }
 
 /* Yeni harita seçim stilleri */
@@ -1405,12 +1172,11 @@ html, body, #root {
   box-shadow: 0 22px 38px rgba(0,0,0,.58), 0 0 24px rgba(212,175,55,.5) !important;
   transition: transform .08s linear, box-shadow .18s ease;
 }
-.card:not(.card--dragging):not(.card--sending) { animation: cardDrawIn .55s cubic-bezier(.22,1,.36,1) var(--draw-delay, 0ms) both; }
+.card:not(.card--dragging) { animation: cardDrawIn .55s cubic-bezier(.22,1,.36,1) var(--draw-delay, 0ms) both; }
 .hand-grid:not(.hand-grid--inactive) .card:not(.game-card--disabled):not(.card--dragging) {
   animation: cardDrawIn .55s cubic-bezier(.22,1,.36,1) var(--draw-delay, 0ms) both, cardIdle 4s calc(var(--draw-delay, 0ms) + .55s) ease-in-out infinite, playablePulse 2.8s calc(var(--draw-delay, 0ms) + .55s) ease-in-out infinite;
 }
 .hand-grid:not(.hand-grid--inactive) .card:hover { animation: none; }
-.card.card--sending { animation: cardTrajectory .42s cubic-bezier(.2,.8,.2,1) forwards !important; }
 .denied-shake {
   animation: deniedShake .36s cubic-bezier(.36,.07,.19,.97) !important;
   border-color: #ff5d61 !important;
@@ -1527,6 +1293,7 @@ button:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
 .mechanic-status { color: #dacdb6; font-size: 13px; line-height: 1.5; padding: 8px 16px; }
 .mechanic-status p { margin: 0; }
 .mechanic-status strong { color: #f3cf86; }
+.mechanic-status__parry { color: #d98b45; }
 .mechanic-status summary { cursor: pointer; margin-top: 4px; }
 .mechanic-status ul { margin: 6px 0; padding-left: 20px; }
 .mechanic-status summary:focus-visible { outline: 2px solid #f3cf86; outline-offset: 3px; }

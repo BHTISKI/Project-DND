@@ -1,9 +1,5 @@
-// Bu dosya src/engine/__tests__/runMap.test.ts için ilgili kodları içerir.
-// Test: runMap düğüm erişimi ve harita geçişleri
-// Test: runMap düğüm erişimi ve harita geçişleri
-// Test: runMap düğüm erişimi ve harita geçişleri
 import { describe, expect, it } from 'vitest';
-import { generateAvailableNodes, updateRunMapAfterNodeCompletion } from '../runMap';
+import { generateAvailableNodes } from '../runMap';
 import { withMockRandom } from '../../testUtils/mockRandom';
 
 describe('runMap', () => {
@@ -21,21 +17,6 @@ describe('runMap', () => {
 
       expect(nodes.some((node) => node.type === 'boss')).toBe(true);
     });
-  });
-
-  it('increments floor after node completion', () => {
-    const result = updateRunMapAfterNodeCompletion(
-      {
-        runFloor: 2,
-        currentNode: null,
-        nodeType: null,
-      },
-      'combat',
-    );
-
-    expect(result.runFloor).toBe(3);
-    expect(result.nodeType).toBe('combat');
-    expect(result.availableNodes.length).toBeGreaterThanOrEqual(2);
   });
 
   // Additional invariant tests
