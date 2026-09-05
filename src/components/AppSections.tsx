@@ -7,6 +7,7 @@ import { restChoices } from '../engine/restResolver';
 import { useGameStore } from '../state/store';
 import { useShallow } from 'zustand/react/shallow';
 import { nodeInfo } from './appView';
+import { canTravel } from '../engine/campaignResolver';
 
 export function RewardCards({ cards, onSelect }: { cards: Card[]; onSelect: (id: string) => void }) {
   if (!cards.length) return <p className="empty-state">Ödül kartı yok.</p>;
@@ -39,9 +40,10 @@ export function PhaseChoices({ phase, onChoose }: { phase: 'event' | 'rest'; onC
 }
 
 export function MapSelection({ floor, nodes, rewards, onSelectNode, onSelectReward, onSkipReward }: { floor: number; nodes: Array<{type: NodeType; id: string}>; rewards: Card[]; onSelectNode: (id: string) => void; onSelectReward: (id: string) => void; onSkipReward: () => void }) {
+  const travelAllowed = useGameStore(s => canTravel(s.campaign));
   return <div className="map-selection">
     <div className="map-selection__intro"><span className="map-floor">BÖLÜM {floor + 1}</span><p>Bir sonraki karşılaşmanın kaderini belirle.</p></div>
-    <div className="map-selection__nodes" aria-label="Mevcut yol seçenekleri">{nodes.map(node => <button key={node.id} type="button" disabled={rewards.length > 0} className={`map-node-button map-node--${node.type}`} onClick={() => onSelectNode(node.id)}>
+    <div className="map-selection__nodes" aria-label="Mevcut yol seçenekleri">{nodes.map(node => <button key={node.id} type="button" disabled={rewards.length > 0 || !travelAllowed} className={`map-node-button map-node--${node.type}`} onClick={() => onSelectNode(node.id)}>
       <div className="map-node-content"><span className="map-node__icon" aria-hidden="true">{nodeInfo[node.type].icon}</span><strong className="map-node__label">{nodeInfo[node.type].label}</strong><small className="map-node__detail">{nodeInfo[node.type].detail}</small></div><span className="map-node__arrow" aria-hidden="true">→</span>
     </button>)}</div>
     {rewards.length > 0 && <><div className="map-reward-note">★ Zafer ödülün hazır. Önce bir kart seç veya pas geç.</div><RewardCards cards={rewards} onSelect={onSelectReward} /><button onClick={onSkipReward} className="button button--quiet" type="button">Ödülü pas geç</button></>}

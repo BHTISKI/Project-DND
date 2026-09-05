@@ -3,6 +3,7 @@ import type { Character, StatusEffect, StatusId } from '../types/game';
 export const statusNames: Record<StatusId, string> = {
   vulnerable: 'Savunmasız', weakened: 'Güçsüz', poisoned: 'Zehirli',
   fortified: 'Tahkimli', empowered: 'Güçlü', postureExposed: 'Duruş açığı',
+  bleeding: 'Kanama', reflection: 'Yansıma', regeneration: 'Yenilenme', timeLocked: 'Zaman kilidi',
 };
 
 export function addStatus(statuses: StatusEffect[], effect: StatusEffect): StatusEffect[] {
@@ -24,9 +25,11 @@ export function ageStatuses(statuses: StatusEffect[]): StatusEffect[] {
 }
 
 export function poisonTick(statuses: StatusEffect[], target: 'player' | 'enemy', character: Character) {
-  const damage = Math.min(character.mevcutCan, statusValue(statuses, 'poisoned'));
+  const damage = Math.min(character.mevcutCan, statusValue(statuses, 'poisoned') + 2 * statusValue(statuses, 'bleeding'));
+  const remaining = Math.max(0, character.mevcutCan - damage);
+  const healed = remaining > 0 ? Math.min(character.maksimumCan - remaining, statusValue(statuses, 'regeneration')) : 0;
   return {
-    character: { ...character, mevcutCan: Math.max(0, character.mevcutCan - damage) },
-    log: damage > 0 ? [`${target === 'player' ? 'Oyuncu' : 'Düşman'} zehirden ${damage} hasar aldı.`] : [],
+    character: { ...character, mevcutCan: remaining + healed },
+    log: [...(damage > 0 ? [`${target === 'player' ? 'Oyuncu' : 'Düşman'} zehir/kanamadan ${damage} hasar aldı.`] : []), ...(healed > 0 ? [`Yenilenme: ${healed} can.`] : [])],
   };
 }

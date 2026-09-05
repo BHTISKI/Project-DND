@@ -1,11 +1,13 @@
 // Bu dosya src/components/Card.test.tsx için ilgili kodları içerir.
 // Card bileşeni testleri: render ve kullanıcı etkileşimleri
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { cleanup } from '@testing-library/react';
 import { CardComponent } from './Card';
 import type { Card } from '../types/game';
+import { useRef } from 'react';
+import { usePreferencesStore } from '../state/preferences';
 
 describe('Card', () => {
   const baseCard: Card = {
@@ -22,10 +24,13 @@ describe('Card', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    usePreferencesStore.setState({ motionEnabled: true });
   });
 
   afterEach(() => {
     cleanup();
+    usePreferencesStore.setState({ motionEnabled: true });
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -102,6 +107,137 @@ describe('Card', () => {
     expect(button).toHaveAttribute('aria-pressed', 'true');
     expect(button).toHaveTextContent('ENERJİ');
     expect(button).toHaveTextContent('HASAR');
+  });
+
+  it('reports a pointer drop once and suppresses the click generated after dragging', async () => {
+    const onPlay = vi.fn();
+    const onDragStart = vi.fn();
+    const onDragEnd = vi.fn();
+    render(<CardComponent card={baseCard} onPlay={onPlay} isDraggable onDragStart={onDragStart} onDragEnd={onDragEnd} />);
+    const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
+    fireEvent(button, new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 300 }));
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 150, clientY: 150 }));
+    await waitFor(() => expect(onDragStart).toHaveBeenCalledWith(baseCard.id));
+    fireEvent(window, new MouseEvent('pointerup', { clientX: 175, clientY: 125 }));
+    await waitFor(() => expect(onDragEnd).toHaveBeenCalledWith(baseCard.id, { x: 175, y: 125 }));
+    expect(onDragEnd).toHaveBeenCalledTimes(1);
+    fireEvent.click(button, { detail: 1 });
+    await new Promise(resolve => window.setTimeout(resolve, 550));
+    expect(onPlay).not.toHaveBeenCalled();
+    // Yeni bir klavye seçimi hâlâ kullanılabilir; iptal bayrağı kartı kilitlemez.
+    fireEvent.keyDown(button, { key: 'Enter' });
+    fireEvent.click(button, { detail: 0 });
+    expect(onPlay).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['pointercancel', 'Escape', 'blur', 'resize'])('returns the card without a drop target when dragging is cancelled by %s', async cancellation => {
+    const onPlay = vi.fn();
+    const onDragStart = vi.fn();
+    const onDragEnd = vi.fn();
+    render(<CardComponent card={baseCard} onPlay={onPlay} isDraggable onDragStart={onDragStart} onDragEnd={onDragEnd} />);
+    const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
+    fireEvent(button, new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 300 }));
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 150, clientY: 150 }));
+    await waitFor(() => expect(onDragStart).toHaveBeenCalledOnce());
+    if (cancellation === 'Escape') fireEvent.keyDown(document, { key: 'Escape' });
+    else if (cancellation === 'blur') fireEvent(window, new Event('blur'));
+    else if (cancellation === 'resize') fireEvent(window, new Event('resize'));
+    else fireEvent(window, new MouseEvent('pointercancel', { clientX: 150, clientY: 150 }));
+    await waitFor(() => expect(onDragEnd).toHaveBeenCalledWith(baseCard.id, null));
+    fireEvent(window, new MouseEvent('pointerup', { clientX: 150, clientY: 150 }));
+    fireEvent.click(button, { detail: 1 });
+    expect(onPlay).not.toHaveBeenCalled();
+    expect(onDragEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps resting cards in their layout position when the table becomes narrow and taller', async () => {
+    let tableRect = new DOMRect(0, 0, 1440, 1200);
+    let cardRect = new DOMRect(550, 600, 210, 330);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      return this.dataset.table ? tableRect : cardRect;
+    });
+    const Table = () => {
+      const bounds = useRef<HTMLDivElement>(null);
+      return <div ref={bounds} data-table="true"><div className="card-hit-area"><CardComponent card={baseCard} onPlay={vi.fn()} isDraggable dragBounds={bounds} /></div></div>;
+    };
+    render(<Table />);
+    const card = screen.getByLabelText(/Test Kartı oynanabilir/i);
+    await new Promise(resolve => window.setTimeout(resolve, 80));
+    expect(card.style.transform).not.toMatch(/translate[XY]\(/);
+    // Masaüstü pencere daralınca kart sıraları sayfayı uzatır; yeni yerleşim CSS'e ait olmalı.
+    tableRect = new DOMRect(0, 0, 900, 1600);
+    cardRect = new DOMRect(120, 950, 210, 330);
+    fireEvent(window, new Event('resize'));
+    await new Promise(resolve => window.setTimeout(resolve, 80));
+    expect(card.style.transform).not.toMatch(/translate[XY]\(/);
+  });
+
+  it.each(['Enter', ' '])('does not play a card with the %s key during an active drag', async key => {
+    const onPlay = vi.fn();
+    const onDragStart = vi.fn();
+    const onDragEnd = vi.fn();
+    render(<CardComponent card={baseCard} onPlay={onPlay} isDraggable onDragStart={onDragStart} onDragEnd={onDragEnd} />);
+    const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
+    fireEvent(button, new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 300 }));
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 150, clientY: 150 }));
+    await waitFor(() => expect(onDragStart).toHaveBeenCalledOnce());
+    fireEvent.keyDown(button, { key });
+    fireEvent.click(button, { detail: 0 });
+    expect(onPlay).not.toHaveBeenCalled();
+    fireEvent(window, new MouseEvent('pointercancel', { clientX: 150, clientY: 150 }));
+    await waitFor(() => expect(onDragEnd).toHaveBeenCalledWith(baseCard.id, null));
+  });
+
+  it('cancels the active drag before opening card inspection', async () => {
+    const onPlay = vi.fn();
+    const onDragStart = vi.fn();
+    const onDragEnd = vi.fn();
+    render(<CardComponent card={baseCard} onPlay={onPlay} isDraggable onDragStart={onDragStart} onDragEnd={onDragEnd} />);
+    const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
+    fireEvent(button, new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 300 }));
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 150, clientY: 150 }));
+    await waitFor(() => expect(onDragStart).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByRole('button', { name: 'Test Kartı ayrıntılarını incele' }));
+    expect(onDragEnd).toHaveBeenCalledWith(baseCard.id, null);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(onPlay).not.toHaveBeenCalled();
+  });
+
+  it.each(['game setting', 'operating system'])('clears drag shadows and hover lift immediately when reduced motion is enabled by the %s', async preference => {
+    let reduced = false;
+    const media = new EventTarget();
+    Object.defineProperty(media, 'matches', { get: () => reduced });
+    vi.stubGlobal('matchMedia', () => media);
+    const onDragStart = vi.fn();
+    const onDragEnd = vi.fn();
+    render(<CardComponent card={baseCard} onPlay={vi.fn()} isDraggable onDragStart={onDragStart} onDragEnd={onDragEnd} />);
+    const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
+    fireEvent(button, new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 300 }));
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 150, clientY: 150 }));
+    await waitFor(() => expect(onDragStart).toHaveBeenCalledOnce());
+    await waitFor(() => expect(button).toHaveClass('card--dragging'));
+    fireEvent(window, new MouseEvent('pointercancel', { clientX: 150, clientY: 150 }));
+    await waitFor(() => expect(onDragEnd).toHaveBeenCalledOnce());
+    await userEvent.hover(button);
+    await waitFor(() => expect(button.style.transform).toContain('translateZ'));
+    act(() => {
+      if (preference === 'game setting') usePreferencesStore.setState({ motionEnabled: false });
+      else { reduced = true; media.dispatchEvent(new Event('change')); }
+    });
+    await waitFor(() => {
+      expect(button.style.transform).not.toMatch(/translate[XYZ]\(|rotateX\(|scale\(/);
+      expect(button.style.filter).toBe('');
+    }, { timeout: 250 });
+  });
+
+  it('returns a hovered card to the table when it becomes unavailable', async () => {
+    const { rerender } = render(<CardComponent card={baseCard} onPlay={vi.fn()} />);
+    const button = screen.getByLabelText(/Test Kartı oynanabilir/i);
+    await userEvent.hover(button);
+    await waitFor(() => expect(button.style.transform).toContain('translateZ'));
+    rerender(<CardComponent card={baseCard} onPlay={vi.fn()} isPlayable={false} />);
+    await waitFor(() => expect(button.style.transform).not.toMatch(/translateZ\(|rotateX\(|scale\(/));
+    expect(button).toBeDisabled();
   });
 
   it('renders correct card type glyph and color', () => {

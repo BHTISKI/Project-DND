@@ -6,45 +6,44 @@ import type { EnemyIntent } from '../types/game';
 import type { Character } from '../types/game';
 import { useShallow } from 'zustand/react/shallow';
 import { PostureBar } from './PostureBar';
+import { HealthBar } from './HealthBar';
+import { FighterFeedback } from './CombatFeedback';
 
 interface FighterPanelProps {
   kind: 'player' | 'enemy';
   fighter: Character;
+  avatarSrc: string;
   block: number;
   statuses: Array<{ id: string; stacks: number; duration: number }>;
   statusLabel: (status: { id: string; stacks: number; duration: number }) => string;
   intent?: React.ReactNode;
   energy?: React.ReactNode;
+  emotion?: string;
 }
 
-function FighterPanel({ kind, fighter, block, statuses, statusLabel, intent, energy }: FighterPanelProps) {
+function FighterPanel({ kind, fighter, avatarSrc, block, statuses, statusLabel, intent, energy, emotion }: FighterPanelProps) {
   const { isim: name, mevcutCan: health, maksimumCan: maxHealth, hasarBonusu: damageBonus } = fighter;
   const healthPercent = Math.max(0, (health / maxHealth) * 100);
   const isPlayer = kind === 'player';
 
   return (
-    <article className={`fighter fighter--${kind}${healthPercent <= 30 ? ' fighter--low-health' : ''}${fighter.isBroken ? ' fighter--broken' : ''}`}>
-      <div className={`fighter-avatar fighter-avatar--${kind}`} aria-label={isPlayer ? 'Oyuncu afişi' : 'Düşman afişi'}>
-        {isPlayer ? <img src="/assets/Oyuncu.png" alt="Oyuncu avatar" className="fighter-avatar-img" /> :
-          <img src="/assets/düşman.png" alt={`${name} avatar`} className="fighter-avatar-img" />}
-      </div>
+    <article data-emotion={emotion} className={`fighter fighter--${kind}${healthPercent <= 30 ? ' fighter--low-health' : ''}${health <= 0 ? ' fighter--defeated' : healthPercent <= 50 ? ' fighter--wounded' : ''}${fighter.isBroken ? ' fighter--broken' : ''}`}>
+      <FighterFeedback target={kind} />
       <div className="fighter-copy">
         <p className="fighter-kicker">{isPlayer ? 'Oyuncu' : 'Düşman'}</p>
         <h2>{name}</h2>
-        <div className="health-row"><span>Can <small>{healthPercent <= 30 ? 'Kritik' : isPlayer ? 'Güvende' : 'Aktif'}</small></span><strong>{health} / {maxHealth}</strong></div>
-        <div className="health-bar" role="progressbar" aria-label={`${isPlayer ? 'Oyuncu' : 'Düşman'} canı`} aria-valuenow={health} aria-valuemin={0} aria-valuemax={maxHealth}>
-          <span style={{ width: `${healthPercent}%` }} />
-          <div className="health-percent">
-            %{Math.round(healthPercent)}
-          </div>
+        <div className={`fighter-avatar fighter-avatar--${kind}`} aria-label={isPlayer ? 'Oyuncu afişi' : 'Düşman afişi'}>
+          <img src={avatarSrc} alt={isPlayer ? 'Oyuncu avatar' : `${name} avatar`} className="fighter-avatar-img" />
         </div>
-        <PostureBar character={fighter} owner={isPlayer ? 'Oyuncu' : 'Düşman'} />
+        <div className="health-row"><span>Can {health <= 0 ? <small>Yenildi</small> : healthPercent <= 30 && <small>Kritik</small>}</span><strong>{health} / {maxHealth}</strong></div>
+        <HealthBar key={fighter.id} health={health} maxHealth={maxHealth} owner={isPlayer ? 'Oyuncu' : 'Düşman'} />
+        {health > 0 && <PostureBar character={fighter} owner={isPlayer ? 'Oyuncu' : 'Düşman'} />}
         <div className="fighter-stats">
           <span className="stat-item"><b>+{damageBonus}</b><small>HASAR</small></span>
           <span className="stat-item block-value"><b>{block}</b><small>BLOK</small></span>
         </div>
         {statuses.length > 0 && <div className="status-row" aria-label={`${isPlayer ? 'Oyuncu' : 'Düşman'} etkileri`}>{statuses.map((status) => <span key={status.id} className={`status-chip${isPlayer ? '' : ' status-chip--enemy'}`} title={statusLabel(status)}>{statusLabel(status)}</span>)}</div>}
-        {intent}
+        {health > 0 && intent}
       </div>
       {energy}
     </article>
@@ -73,9 +72,11 @@ interface BattleStatsProps {
 }
 
 export const BattleStats: React.FC<BattleStatsProps> = ({ side = 'all' }) => {
+  const emotion = useGameStore(s => s.enemyDialog[0]?.emotion);
   const {
     player,
     enemy,
+    enemyArchetype,
     currentEnergy,
     maxEnergy,
     playerBlock,
@@ -91,6 +92,7 @@ export const BattleStats: React.FC<BattleStatsProps> = ({ side = 'all' }) => {
   } = useGameStore(useShallow((state) => ({
     player: state.player,
     enemy: state.enemy,
+    enemyArchetype: state.enemyArchetype,
     currentEnergy: state.currentEnergy,
     maxEnergy: state.maxEnergy,
     playerBlock: state.playerBlock,
@@ -104,6 +106,9 @@ export const BattleStats: React.FC<BattleStatsProps> = ({ side = 'all' }) => {
     handSize: state.hand.length,
     discardSize: state.discardPile.length,
   })));
+  const enemyAvatarSrc = enemyArchetype === 'guardian' || enemyArchetype === 'knight'
+    ? '/assets/enemy-armored-paint.png'
+    : '/assets/enemy-hooded-paint.png';
   const { type: intentType, valueText } = getIntentDetails(enemyIntent);
   const intentIsAttack = ['attack', 'saldırı', 'saldiri'].includes(intentType);
   const intentIsDefend = ['defend', 'defense', 'savunma'].includes(intentType);
@@ -118,13 +123,13 @@ export const BattleStats: React.FC<BattleStatsProps> = ({ side = 'all' }) => {
 
   return (
     <>
-      {(side === 'all' || side === 'player') && <FighterPanel kind="player" fighter={player} block={playerBlock} statuses={playerStatuses} statusLabel={statusLabel} energy={<div className="energy-display" aria-label={`${currentEnergy} / ${maxEnergy} enerji`}>
+      {(side === 'all' || side === 'player') && <FighterPanel kind="player" fighter={player} avatarSrc="/assets/player-paint.png" block={playerBlock} statuses={playerStatuses} statusLabel={statusLabel} energy={<div className="energy-display" aria-label={`${currentEnergy} / ${maxEnergy} enerji`}>
           <small>ENERJİ</small>
           <span>{currentEnergy} <b>/ {maxEnergy}</b></span>
           <span className="energy-pips" aria-hidden="true">{Array.from({ length: maxEnergy }, (_, index) => <i key={index} className={index < currentEnergy ? 'energy-pip energy-pip--full' : 'energy-pip'} />)}</span>
         </div>} />}
 
-      {(side === 'all' || side === 'enemy') && <FighterPanel kind="enemy" fighter={enemy} block={enemyBlock} statuses={enemyStatuses} statusLabel={statusLabel} intent={<div key={`${intentType}-${displayedIntentValue}`} className={`enemy-intent enemy-intent--${intentClass}`} aria-live="polite">
+      {(side === 'all' || side === 'enemy') && <FighterPanel kind="enemy" emotion={emotion} fighter={enemy} avatarSrc={enemyAvatarSrc} block={enemyBlock} statuses={enemyStatuses} statusLabel={statusLabel} intent={<div key={`${intentType}-${displayedIntentValue}`} className={`enemy-intent enemy-intent--${intentClass}`} aria-live="polite">
             <span className="enemy-intent__icon" aria-hidden="true">{telegraph?.icon ?? (intentIsAttack ? '⚔' : intentIsDefend ? '◈' : '✦')}</span>
             <span><b>Düşman niyeti</b><strong>{intentLabel}</strong></span>
             {displayedIntentValue && <small>{displayedIntentValue}</small>}

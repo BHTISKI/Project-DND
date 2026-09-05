@@ -1,28 +1,66 @@
-/* Kök CSS değişkenleri ve tipografi tanımları */
+/* Masa, keçe ve kâğıt aynı malzeme paletini paylaşır; metin renkleri yüzeye göre seçilir. */
 :root {
-  --sans: 'Trebuchet MS', 'Segoe UI', sans-serif;
-  --heading: Georgia, 'Times New Roman', serif;
-  --mono: 'Courier New', monospace;
-  font: 16px/1.45 var(--sans);
-  color: #17202a;
-  background: #000;
+  --color-parchment: #e3d3ae;
+  --color-ink: #29251c;
+  --color-rust: #8d4334;
+  --color-metal: #ab8850;
+  --font-title: 'Cinzel', Georgia, serif;
+  --font-body: 'Lora', Georgia, serif;
+  --font-note: 'Caveat', 'Segoe Print', cursive;
+  --ink: #eee3cb;
+  --muted: #c0b9a2;
+  --paper: var(--color-parchment);
+  --panel: #293a31;
+  --line: #7b6a48;
+  --red: #c97862;
+  --teal: #b2c5a0;
+  --gold: #d1b578;
+  --bronze: #806239;
+  --bronze-light: #957442;
+  --shadow: 3px 6px 12px #100e0a60;
+  --card-width: 210px;
+  --card-height: 338px;
+  /* İnce damarlar ve geniş tahta aralıkları: dış görsel indirmeden ahşap yüzey. */
+  --bg-tabletop:
+    repeating-linear-gradient(3deg, transparent 0 3px, #160d070d 4px, transparent 6px 11px),
+    repeating-linear-gradient(91deg, #190e0840 0 2px, #b5854612 3px 5px, transparent 6px 230px),
+    repeating-linear-gradient(0deg, #6d4727 0, #57371f 8px, #654224 15px, #79532e 42px, #674326 75px);
+  /* Çapraz lifler keçeyi, iç gölge masaya oturan kalın kenarı tarif eder. */
+  --bg-playmat:
+    repeating-linear-gradient(32deg, #d9e4bc04 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(122deg, #081c150a 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 45% 15%, #3a5442, #243d32 60%, #1b3028);
+  --paper-texture:
+    radial-gradient(ellipse at 0 100%, #8b623526, transparent 45%),
+    repeating-linear-gradient(12deg, #6f542508 0 1px, transparent 1px 4px),
+    linear-gradient(115deg, #ecdfc0, var(--color-parchment) 65%, #d6c49d);
+  --shadow-light: radial-gradient(ellipse at 44% 8%, #fce2a51a, transparent 65%);
+  --vignette: radial-gradient(ellipse at 50% 35%, transparent 42%, #0b08064d 100%);
+  font: 15px/1.5 var(--font-body);
+  color: var(--ink);
+  background: #51351f;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
 }
 
-body {
-  min-width: 320px;
-  margin: 0;
-}
-
-button {
-  font: inherit;
-}
-
-h1,
-h2,
-h3,
-p {
-  margin-top: 0;
+/* Sayfa doğal boyunda uzar; kısa ekranlarda oyun bilgileri kesilmez. */
+* { box-sizing: border-box; }
+html { min-width: 320px; min-height: 100%; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background-image: var(--shadow-light), var(--bg-tabletop); }
+body::before { content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none; background: var(--vignette); }
+#root { min-height: 100svh; isolation: isolate; }
+h1, h2, h3, h4, p { margin: 0; }
+button, input { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled) { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+button:focus-visible, summary:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+::selection { background: #ab8850; color: #171b13; }
+/* Masaüstünde uzun günlük ve kart açıklamaları ince kaydırma çubukları kullanır. */
+* { scrollbar-width: thin; scrollbar-color: #a08b5f #1f3029; }
+/* Hareket hassasiyetinde geri bildirim renk ve kenar çizgisiyle sürer. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }

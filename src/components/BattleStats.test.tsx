@@ -176,7 +176,7 @@ describe('BattleStats', () => {
   it('shows numeric, focusable posture with recovery and a non-color Broken label', () => {
     useGameStore.setState({
       player: { ...basePlayer, mevcutCan: 5, currentPosture: 72 },
-      enemy: { ...baseEnemy, currentPosture: 70, isBroken: true },
+      enemy: { ...baseEnemy, currentPosture: 80, isBroken: true },
     });
     render(<BattleStats />);
     const playerPosture = screen.getByRole('progressbar', { name: /Oyuncu dengesi/ });
@@ -186,6 +186,6 @@ describe('BattleStats', () => {
     expect(playerPosture).toHaveAttribute('title', 'Tur sonu −12');
     const enemyPosture = screen.getByRole('progressbar', { name: /Düşman dengesi/ });
     expect(enemyPosture).toHaveClass('posture-bar--broken');
-    expect(screen.getByText(/KIRILDI · İNFAZ AÇIĞI · 70 \/ 70 · İnfaz yapılmazsa 35 \/ 70/)).toBeInTheDocument();
+    expect(screen.getByText(/KIRILDI · İNFAZ AÇIĞI · 80 \/ 80 · İnfaz yapılmazsa 40 \/ 80/)).toBeInTheDocument();
   });
 });

@@ -7,11 +7,13 @@ import { BossResolver } from '../bossResolver';
 import { withMockRandom } from '../../testUtils/mockRandom';
 import { makeGameState } from '../../testUtils/gameState';
 import { initialPosture } from '../../mechanics/posture';
+import { createEnemy } from '../enemyArchetypes';
 
 describe('BossResolver', () => {
   it('initializes a stronger boss', async () => {
     const state = makeGameState({
       victoryCount: 2,
+      enemy: createEnemy('knight', 3, 'boss'),
       playerStatuses: [{ id: 'empowered', duration: 2, stacks: 1, value: 2 }],
       enemyStatuses: [{ id: 'poisoned', duration: 2, stacks: 1, value: 1 }],
       currentEnergy: 0,
@@ -24,8 +26,8 @@ describe('BossResolver', () => {
     );
 
     expect(result.enemy.mevcutCan).toBe(result.enemy.maksimumCan);
-    expect(result.enemy.maksimumCan).toBeGreaterThan(state.enemy.maksimumCan);
-    expect(result.enemy.hasarBonusu).toBe(state.enemy.hasarBonusu + 1);
+    expect(result.enemy.maksimumCan).toBe(state.enemy.maksimumCan);
+    expect(result.enemy.hasarBonusu).toBe(state.enemy.hasarBonusu);
     expect(result.currentEnergy).toBe(result.maxEnergy);
     expect(result.playerBlock).toBe(0);
     expect(result.enemyStatuses).toEqual([]);

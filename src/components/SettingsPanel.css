@@ -1,47 +1,46 @@
-/* The supplied orange disc / indigo ring / dark card, scaled for a corner control.
-   Names are scoped so the widget cannot change the game's .card or .button rules. */
+/* Küçük pirinç mühür masanın köşesinde kalır; oyun kartlarıyla yarışmaz. */
 .settings-control {
   position: fixed;
-  right: max(20px, env(safe-area-inset-right));
-  bottom: max(16px, env(safe-area-inset-bottom));
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
   z-index: 60;
 }
 .settings-trigger {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 3px;
   padding: 4px;
   border: 0;
-  border-radius: 14px;
-  color: #e9e5dd;
+  border-radius: 5px;
+  color: #e3d3ae;
   background: transparent;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.settings-trigger:focus-visible { outline: 2px solid #b3abff; outline-offset: 4px; }
-.settings-trigger__label { font: 500 12px/1.4 'Segoe UI', sans-serif; text-shadow: 0 1px 3px #000; }
-.settings-seal { display: grid; place-items: center; position: relative; width: 84px; height: 84px; border-radius: 50%; }
+.settings-trigger:focus-visible { outline: 2px solid #d2b87d; outline-offset: 4px; }
+.settings-trigger__label { font: 500 11px/1.4 var(--font-body, Georgia, serif); text-shadow: 0 1px 3px #000; }
+.settings-seal { display: grid; place-items: center; position: relative; width: 58px; height: 58px; border-radius: 50%; }
 .settings-seal__face {
   position: absolute;
-  inset: 9px;
+  inset: 6px;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 32%, #f09a2a, #e48719 65%, #d87410);
-  box-shadow: 0 3px 9px #0006, inset 0 0 9px #5c2b1833;
+  background: radial-gradient(circle at 36% 28%, #b59662, #8b6c3e 66%, #665031);
+  box-shadow: 0 3px 7px #0006, inset 0 1px 2px #edddb34d;
 }
-.settings-seal__face::after { content: ''; position: absolute; inset: 5px; border: 1px solid #ffefcc42; border-radius: 50%; }
+.settings-seal__face::after { content: ''; position: absolute; inset: 4px; border: 1px solid #e5d09a50; border-radius: 50%; }
 .settings-seal__ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg); }
-.settings-seal__track, .settings-seal__arc { fill: none; stroke-width: 8; }
-.settings-seal__track { stroke: #dedcd7; }
+.settings-seal__track, .settings-seal__arc { fill: none; stroke-width: 4; }
+.settings-seal__track { stroke: #4b4533; }
 .settings-seal__arc {
+  stroke: #b9a16e;
   stroke-linecap: round;
   stroke-dasharray: 6 94;
   stroke-dashoffset: 0;
-  filter: drop-shadow(0 0 2px #8c7ce5a6);
+  filter: drop-shadow(0 0 1px #d4be8138);
   animation: settings-ring-fill var(--settings-cycle, 6s) infinite;
 }
-/* Build to 88%, then let the tail catch up in the same direction.
-   -100 and 0 are the same point on this normalized path: no visible reset. */
+/* Halka tercihi korunur; mat pirinç tonu parlamadan yavaşça dolar. */
 @keyframes settings-ring-fill {
   0% { stroke-dasharray: 6 94; stroke-dashoffset: 0; animation-timing-function: cubic-bezier(.35, 0, .2, 1); }
   64% { stroke-dasharray: 88 12; stroke-dashoffset: 0; animation-timing-function: cubic-bezier(.6, 0, .3, 1); }
@@ -51,63 +50,63 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 25px;
-  height: 35px;
-  border: 1px solid #f2f2f2;
-  border-radius: 3px;
-  background: linear-gradient(145deg, #343434, #202020);
-  color: #fff;
-  box-shadow: 0 3px 7px #0006;
+  width: 19px;
+  height: 27px;
+  border: 1px solid #e0cc9e;
+  border-radius: 2px 3px 2px 1px;
+  background: linear-gradient(145deg, #30483a, #1b3027);
+  color: #e4d5af;
+  box-shadow: 1px 3px 4px #0005;
   transform: rotate(-8deg);
+  transition: transform 160ms ease;
 }
-.settings-seal__card::before { content: ''; position: absolute; inset: 3px; border: 1px solid #ffffff26; border-radius: 1px; }
-.settings-seal__card span { font: 15px/1 Georgia, serif; text-shadow: 0 0 6px #ffffff80; }
-.settings-trigger:hover .settings-seal__card { transform: rotate(0deg); }
+.settings-seal__card::before { content: ''; position: absolute; inset: 3px; border: 1px solid #dbca9b45; border-radius: 1px; }
+.settings-seal__card span { font: 11px/1 Georgia, serif; }
+.settings-trigger:hover .settings-seal__card { transform: rotate(-2deg); }
 .settings-control--quiet .settings-seal__arc { filter: none; }
-.settings-control--quiet .settings-seal__face { box-shadow: 0 3px 9px #0006; }
-.settings-control--quiet .settings-seal__card span { text-shadow: none; }
+.settings-control--quiet .settings-seal__face { box-shadow: 0 3px 7px #0006; }
 .settings-control--no-ring .settings-seal__arc { display: none; }
 .settings-trigger[aria-expanded='true'] .settings-seal__arc { animation-play-state: paused; }
 
+/* Ayarlar, ahşap çerçeveli koyu bir levhada; mevcut form ve odak akışı korunur. */
 .game-settings {
   position: fixed;
-  inset: auto max(20px, env(safe-area-inset-right)) max(132px, calc(env(safe-area-inset-bottom) + 116px)) auto;
+  inset: auto max(18px, env(safe-area-inset-right)) max(108px, calc(env(safe-area-inset-bottom) + 94px)) auto;
   width: min(350px, calc(100vw - 32px));
-  max-height: calc(100dvh - 156px);
+  max-height: calc(100dvh - 132px);
   margin: 0;
   padding: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  border: 1px solid #56515f;
-  border-radius: 12px;
-  color: #e8e5ed;
-  background: #26232c;
-  box-shadow: 0 12px 40px #0006;
-  font: 14px/1.5 'Segoe UI', sans-serif;
+  border: 1px solid #8d7953;
+  border-radius: 3px 5px 2px 4px;
+  color: #e3d3ae;
+  background: linear-gradient(130deg, #ffffff04, #00000010), #25392f;
+  box-shadow: 3px 5px 0 -2px #483924, 5px 14px 34px #0007, inset 0 0 0 3px #b1986430;
+  font: 14px/1.5 var(--font-body, Georgia, serif);
 }
-.game-settings::backdrop { background: #0005; }
-.game-settings__content { padding: 20px; }
+.game-settings::backdrop { background: #0c110d88; }
+.game-settings__content { padding: 22px; }
 .game-settings__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
-.game-settings__header h2 { color: #f1edf7; font: 500 21px/1.3 'Segoe UI', sans-serif; margin: 0; }
-.game-settings__close { width: 36px; height: 36px; border: 0; border-radius: 6px; background: #35303e; color: #ded7e8; font: 26px/1 'Segoe UI', sans-serif; cursor: pointer; }
-.game-settings__close:hover { background: #45404e; }
+.game-settings__header h2 { color: #f0e2c0; font: 500 21px/1.3 var(--font-title, Georgia, serif); margin: 0; }
+.game-settings__close { width: 36px; height: 36px; border: 1px solid #8a785249; border-radius: 2px; background: #38483a; color: #e3d3ae; font: 26px/1 Georgia, serif; cursor: pointer; }
+.game-settings__close:hover { background: #49563e; }
 .game-settings__group { border: 0; min-width: 0; padding: 0; margin: 0 0 22px; }
-.game-settings__group legend { padding: 0; margin-bottom: 8px; color: #bbb2c8; font-size: 12px; }
+.game-settings__group legend { padding: 0; margin-bottom: 8px; color: #c7b992; font-size: 12px; }
 .game-settings__toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; cursor: pointer; }
-.game-settings__toggle input { width: 18px; height: 18px; margin: 0 2px 0 0; accent-color: #a799ed; cursor: pointer; }
+.game-settings__toggle input { width: 18px; height: 18px; margin: 0 2px 0 0; accent-color: #c5ad73; cursor: pointer; }
 .game-settings__toggle:has(input:disabled) { opacity: .5; cursor: default; }
-.game-settings__hint { color: #a9a1b5; font-size: 12px; margin: 7px 0 0; }
+.game-settings__hint { color: #b8b69a; font-size: 12px; margin: 7px 0 0; }
 .game-settings__speed { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; }
-.game-settings__speed output { color: #c7bcf6; font-variant-numeric: tabular-nums; }
-.game-settings__speed input { grid-column: 1 / -1; width: 100%; height: 24px; margin: 0; accent-color: #a799ed; cursor: pointer; }
+.game-settings__speed output { color: #dfc48a; font-variant-numeric: tabular-nums; }
+.game-settings__speed input { grid-column: 1 / -1; width: 100%; height: 24px; margin: 0; accent-color: #c5ad73; cursor: pointer; }
 .game-settings__speed input:disabled { opacity: .4; cursor: default; }
-.game-settings__footer { padding-top: 16px; border-top: 1px solid #48404f; }
-.game-settings__footer button { background: transparent; color: #d1c5ee; padding: 4px 0; border: 0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-.game-settings__footer p { margin: 12px 0 0; color: #b3aabd; font-size: 12px; }
-.game-settings :is(button, input):focus-visible { outline: 2px solid #c4b4ff; outline-offset: 4px; }
+.game-settings__footer { padding-top: 16px; border-top: 1px solid #b1986440; }
+.game-settings__footer button { background: transparent; color: #dfc48a; padding: 4px 0; border: 0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.game-settings__footer p { margin: 12px 0 0; color: #b8b69a; font-size: 12px; }
+.game-settings :is(button, input):focus-visible { outline: 2px solid #d2b87d; outline-offset: 4px; }
 
-/* Keep the last combat card clear of the floating control. */
-body:has(.settings-control) .app--combat .hand-grid { padding-right: 110px; scroll-padding-right: 110px; }
+/* Hareket kapatılınca tüm geçişler kısalır; halka ve ekran sarsıntısı durur. */
 html[data-game-shake='off'] .app.screen-shake { animation: none !important; }
 html[data-game-motion='reduced'] *,
 html[data-game-motion='reduced'] *::before,
@@ -122,14 +121,9 @@ html[data-game-motion='reduced'] .settings-trigger:hover .settings-seal__card { 
 @media (prefers-reduced-motion: reduce) {
   html:not([data-game-motion='full']) .settings-seal__arc { animation: none !important; stroke-dasharray: 64 36; }
   html:not([data-game-motion='full']) .settings-trigger:hover .settings-seal__card { transform: rotate(-8deg); }
-  /* The in-game switch is an explicit choice and takes priority for this small status ring. */
+  /* Oyuncunun açık hareket tercihi, bu küçük halkanın sistem varsayımını değiştirir. */
   html[data-game-motion='full'] .settings-seal__arc {
     animation-duration: var(--settings-cycle, 6s) !important;
     animation-iteration-count: infinite !important;
   }
-}
-@media (max-width: 600px) {
-  .settings-control { right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); }
-  .settings-seal { width: 68px; height: 68px; }
-  .game-settings { right: 12px; bottom: 112px; max-height: calc(100dvh - 132px); }
 }

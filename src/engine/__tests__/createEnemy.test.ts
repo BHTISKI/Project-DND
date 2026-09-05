@@ -7,10 +7,19 @@ describe('createEnemy', () => {
     expect(createEnemy('mage', 2)).toEqual({
       id: 'enemy-2',
       isim: 'Büyücü',
-      mevcutCan: 12,
-      maksimumCan: 12,
+      mevcutCan: 24,
+      maksimumCan: 24,
       hasarBonusu: 2,
       ...initialPosture('mage'),
+    });
+  });
+
+  it('scales elite and boss health without changing the posture source', () => {
+    expect(createEnemy('goblin', 0, 'elite')).toMatchObject({
+      mevcutCan: 23, maksimumCan: 23, hasarBonusu: 2, ...initialPosture('goblin', 'elite'),
+    });
+    expect(createEnemy('goblin', 0, 'boss')).toMatchObject({
+      mevcutCan: 38, maksimumCan: 38, hasarBonusu: 2, ...initialPosture('goblin', 'boss'),
     });
   });
 });

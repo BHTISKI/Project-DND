@@ -1,7 +1,7 @@
 // Bu dosya src/App.test.tsx için ilgili kodları içerir.
 // App bileşeni testleri: render ve kullanıcı etkileşimleri
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 import { useGameStore } from './state/store';
@@ -85,6 +85,28 @@ describe('App', () => {
     expect(screen.getByText(/Hamleni seç/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Savaş alanı/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Oyuncu turunu bitir/i })).toBeInTheDocument();
+  });
+
+  it.each([
+    { point: { x: 200, y: 150 }, played: true, location: 'inside the battlefield' },
+    { point: { x: 700, y: 350 }, played: false, location: 'outside the battlefield' },
+  ])('plays a dragged card only when released $location', async ({ point, played }) => {
+    useGameStore.setState({
+      initialized: true, gamePhase: 'combat',
+      enemy: { ...useGameStore.getState().enemy, mevcutCan: 100, maksimumCan: 100 },
+      hand: [{ id: 'drag-card', isim: 'Masa Kartı', tip: 'saldırı', manaBedeli: 1, baseHasar: 1, effects: [{ kind: 'attack', amount: 1 }] }],
+    });
+    render(<App />);
+    const battlefield = screen.getByLabelText('Savaş alanı');
+    vi.spyOn(battlefield, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 500, 200));
+    const button = screen.getByRole('button', { name: /Masa Kartı oynanabilir/ });
+    fireEvent(button, new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 350 }));
+    fireEvent(window, new MouseEvent('pointermove', { clientX: point.x, clientY: point.y }));
+    await screen.findByText('Kartı buraya bırak');
+    fireEvent(window, new MouseEvent('pointerup', { clientX: point.x, clientY: point.y }));
+    await waitFor(() => expect(screen.queryByText('Kartı buraya bırak')).not.toBeInTheDocument());
+    expect(useGameStore.getState().hand).toHaveLength(played ? 0 : 1);
+    expect(useGameStore.getState().currentEnergy).toBe(played ? 2 : 3);
   });
 
   it('transitions to next map after defeating enemy in combat', async () => {

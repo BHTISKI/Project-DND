@@ -21,7 +21,7 @@ npm test
 
 ## Mevcut oyun kuralları
 
-1. 2–20 karakterlik bir isim girilir. Yedi kartlık başlangıç destesi hazırlanır.
+1. 2–20 karakterlik bir isim girilir. Yeni macera 24 can ve yedi kartlık başlangıç destesiyle başlar.
 2. Haritadan ilk savaşa girerken, beş seçenekten üç kart seçilir. Yük bütçesi 6'dır; sıradan/seçkin/nadir/efsanevi kartlar 1/2/3/4 yük kullanır. Üç seçimi tamamlamayı engelleyen seçimler kapalıdır.
 3. Her oyuncu turunda beş kart çekilir ve enerji 3'e doldurulur. Elde tutulan her kart bir çekiş yerini kullanır; örneğin bir kart saklandıysa dört yeni kart çekilir. Kartların ürettiği enerji bu dolum değerini aşabilir. Kırık Ruh bu macera boyunca maksimum canı ve tur dolum enerjisini düşürür.
 4. Kart tek tıklamayla oynanır; çift tıklama veya **İncele** düğmesi ayrıntıları açar. Çift tıklamayı ayırmak için fareyle tek tıklama 500 ms gecikmeli uygulanır. Klavyeyle oynama anlıktır. İnceleme enerji harcatmaz; Escape pencereyi kapatır.
@@ -29,7 +29,7 @@ npm test
 6. Güçlü hasarı artırır, Güçsüz azaltır. Savunmasız alınan hasarı yük × değer başına %25 artırır. Zehir, hedefin eyleminden önce işler. Tahkimli, düşman hamlesinden önce blok kazandırır. Süreler tamamlanan tur sonunda azalır; durum yükleri en fazla 3’tür.
 7. Blok kartları birbirine eklenir; gelen hasar yalnızca kullandığı bloğu tüketir. Oyuncu bloğu düşman turundan sonra, düşman bloğu sonraki düşman hamlesinden önce temizlenir.
 8. Yakın saldırılar, HP hasarı tamamen bloklansa da kartta yazan denge hasarını verir. HP oranı %70 üzerindeyken 1×, %30–70 arasındayken 1,35×, %30 altındayken 1,75× denge hasarı alınır. Uzaktan saldırı, zehir, lanet ve saf hasar denge doldurmaz. Denge kırılınca blok temizlenir; sonraki uygun yakın saldırı **İnfaz** olur. Normal düşman anında ölür, elit/boss maksimum canının %35’ini kaybeder; oyuncu durum etkileri uygulanmış saldırının 2× hasarını blok kullanmadan alır. Kullanılmayan kırılma penceresi %50 dengeye döner; otomatik tur atlama yoktur.
-9. Düşman niyeti hamle öncesinde gösterilir. Fırsatçı ve paranoyak düşmanlar kartlarına tepki verirse gösterge hemen güncellenir. Tur bitiminde aynı hamle çözülür. Hasar göstergesi blok öncesidir; aldatıcı düşmanda niyetin belirsiz olduğu belirtilir.
+9. Düşman niyeti hamle öncesinde gösterilir. Taktik rakip zekâsı; iki tarafın canını, bloğunu ve Dengesini okuyarak İnfaz, savunma, şifa veya arketipe özgü karşı hamle seçebilir. Neden plan değiştirdiği niyet kartında açıklanır. Fırsatçı ve paranoyak düşmanlar kartlarına tepki verirse gösterge hemen güncellenir. Tur bitiminde aynı hamle çözülür. Hasar göstergesi blok öncesidir; aldatıcı düşmanda niyetin belirsiz olduğu belirtilir.
 10. Kullanılan normal kart mezarlığa gider. **Tükenir** kartları ayrı yığına gider; bu savaşta tekrar çekilmez, savaş sonunda geri döner. Çekiş destesi boşalınca yalnızca mezarlık karıştırılır. Oynanmakta olan çekiş kartı kendi etkisiyle geri çekilemez. Lanetlerin bedeli kart açıklamasında gösterilir.
 11. Her ölüm yolu aynı sonucu uygular: oyuncu 0 canda kaybeder; eşzamanlı ölüm yenilgidir. Düşman yenilince ödül bir kez verilir. Normal altın 20 + önceki zafer × 5; elit bu miktarın %50 fazlası; boss 50 + önceki zafer × 10'dur. Normal/elit 3, boss 4 kart seçeneği verir.
 12. Ödül seçimi veya pas geçme sonrası mağaza açılır. Mağaza, eldeki ve mezarlıktaki kartlar dahil bütün sahip olunan kartları yönetir. Tam canda şifa satılmaz; etkisiz yükseltme ücretlendirilmez; son kart silinmez.
@@ -95,4 +95,4 @@ npm run simulate -- --baseline
 npm run simulate -- --with-mechanics
 ```
 
-Simülasyon kazanma oranı, savaş süresi, denge kırılması ve İnfaz kullanımı dahil tasarım ölçümleri üretir; insan oyuncu eğlencesini veya tam macera kazanma oranını ölçmez. Baseline seçeneği yalnızca elde tutma/tükenme/Bitirici ablasyonudur; her iki mod da aynı güncel Denge motorunu kullanır.
+Simülasyon normal, elit ve boss karşılaşmalarını eşleştirilmiş tohumlarla ayrı raporlar; kazanma oranı, savaş süresi, oyuncu/düşman Denge kırılması ve İnfaz kullanımı dahil tasarım ölçümleri üretir. Hedef aralıklar normal savaşta 3–5, elitte 5–8 ve bossta 8–12 turdur. İnsan oyuncu eğlencesini veya tam macera kazanma oranını ölçmez. Baseline seçeneği yalnızca elde tutma/tükenme/Bitirici ablasyonudur; her iki mod da aynı güncel Denge motorunu ve rakip zekâsını kullanır.

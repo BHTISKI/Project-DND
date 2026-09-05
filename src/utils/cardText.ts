@@ -10,6 +10,7 @@ function damageFormula(card: Card, effect: Extract<CardEffect, {kind: 'attack' |
 }
 export function describeEffect(effect: CardEffect, card: Card): string {
   switch (effect.kind) {
+    case 'conditional': return `Düşmanda ${statusNames[effect.status]} varsa ${effect.damage} ek hasar (blok işler; denge hasarı yok)`;
     case 'attack': return `Saldırı: ${damageFormula(card, effect)} hasar`;
     case 'damage': return `Doğrudan hasar: ${damageFormula(card, effect)}`;
     case 'block': return `${effect.target === 'enemy' ? 'Düşmana ' : ''}${effect.amount} blok kazan`;

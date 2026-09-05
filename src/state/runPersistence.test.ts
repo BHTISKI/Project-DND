@@ -3,6 +3,7 @@ import { useGameStore } from './store';
 import { LEGACY_RUN_SAVE_KEY, readRunSave, RUN_SAVE_KEY, snapshotRun, writeRunSave } from './runPersistence';
 import { sampleCardDefs } from '../types/game';
 import { upgradedCard } from '../utils/game';
+import { generateAvailableNodes } from '../engine/runMap';
 
 const state = () => useGameStore.getState();
 beforeEach(() => {
@@ -13,7 +14,12 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-function start() { expect(state().startNewGame('Selim', null)).toBe(true); }
+// These regression cases deliberately exercise pre-campaign runs; campaign saves have a separate suite.
+function start() {
+  expect(state().startNewGame('Selim', null)).toBe(true);
+  useGameStore.setState({ campaign: undefined, availableNodes: generateAvailableNodes(0) });
+  state().retrySave();
+}
 
 function legacyPayloadFromCurrent() {
   const payload = JSON.parse(localStorage.getItem(RUN_SAVE_KEY)!);
@@ -172,12 +178,12 @@ it('migrates a version 2 posture ratio and fills new card and turn metadata', ()
   expect(result.kind).toBe('ready');
   if (result.kind !== 'ready') return;
   expect(result.run.player).toMatchObject({ maxPosture: 100, currentPosture: 100, isBroken: true });
-  expect(result.run.enemy).toMatchObject({ maxPosture: 70, currentPosture: 35, isBroken: false });
+  expect(result.run.enemy).toMatchObject({ maxPosture: 80, currentPosture: 40, isBroken: false });
   expect(result.run).toMatchObject({ postureComboCount: 0, pendingParry: false,
     playerGuardPostureCost: 0, enemyGuardPostureCost: 0 });
   expect([...result.run.deck, ...result.run.hand].every(cardValue =>
     typeof cardValue.postureDamage === 'number' && typeof cardValue.isRanged === 'boolean')).toBe(true);
-  expect(JSON.parse(localStorage.getItem(RUN_SAVE_KEY)!).version).toBe(3);
+  expect(JSON.parse(localStorage.getItem(RUN_SAVE_KEY)!).version).toBe(4);
 });
 
 it('does not give victory rewards or persistent gold twice after reload', () => {
@@ -255,7 +261,7 @@ it('saves defeat instead of leaving an earlier living character to reload', () =
   state().restartGame();
   reload();
   expect(state().runFloor).toBe(0);
-  expect(state().player.mevcutCan).toBe(10);
+  expect(state().player.mevcutCan).toBe(24);
 });
 
 it('round-trips every current card and upgrade, including optional mechanics', () => {
@@ -346,7 +352,7 @@ it('moves an old run into the Makara save slot and removes retired combat fields
   expect(result.run.baseEnemyIntent).toMatchObject({ action: { kind: 'execution', damage: 12 } });
   expect(result.run.baseEnemyIntent).not.toHaveProperty('criticalDamage');
   expect(result.run.battleLogs).toEqual(['Normal kayıt']);
-  expect(JSON.parse(localStorage.getItem(RUN_SAVE_KEY)!).version).toBe(3);
+  expect(JSON.parse(localStorage.getItem(RUN_SAVE_KEY)!).version).toBe(4);
   expect(localStorage.getItem(LEGACY_RUN_SAVE_KEY)).toBe(legacyRaw);
 });
 

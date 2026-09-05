@@ -1,4 +1,10 @@
 import { create } from 'zustand';
+import { initialCampaign, type CampaignRun } from '../content/campaign';
+import { createCampaignActions, type CampaignActions } from './campaignSlice';
+import { campaignNodes, campaignEncounter, campaignPhase, campaignVictory, campaignEvent, canTravel } from '../engine/campaignResolver';
+import { triggerRelics } from '../engine/relicResolver';
+import { addStatus } from '../engine/statuses';
+import { withNpcDialogue, type NpcLine } from '../engine/npcDialogue';
 import { sampleCardDefs } from '../types/game';
 import type { Card, Character, EnemyArchetypeId, EnemyBehaviorId, EnemyIntent, NodeType, PlayerSignal, RunMapState, StatusEffect } from '../types/game';
 import { calculateUpgradeCost, getCardWeight, shuffle, upgradedCard } from '../utils/game';
@@ -18,7 +24,9 @@ import { readRunSave, writeRunSave } from './runPersistence';
 import type { SaveStatus } from './runPersistence';
 import { initialPosture } from '../mechanics/posture';
 
-export interface GameState extends RunMapState {
+export interface GameState extends RunMapState, CampaignActions {
+  combatFeedback?: import('../engine/combatFeedback').CombatFeedback[];
+  campaign?: CampaignRun;
   saveStatus: SaveStatus;
   saveCursor: string | null;
   startNewGame: (name: string, expectedCursor: string | null) => boolean;
@@ -90,7 +98,7 @@ export interface GameState extends RunMapState {
   enemyGuardPostureCost: number;
   // Dialogs
   playerDialog: { text: string; timestamp: number }[];
-  enemyDialog: { text: string; timestamp: number }[];
+  enemyDialog: NpcLine[];
   // Actions
   initializeGame: () => void;
   restartGame: () => void;
@@ -119,7 +127,7 @@ export interface GameState extends RunMapState {
 }
 
 const defaultPlayer: Character = {
-  id: 'player-1', isim: 'Ero', mevcutCan: 10, maksimumCan: 10, hasarBonusu: 2, ...initialPosture(),
+  id: 'player-1', isim: 'Ero', mevcutCan: 24, maksimumCan: 24, hasarBonusu: 2, ...initialPosture(),
 };
 
 export function createInitialDeck(): Card[] {
@@ -128,6 +136,7 @@ export function createInitialDeck(): Card[] {
 
 function initialRun() {
   return {
+    campaign: undefined as CampaignRun | undefined,
     saveStatus: 'idle' as SaveStatus, saveCursor: null as string | null,
     player: { ...defaultPlayer }, enemy: createEnemy('goblin', 0), playerName: '',
     isPlayerTurn: true, round: 1, maxEnergy: 3, currentEnergy: 3, drawCount: 5,
@@ -155,7 +164,7 @@ function resetCombatPlayer(player: Character): Character {
 }
 function mapAfter(state: GameState, advance: boolean): GameState {
   const runFloor = state.runFloor + (advance ? 1 : 0);
-  return { ...state, ...restoreExhausted(state), gamePhase: 'mapSelection', runFloor, availableNodes: generateAvailableNodes(runFloor),
+  return { ...state, ...restoreExhausted(state), gamePhase: 'mapSelection', runFloor, availableNodes: state.campaign ? campaignNodes(runFloor) : generateAvailableNodes(runFloor),
     currentNode: null, nodeType: null, enemyIntent: null, enemyIntentValue: 0, baseEnemyIntent: null,
     player: resetCombatPlayer(state.player), playerBlock: 0, enemyBlock: 0, enemySkipNextTurn: false,
     playerStatuses: [], enemyStatuses: [], apocalypseTurns: null, comboChain: [], comboCount: 0, nextDamageBonus: 0,
@@ -166,12 +175,14 @@ function mapAfter(state: GameState, advance: boolean): GameState {
 // All damage routes share one terminal decision. Simultaneous death counts as defeat.
 export function finishEncounter(state: GameState): GameState {
   if (state.gamePhase !== 'combat') return state;
+  state = campaignPhase(state);
   if (state.player.mevcutCan <= 0) return {
     ...state, gamePhase: 'gameOver', player: { ...state.player, mevcutCan: 0 },
     enemyIntent: null, enemyIntentValue: 0, playerDialog: [], enemyDialog: [],
     battleLogs: [...state.battleLogs, 'Oyuncu ölü! Oyun bitti.'],
   };
   if (state.enemy.mevcutCan > 0) return state;
+  if (state.campaign) return campaignVictory(state);
   const type = state.nodeType ?? state.currentNode;
   let won: GameState;
   if (type === 'boss') won = BossResolver.checkBossVictory(state).newState;
@@ -181,7 +192,7 @@ export function finishEncounter(state: GameState): GameState {
       battleLogs: [...state.battleLogs, `Zafer! ${reward.gold} altın kazandın.`] };
   }
   return { ...mapAfter(won, true), metaGold: state.metaGold + 10, metaVictories: state.metaVictories + 1,
-    playerDialog: [{ text: 'Düşmanı yendim!', timestamp: Date.now() }] };
+    playerDialog: [] };
 }
 function beginCombat(state: GameState): GameState {
   const combined = shuffle(allCards(state));
@@ -195,6 +206,13 @@ function beginCombat(state: GameState): GameState {
     postureComboCount: 0, pendingParry: false, playerGuardPostureCost: 0, enemyGuardPostureCost: 0,
     apocalypseTurns: null, apocalypseHpPercent: 50, playerDialog: [], enemyDialog: [],
   }, state.drawCount);
+  if (next.campaign) {
+    next = { ...next, campaign: { ...next.campaign, usedRelics: [] } };
+    if (next.campaign!.classId === 'weaver') next = drawCardsState(next, 1);
+    if (next.campaign!.classId === 'warden') next.playerBlock += 4;
+    if (next.campaign!.classId === 'cinder') next.enemyStatuses = addStatus(next.enemyStatuses, { id: 'poisoned', duration: 2, stacks: 1 });
+    next = triggerRelics(next, 'battle');
+  }
   next = prepareEnemyIntent(next);
   if (state.pendingPlayerSkip) {
     next = log({ ...next, pendingPlayerSkip: false }, 'Kehanet bedeli: ilk oyuncu turu feda edildi.');
@@ -205,7 +223,7 @@ function beginCombat(state: GameState): GameState {
 
 export const useGameStore = create<GameState>((set, get) => {
   const update = (resolve: (state: GameState) => GameState) => set(state => {
-    const next = resolve(state);
+    const next = withNpcDialogue(state, resolve(state));
     if (next === state) return state;
     if (!next.initialized || !next.playerName) return next;
     const saved = writeRunSave(next, next.saveCursor);
@@ -214,23 +232,24 @@ export const useGameStore = create<GameState>((set, get) => {
       saveMetaState(next.metaGold, next.metaVictories);
     return { ...next, saveStatus: saved.status, saveCursor: saved.cursor };
   });
-  const startRun = (state: GameState): GameState => {
+  const startRun = (state: GameState, campaign = false): GameState => {
     const cards = createInitialDeck();
     const meta = loadMetaState();
     const previous = readRunSave();
     meta.metaGold = Math.max(meta.metaGold, state.metaGold, previous.kind === 'ready' ? previous.run.metaGold : 0);
     meta.metaVictories = Math.max(meta.metaVictories, state.metaVictories, previous.kind === 'ready' ? previous.run.metaVictories : 0);
-    return { ...state, ...initialRun(), ...meta, saveCursor: state.saveCursor, playerName: state.playerName,
+    return { ...state, ...initialRun(), ...meta, ...(campaign ? { campaign: initialCampaign(), availableNodes: campaignNodes(0) } : {}), saveCursor: state.saveCursor, playerName: state.playerName,
       player: { ...defaultPlayer, isim: state.playerName || 'Ero' }, initialized: true,
       hand: cards.slice(0, 5), deck: cards.slice(5),
       battleLogs: ['Oyun başlatıldı. Deste hazırlandı.'] };
   };
   return {
     ...initialRun(),
+    ...createCampaignActions(update),
     startNewGame: (name, expectedCursor) => {
       const playerName = name.trim();
       if (playerName.length < 2 || playerName.length > 20) return false;
-      const next = startRun({ ...get(), playerName, saveCursor: expectedCursor });
+      const next = startRun({ ...get(), playerName, saveCursor: expectedCursor }, true);
       const saved = writeRunSave(next, expectedCursor);
       if (saved.status === 'conflict') return false;
       set({ ...next, saveStatus: saved.status, saveCursor: saved.cursor });
@@ -246,7 +265,7 @@ export const useGameStore = create<GameState>((set, get) => {
     },
     retrySave: () => update(state => ({ ...state })),
     initializeGame: () => update(state => state.initialized ? state : startRun(state)),
-    restartGame: () => update(state => state.gamePhase === 'gameOver' ? startRun(state) : state),
+    restartGame: () => update(state => state.gamePhase === 'gameOver' ? startRun(state, !!state.campaign) : state),
     drawCards: count => update(state => finishEncounter(drawCardsState(state, count))),
     playCard: id => update(state => finishEncounter(resolveCard(state, id))),
     endTurn: () => update(state => resolveTurn(state, finishEncounter)),
@@ -260,17 +279,17 @@ export const useGameStore = create<GameState>((set, get) => {
       return trimmed.length >= 2 && trimmed.length <= 20
         ? { ...state, playerName: trimmed, player: { ...state.player, isim: trimmed } } : state;
     }),
-    addPlayerDialog: text => update(state => ({ ...state, playerDialog: [{ text, timestamp: Date.now() }] })),
-    addEnemyDialog: text => update(state => ({ ...state, enemyDialog: [{ text, timestamp: Date.now() }] })),
+    addPlayerDialog: () => {},
+    addEnemyDialog: text => update(state => ({ ...state, enemyDialog: [...state.enemyDialog, { text, timestamp: Date.now() }] })),
     addRewardCardToDeck: id => update(state => {
       if (!['victory', 'mapSelection'].includes(state.gamePhase)) return state;
       const card = state.rewardOptions.find(c => c.id === id);
       if (!card) return state;
-      return { ...state, deck: [...state.deck, card], rewardOptions: [], gamePhase: 'shop', currentNode: null, nodeType: null };
+      return { ...state, deck: [...state.deck, card], rewardOptions: [], gamePhase: state.campaign ? 'mapSelection' : 'shop', currentNode: null, nodeType: null };
     }),
     skipReward: () => update(state => {
       if (!['victory', 'mapSelection'].includes(state.gamePhase) || !state.rewardOptions.length) return state;
-      return { ...state, rewardOptions: [], gamePhase: 'shop', currentNode: null, nodeType: null };
+      return { ...state, rewardOptions: [], gamePhase: state.campaign ? 'mapSelection' : 'shop', currentNode: null, nodeType: null };
     }),
     buyCard: id => update(state => {
       if (state.gamePhase !== 'shop' || !/^shop-\d+$/.test(id)) return state;
@@ -323,19 +342,18 @@ export const useGameStore = create<GameState>((set, get) => {
     }),
     startNextCombat: () => update(state => state.gamePhase === 'shop' ? mapAfter(state, state.currentNode === 'shop') : state),
     selectNode: id => update(state => {
-      if (state.gamePhase !== 'mapSelection' || state.rewardOptions.length) return state;
+      if (state.gamePhase !== 'mapSelection' || state.rewardOptions.length || !canTravel(state.campaign)) return state;
       const node = state.availableNodes.find(n => n.id === id);
       if (!node) return state;
       if (node.type === 'shop' || node.type === 'event' || node.type === 'rest')
         return { ...state, gamePhase: node.type, currentNode: node.type, nodeType: node.type };
       const archetype = chooseArchetype(state.victoryCount);
-      const base = createEnemy(archetype, state.runFloor);
-      const enemy = node.type === 'elite' ? { ...base, mevcutCan: Math.ceil(base.maksimumCan * 1.5),
-        maksimumCan: Math.ceil(base.maksimumCan * 1.5), hasarBonusu: base.hasarBonusu + 1, ...initialPosture(archetype, 'elite') } : base;
+      const enemy = createEnemy(archetype, state.runFloor, node.type);
       let encounter: GameState = { ...state, enemy, enemyArchetype: archetype, currentNode: node.type, nodeType: node.type,
         enemyBehavior: node.type === 'elite' || node.type === 'boss' || archetype === 'mage' ? 'paranoid'
           : archetype === 'goblin' || archetype === 'assassin' ? 'opportunist' : 'standard',
         enemyCanLie: node.type === 'elite' || node.type === 'boss' };
+      if (state.campaign) encounter = campaignEncounter(encounter, node.type);
       if (node.type === 'boss') encounter = BossResolver.initializeBoss(encounter);
       if (state.starterDraftComplete) return beginCombat(encounter);
       const pool = shuffle(sampleCardDefs.filter(c => !c.isCursed));
@@ -355,6 +373,7 @@ export const useGameStore = create<GameState>((set, get) => {
     }),
     resolveEvent: choice => update(state => {
       if (state.gamePhase !== 'event') return state;
+      if (state.campaign) return campaignEvent(state, choice);
       const resolved = EventResolver.resolveEvent(state, choice);
       return resolved === state ? state : mapAfter(resolved, true);
     }),

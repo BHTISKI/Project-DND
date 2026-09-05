@@ -176,19 +176,19 @@ describe('Store helper functions', () => {
       expect(enemy).toMatchObject({
         id: 'enemy-0',
         isim: 'Goblin',
-        mevcutCan: 7,
-        maksimumCan: 7,
+        mevcutCan: 15,
+        maksimumCan: 15,
         hasarBonusu: 1,
         currentPosture: 0,
-        maxPosture: 70,
+        maxPosture: 80,
         isBroken: false,
       });
     });
 
     it('should scale enemy stats with tier', () => {
       const enemy = createEnemy('goblin', 2);
-      expect(enemy.mevcutCan).toBe(7 + 2 * 2); // guardian? wait, goblin: hp + tier * 2
-      expect(enemy.maksimumCan).toBe(7 + 2 * 2);
+      expect(enemy.mevcutCan).toBe(15 + 2 * 3);
+      expect(enemy.maksimumCan).toBe(15 + 2 * 3);
       expect(enemy.hasarBonusu).toBe(1 + Math.floor(2 / 3)); // damage bonus + floor(tier/3)
     });
   });
@@ -381,8 +381,8 @@ describe('Store actions', () => {
       expect(state.discardPile).toHaveLength(0);
       expect(state.gold).toBe(50);
       expect(state.currentEnergy).toBe(3);
-      expect(state.player.mevcutCan).toBe(10);
-      expect(state.enemy.mevcutCan).toBe(7); // defaultEnemy is goblin tier 0
+      expect(state.player.mevcutCan).toBe(24);
+      expect(state.enemy.mevcutCan).toBe(15); // defaultEnemy is goblin tier 0
       expect(state.enemyIntent).toBeDefined();
     });
 

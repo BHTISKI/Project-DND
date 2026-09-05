@@ -68,9 +68,9 @@ describe('posture rules', () => {
   });
 
   it('provides profile and encounter capacities without floor scaling', () => {
-    expect(initialPosture('assassin')).toMatchObject({ maxPosture: 60, postureRecoveryRate: 1, postureDamageTaken: 1.2 });
-    expect(postureProfile('guardian', 'elite').maxPosture).toBe(163);
-    expect(postureProfile('knight', 'boss').maxPosture).toBe(210);
+    expect(initialPosture('assassin')).toMatchObject({ maxPosture: 70, postureRecoveryRate: 1, postureDamageTaken: 1.2 });
+    expect(postureProfile('guardian', 'elite').maxPosture).toBe(196);
+    expect(postureProfile('knight', 'boss').maxPosture).toBe(272);
   });
 
   it('derives card metadata and momentum from printed values', () => {

@@ -40,18 +40,32 @@ it('cancels delayed card play on unmount', () => {
   unmount(); act(() => vi.advanceTimersByTime(1000));
   expect(onPlay).not.toHaveBeenCalled();
 });
-it('dialogs expire without another insertion and newer messages replace older ones', () => {
+it('player stays silent and NPC reactions wait their turn', () => {
   vi.useFakeTimers();
   render(<DialogBubble />);
   act(() => useGameStore.getState().addPlayerDialog('İlk mesaj'));
-  act(() => vi.advanceTimersByTime(3000));
-  act(() => useGameStore.getState().addPlayerDialog('Yeni mesaj'));
   expect(screen.queryByText('İlk mesaj')).not.toBeInTheDocument();
-  act(() => vi.advanceTimersByTime(2000));
-  expect(screen.getByText('Yeni mesaj')).toBeInTheDocument();
-  act(() => vi.advanceTimersByTime(3000));
-  expect(screen.queryByText('Yeni mesaj')).not.toBeInTheDocument();
+  act(() => useGameStore.getState().addEnemyDialog('İlk tepki'));
+  act(() => useGameStore.getState().addEnemyDialog('İkinci tepki'));
+  expect(screen.getByRole('status')).toHaveTextContent('İlk tepki');
+  expect(screen.queryByText('İkinci tepki')).not.toBeInTheDocument();
+  act(() => vi.advanceTimersByTime(5500));
+  expect(screen.getByRole('status')).toHaveTextContent('İkinci tepki');
+  act(() => vi.advanceTimersByTime(5500));
+  expect(screen.queryByText('İkinci tepki')).not.toBeInTheDocument();
   expect(useGameStore.getState().playerDialog).toEqual([]);
+});
+it('story dialogue survives time and advances one line per click', () => {
+  vi.useFakeTimers();
+  useGameStore.setState({ enemyDialog: [
+    { text: 'Geçidin hikâyesi.', timestamp: 1, story: true },
+    { text: 'Yolun devamı.', timestamp: 2, story: true },
+  ] });
+  render(<DialogBubble />);
+  act(() => vi.advanceTimersByTime(60000));
+  expect(screen.getByText('Geçidin hikâyesi.')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /Devam et/ }));
+  expect(screen.getByRole('status')).toHaveTextContent('Yolun devamı.');
 });
 it('shop lists hand and discard cards and disables full-health healing', () => {
   useGameStore.setState({ gamePhase: 'shop', gold: 200, hand: [makeCard('Eldeki')], discardPile: [makeCard('Mezarlıktaki')] });

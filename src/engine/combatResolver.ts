@@ -1,10 +1,14 @@
 import type { GameState } from '../state/store';
+import { feedback } from './combatFeedback';
 import type { Card, Character, EnemyIntent, StatusEffect } from '../types/game';
 import { sampleCardDefs } from '../types/game';
 import { decideEnemyBehavior, actionFromIntent } from './enemyBehavior';
 import { generateEnemyIntent } from './enemyArchetypes';
+import { campaignDecision, campaignPhase } from './campaignResolver';
+import { triggerRelics } from './relicResolver';
 import { ageStatuses, addStatus, poisonTick, statusValue, statusNames } from './statuses';
-import { drawFromPiles } from './cardPiles';
+import { drawCardsState } from './drawCards';
+export { drawCardsState } from './drawCards';
 import { generateRandomId } from '../utils/id';
 import { retainHand } from '../mechanics/retain';
 import { routePlayedCard } from '../mechanics/exhaust';
@@ -37,7 +41,7 @@ function withPostureDamage(state: GameState, target: CombatSide, amount: number,
   const broke = !previous.isBroken && character.isBroken;
   const blockKey = target === 'player' ? 'playerBlock' : 'enemyBlock';
   const costKey = target === 'player' ? 'playerGuardPostureCost' : 'enemyGuardPostureCost';
-  return { ...state, [target]: character,
+  return { ...(broke ? feedback(state, target, 'break') : state), [target]: character,
     ...(broke ? { [blockKey]: 0, [costKey]: 0,
       battleLogs: [...state.battleLogs, `${target === 'player' ? 'Oyuncunun' : 'Düşmanın'} duruşu kırıldı.`] } : {}) };
 }
@@ -51,27 +55,16 @@ function cursedCard(name: string): Card {
   if (!def) throw new Error('Bilinmeyen lanet: ' + name);
   return { ...def, id: generateRandomId() };
 }
-export function drawCardsState(state: GameState, count: number): GameState {
-  const { drawn, ...piles } = drawFromPiles(state, count);
-  let next = { ...state, ...piles };
-  const broken = drawn.filter(c => c.isim === 'Kırık Ruh').length;
-  if (broken) {
-    const maximum = Math.max(1, state.player.maksimumCan - broken * 2);
-    const energy = Math.max(1, state.maxEnergy - broken * 2);
-    next = { ...next, maxEnergy: energy, currentEnergy: Math.min(next.currentEnergy, energy),
-      player: { ...next.player, maksimumCan: maximum, mevcutCan: Math.min(next.player.mevcutCan, maximum) },
-      battleLogs: [...next.battleLogs, `Kırık Ruh: maksimum can ve enerji ${broken * 2} azaldı.`] };
-  }
-  return next;
-}
 
 export function refreshEnemyIntent(state: GameState): GameState {
   if (state.gamePhase !== 'combat' || state.enemy.mevcutCan <= 0) return state;
+  state = campaignPhase(state);
   const block = state.playerBlock + statusValue(state.playerStatuses, 'fortified');
   const signal = state.lastPlayerSignal === 'parry' || state.lastPlayerSignal === 'retaliation'
     ? state.lastPlayerSignal : block === 0 ? 'no-block' : 'none';
-  const decision = decideEnemyBehavior({
-    behavior: state.enemyBehavior, enemy: state.enemy, player: state.player, playerBlock: block,
+  const decision = campaignDecision(state) ?? decideEnemyBehavior({
+    behavior: state.enemyBehavior, archetype: state.enemyArchetype, enemy: state.enemy, player: state.player,
+    playerBlock: block, enemyBlock: state.enemyBlock,
     playerStatuses: state.playerStatuses, previousIntent: state.baseEnemyIntent,
     lastPlayerSignal: signal, desperationStacks: state.desperationStacks, canLie: state.enemyCanLie,
     random: () => state.enemyBehaviorRoll,
@@ -81,7 +74,7 @@ export function refreshEnemyIntent(state: GameState): GameState {
   const incoming = damageWithStatuses(action.damage ?? 0, state.enemyStatuses, state.playerStatuses);
   const executeThreat = !state.enemySkipNextTurn && state.player.isBroken && isMeleeAction(action);
   const multiplier = executeThreat ? POSTURE_CONFIG.execute.playerDamageMultiplier : 1;
-  const suppressed = state.enemySkipNextTurn;
+  const suppressed = state.enemySkipNextTurn || statusValue(state.enemyStatuses, 'timeLocked') > 0;
   const hidden = decision.telegraph.deceptive;
   const intent: EnemyIntent = {
     type: suppressed ? 'defend' : decision.telegraph.type,
@@ -95,9 +88,9 @@ export function refreshEnemyIntent(state: GameState): GameState {
       ? Math.min(action.damage ?? 4, state.enemy.maksimumCan - state.enemy.mevcutCan) : undefined,
     warning: suppressed ? undefined : executeThreat ? `İnfaz bloklanamaz${incoming * multiplier >= state.player.mevcutCan ? ' ve ölümcül' : ''}.`
       : hidden ? 'Niyet belirsiz: farklı bir hamle yapabilir.'
-      : action.ignoresBlock ? 'Blok bu saldırıyı durdurmaz.'
-      : state.enemyBehavior === 'opportunist' ? 'Blok kazanırsan fırsat saldırısı iptal olur.'
-      : state.enemyBehavior === 'paranoid' ? 'Savuşturma kartları bu niyeti değiştirebilir.' : undefined,
+      : decision.reason ?? (action.ignoresBlock ? 'Blok bu saldırıyı durdurmaz.'
+        : state.enemyBehavior === 'opportunist' ? 'Blok kazanırsan fırsat saldırısı iptal olur.'
+        : state.enemyBehavior === 'paranoid' ? 'Savuşturma kartları bu niyeti değiştirebilir.' : undefined),
   };
   return { ...state, enemyIntent: intent, enemyIntentValue: intent.estimatedDamage ?? intent.estimatedBlock ?? intent.estimatedHeal ?? 0 };
 }
@@ -116,7 +109,7 @@ export function resolveCard(state: GameState, cardId: string): GameState {
     return { ...state, battleLogs: [...state.battleLogs, reason] };
   }
   const logs: string[] = [];
-  let s: GameState = { ...state, hand: state.hand.filter(c => c.id !== cardId),
+  let s: GameState = { ...state, combatFeedback: [], hand: state.hand.filter(c => c.id !== cardId),
     currentEnergy: state.currentEnergy - card.manaBedeli,
     lastPlayerSignal: card.isParry || card.tags?.includes('parry') ? 'parry' : card.tags?.includes('retaliation') ? 'retaliation' : state.lastPlayerSignal,
     pendingParry: card.isParry || state.pendingParry };
@@ -142,11 +135,22 @@ export function resolveCard(state: GameState, cardId: string): GameState {
         ? [...s.enemyStatuses.filter(status => status.id !== 'postureExposed'), result.exposure]
         : s.enemyStatuses };
     logs.push(`İnfaz: ${result.damage} hasar${result.character.mevcutCan <= 0 ? '; düşman yenildi' : ''}.`);
+    s = feedback(s, 'enemy', 'heavy', result.damage);
   }
   let postureApplied = false;
   let guardCostQueued = false;
   for (const effect of card.effects ?? []) {
+    if (s.player.mevcutCan <= 0) break;
     switch (effect.kind) {
+      case 'conditional': {
+        if (statusValue(s.enemyStatuses, effect.status) > 0) {
+          const hit = hitCharacter(s.enemy, s.enemyBlock, effect.damage);
+          s = { ...s, enemy: hit.character, enemyBlock: hit.block };
+          s = feedback(feedback(s, 'enemy', 'damage', hit.damage), 'enemy', 'block', hit.absorbed);
+          logs.push(`${statusNames[effect.status]} bağı: ${hit.damage} ek hasar.`);
+        }
+        break;
+      }
       case 'attack':
       case 'damage': {
         if (executes) break;
@@ -158,6 +162,8 @@ export function resolveCard(state: GameState, cardId: string): GameState {
         const defenderBeforeHit = s.enemy;
         const hit = hitCharacter(s.enemy, s.enemyBlock, damage);
         s = { ...s, enemy: hit.character, enemyBlock: hit.block, nextDamageBonus: 0 };
+        s = feedback(feedback(s, 'enemy', bonus > 0 || hit.damage >= 12 ? 'heavy' : 'damage', hit.damage), 'enemy', 'block', hit.absorbed);
+        if (hit.damage > 0) s.player = { ...s.player, mevcutCan: Math.max(0, s.player.mevcutCan - statusValue(s.enemyStatuses, 'reflection')) };
         if (!postureApplied && meleeCard && hit.character.mevcutCan > 0) {
           const guardCost = hit.absorbed > 0 ? s.enemyGuardPostureCost : 0;
           s = withPostureDamage(s, 'enemy', card.postureDamage ?? 0,
@@ -179,6 +185,7 @@ export function resolveCard(state: GameState, cardId: string): GameState {
           if (!guardCostQueued) s.playerGuardPostureCost += card.postureCostOnBlock ?? 0;
         }
         guardCostQueued = true;
+        s = feedback(s, effect.target === 'enemy' ? 'enemy' : 'player', 'block', amount);
         logs.push(`${effect.target === 'enemy' ? 'Düşman' : 'Oyuncu'} ${amount} blok kazandı.`);
         break;
       }
@@ -186,6 +193,7 @@ export function resolveCard(state: GameState, cardId: string): GameState {
         const target = effect.target ?? 'player';
         const amount = Math.min(effect.amount, s[target].maksimumCan - s[target].mevcutCan);
         s[target] = { ...s[target], mevcutCan: s[target].mevcutCan + amount };
+        s = feedback(s, target, 'heal', amount);
         logs.push(`${effect.target === 'enemy' ? 'Düşman' : 'Oyuncu'} ${amount} can iyileştirdi.`);
         break;
       }
@@ -237,13 +245,15 @@ export function resolveCard(state: GameState, cardId: string): GameState {
     if (card.exhaust) logs.push(`${card.isim} tükendi; savaş sonunda geri döner.`);
   }
   s.battleLogs = [...s.battleLogs, logs.join(' ')];
-  s.playerDialog = [{ text: `${card.isim} kartını oynadım!`, timestamp: Date.now() }];
+  s.playerDialog = [];
+  s = triggerRelics(s, card.tip === 'saldırı' ? 'attack' : card.tip === 'savunma' ? 'defend' : 'skill');
+  if (card.exhaust) s = triggerRelics(s, 'exhaust');
   return refreshEnemyIntent(s);
 }
 
 export function resolveTurn(state: GameState, finish: (s: GameState) => GameState): GameState {
   if (state.gamePhase !== 'combat' || !state.isPlayerTurn) return state;
-  let s = finish(state);
+  let s = finish({ ...state, combatFeedback: [] });
   if (s.gamePhase !== 'combat') return s;
   // A break caused by this enemy action must survive into the player's response turn.
   const playerWasBroken = s.player.isBroken;
@@ -269,6 +279,7 @@ export function resolveTurn(state: GameState, finish: (s: GameState) => GameStat
   s = finish(s);
   if (s.gamePhase !== 'combat') return s;
   const enemyTick = poisonTick(s.enemyStatuses, 'enemy', s.enemy);
+  s = feedback(s, 'enemy', 'poison', s.enemy.mevcutCan - enemyTick.character.mevcutCan);
   s = finish({ ...s, enemy: enemyTick.character, battleLogs: [...s.battleLogs, ...enemyTick.log] });
   if (s.gamePhase !== 'combat') return s;
   const enemyBeforeRecovery = s.enemy.currentPosture;
@@ -277,7 +288,7 @@ export function resolveTurn(state: GameState, finish: (s: GameState) => GameStat
     `Düşman dengesi ${enemyBeforeRecovery - s.enemy.currentPosture} azaldı.`];
   // Resolve the published action; never roll another decision here.
   const action = withEnemyPosture(actionFromIntent(state.enemyIntent), state.enemyArchetype);
-  const skipped = state.enemySkipNextTurn;
+  const skipped = state.enemySkipNextTurn || statusValue(state.enemyStatuses, 'timeLocked') > 0;
   let parrySucceeded = false;
   s.enemyBlock = 0;
   s.enemyGuardPostureCost = 0;
@@ -292,6 +303,7 @@ export function resolveTurn(state: GameState, finish: (s: GameState) => GameStat
     }
   }
   s.pendingParry = false;
+  const hpBeforeAction = s.player.mevcutCan;
   if (skipped) {
     s = { ...s, battleLogs: [...s.battleLogs, 'Düşman turunu atladı.'] };
   } else if (parrySucceeded) {
@@ -302,12 +314,15 @@ export function resolveTurn(state: GameState, finish: (s: GameState) => GameStat
       const result = resolveExecute(s.player, 'player', amount);
       s = { ...s, player: result.character, playerBlock: 0, playerGuardPostureCost: 0,
         battleLogs: [...s.battleLogs, `İnfaz: düşman oyuncuya ${result.damage} hasar vurdu.`] };
+      s = feedback(s, 'player', 'heavy', result.damage);
       if (result.damage > 0 && Math.random() < 0.3) s.deck = [...s.deck, cursedCard('Körlük Mührü')];
     } else {
       const defenderBeforeHit = s.player;
       const hit = hitCharacter(s.player, s.playerBlock, amount, action.ignoresBlock);
       s = { ...s, player: hit.character, playerBlock: hit.block,
         battleLogs: [...s.battleLogs, `Düşman ${hit.damage} hasar vurdu. (Blok: ${hit.absorbed})`] };
+      s = feedback(feedback(s, 'player', hit.damage >= 12 ? 'heavy' : 'damage', hit.damage), 'player', 'block', hit.absorbed);
+      if (hit.damage > 0) s.enemy = { ...s.enemy, mevcutCan: Math.max(0, s.enemy.mevcutCan - statusValue(s.playerStatuses, 'reflection')) };
       if (isMeleeAction(action) && hit.character.mevcutCan > 0) {
         s = withPostureDamage(s, 'player', action.postureDamage ?? 0, 1, defenderBeforeHit);
         if (hit.absorbed > 0) {
@@ -321,10 +336,12 @@ export function resolveTurn(state: GameState, finish: (s: GameState) => GameStat
   } else if (action.kind === 'defend') {
     s.enemyBlock = (action.block ?? 0) + statusValue(s.enemyStatuses, 'fortified');
     s.enemyGuardPostureCost = action.postureCostOnBlock ?? 0;
+    s = feedback(s, 'enemy', 'block', s.enemyBlock);
     s.battleLogs = [...s.battleLogs, `Düşman ${s.enemyBlock} blok kazandı.`];
   } else if (action.kind === 'heal') {
     const amount = Math.min(action.damage ?? 4, s.enemy.maksimumCan - s.enemy.mevcutCan);
     s.enemy = { ...s.enemy, mevcutCan: s.enemy.mevcutCan + amount };
+    s = feedback(s, 'enemy', 'heal', amount);
     s.battleLogs = [...s.battleLogs, `Düşman ${amount} can iyileştirdi.`];
   } else if (action.kind === 'poison') {
     s.playerStatuses = addStatus(s.playerStatuses, { id: 'poisoned', duration: 3, stacks: action.poison ?? 2, value: 1 });
@@ -333,9 +350,11 @@ export function resolveTurn(state: GameState, finish: (s: GameState) => GameStat
     s.playerStatuses = addStatus(s.playerStatuses, { id: 'weakened', duration: 2, stacks: 1, value: 1 });
     s.battleLogs = [...s.battleLogs, 'Düşman oyuncuyu güçsüzleştirdi.'];
   } else s.battleLogs = [...s.battleLogs, 'Düşman geri çekildi.'];
+  if (s.player.mevcutCan < hpBeforeAction) s = triggerRelics(s, 'hurt');
   s = finish(s);
   if (s.gamePhase !== 'combat') return s;
   const playerTick = poisonTick(s.playerStatuses, 'player', s.player);
+  s = feedback(s, 'player', 'poison', s.player.mevcutCan - playerTick.character.mevcutCan);
   s = finish({ ...s, player: playerTick.character, battleLogs: [...s.battleLogs, ...playerTick.log] });
   if (s.gamePhase !== 'combat') return s;
   const playerNewlyBroken = !playerWasBroken && s.player.isBroken;
@@ -346,8 +365,10 @@ export function resolveTurn(state: GameState, finish: (s: GameState) => GameStat
     `Oyuncu dengesi ${playerBeforeRecovery - recoveredPlayer.currentPosture} azaldı.`];
   s = { ...s, player: recoveredPlayer,
     playerStatuses: ageStatuses(s.playerStatuses), enemyStatuses: ageStatuses(s.enemyStatuses),
-    playerBlock: 0, playerGuardPostureCost: 0, enemySkipNextTurn: false, currentEnergy: s.maxEnergy, isPlayerTurn: true,
+    playerBlock: 0, playerGuardPostureCost: 0, enemySkipNextTurn: false, currentEnergy: Math.max(0, s.maxEnergy - statusValue(s.playerStatuses, 'timeLocked')), isPlayerTurn: true,
     comboChain: [], comboCount: 0, postureComboCount: 0, nextDamageBonus: 0, lastPlayerSignal: 'none', round: s.round + 1,
-    enemyDialog: [{ text: skipped ? 'Bu tur hamle yapamıyorum.' : 'Hamlemi yaptım. Sıra sende.', timestamp: Date.now() }] };
-  return prepareEnemyIntent(drawCardsState(s, Math.max(0, s.drawCount - retained.length)));
+    enemyDialog: s.enemyDialog };
+  if (s.campaign) s = { ...s, campaign: { ...s.campaign, usedRelics: [] } };
+  s = triggerRelics(drawCardsState(s, Math.max(0, s.drawCount - retained.length)), 'turn');
+  return prepareEnemyIntent(s);
 }

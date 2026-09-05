@@ -63,7 +63,7 @@ describe('posture combat flow', () => {
 
     const next = resolveCard(state, ranged.id);
     expect(next.enemy.mevcutCan).toBe(99);
-    expect(next.enemy).toMatchObject({ currentPosture: 70, isBroken: true });
+    expect(next.enemy).toMatchObject({ currentPosture: 80, isBroken: true });
     expect(next.enemyGuardPostureCost).toBe(15);
   });
 
@@ -219,7 +219,7 @@ describe('posture combat flow', () => {
     state.enemy = { ...state.enemy, currentPosture: 70, isBroken: true };
     state.player = { ...state.player, currentPosture: 100, isBroken: true };
     state = resolveTurn(state, current => current);
-    expect(state.enemy).toMatchObject({ currentPosture: 35, isBroken: false });
+    expect(state.enemy).toMatchObject({ currentPosture: 40, isBroken: false });
     expect(state.player).toMatchObject({ currentPosture: 50, isBroken: false });
   });
 });

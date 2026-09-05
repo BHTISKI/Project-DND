@@ -35,6 +35,7 @@ export function makePlayer(partial: Partial<Character> = {}): Character {
 
 export function makeGameState(partial: Partial<GameState>): GameState {
   const defaults: GameState = {
+    configureCampaign: () => {}, chooseCampaignOutcome: () => {}, chooseRelic: () => {},
     saveStatus: 'idle',
     saveCursor: null,
     startNewGame: () => false,

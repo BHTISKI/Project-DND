@@ -8,14 +8,14 @@ export const POSTURE_CONFIG = {
   parry: { successDamage: 60, failureDamage: 45 },
   card: { baseDamage: 20, perEnergy: 10, blockCostMultiplier: 5, upgradeBonus: 5 },
   momentum: { startsAt: 3, step: 0.25, maximum: 1.75 },
-  encounter: { elite: 1.25, boss: 1.5 },
+  encounter: { elite: 1.35, boss: 1.75 },
   profiles: {
     player: { maxPosture: 100, postureRecoveryRate: 1, postureDamageTaken: 1, attackPosture: 0 },
-    goblin: { maxPosture: 70, postureRecoveryRate: 0.8, postureDamageTaken: 1.15, attackPosture: 25 },
-    guardian: { maxPosture: 130, postureRecoveryRate: 0.6, postureDamageTaken: 0.85, attackPosture: 30 },
-    mage: { maxPosture: 80, postureRecoveryRate: 0.9, postureDamageTaken: 1, attackPosture: 20 },
-    assassin: { maxPosture: 60, postureRecoveryRate: 1, postureDamageTaken: 1.2, attackPosture: 35 },
-    knight: { maxPosture: 140, postureRecoveryRate: 0.65, postureDamageTaken: 0.8, attackPosture: 40 },
+    goblin: { maxPosture: 80, postureRecoveryRate: 0.8, postureDamageTaken: 1.15, attackPosture: 25 },
+    guardian: { maxPosture: 145, postureRecoveryRate: 0.6, postureDamageTaken: 0.85, attackPosture: 30 },
+    mage: { maxPosture: 90, postureRecoveryRate: 0.9, postureDamageTaken: 1, attackPosture: 20 },
+    assassin: { maxPosture: 70, postureRecoveryRate: 1, postureDamageTaken: 1.2, attackPosture: 35 },
+    knight: { maxPosture: 155, postureRecoveryRate: 0.65, postureDamageTaken: 0.8, attackPosture: 40 },
   },
 } as const;
 

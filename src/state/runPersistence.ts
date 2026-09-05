@@ -1,15 +1,17 @@
 import { sampleCardDefs } from '../types/game';
+import { encounters } from '../content/campaign';
+import { relics } from '../content/relics';
 import type { Card, CardEffect, Character, EnemyAction, EnemyIntent, EnemyArchetypeId, NodeType, StatusEffect, StatusId } from '../types/game';
 import type { GameState } from './store';
 import { cardPostureMetadata, postureProfile, POSTURE_CONFIG, withEnemyPosture } from '../mechanics/posture';
 
 export const RUN_SAVE_KEY = 'makara.run';
 export const LEGACY_RUN_SAVE_KEY = ['project', ['d', 'n', 'd'].join('') + '.run'].join('-');
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 
-type ActionKeys = { [K in keyof GameState]: GameState[K] extends (...args: never[]) => unknown ? K : never }[keyof GameState];
+type ActionKeys = { [K in keyof GameState]-?: GameState[K] extends (...args: never[]) => unknown ? K : never }[keyof GameState];
 export type RunSnapshot = Omit<GameState, ActionKeys | 'initialized' |
-  'playerDialog' | 'enemyDialog' | 'saveStatus' | 'saveCursor'>;
+  'playerDialog' | 'enemyDialog' | 'saveStatus' | 'saveCursor' | 'combatFeedback'>;
 export type SaveStatus = 'idle' | 'saved' | 'error' | 'conflict';
 export type RunSaveResult =
   | { kind: 'ready'; run: RunSnapshot; savedAt: number; cursor: string | null }
@@ -33,7 +35,7 @@ const shape = (required: Record<string, Check>, optional: Record<string, Check> 
   Object.entries(optional).every(([key, check]) => v[key] === undefined || check(v[key]));
 const legacyDie: Check = v => typeof v === 'string' && (v === 'sabit' || /^d[1-9]\d*$/.test(v));
 const targetSide = oneOf('player', 'enemy');
-const statusId = oneOf('vulnerable', 'weakened', 'poisoned', 'fortified', 'empowered', 'postureExposed');
+const statusId = oneOf('vulnerable', 'weakened', 'poisoned', 'fortified', 'empowered', 'postureExposed', 'bleeding', 'reflection', 'regeneration', 'timeLocked');
 const nodeType = oneOf('combat', 'elite', 'shop', 'event', 'rest', 'boss');
 const intentType = oneOf('attack', 'defend', 'special');
 const cardType = oneOf('saldırı', 'savunma', 'yetenek');
@@ -41,6 +43,7 @@ const cardType = oneOf('saldırı', 'savunma', 'yetenek');
 const effect: Check = value => {
   if (!record(value)) return false;
   switch (value.kind) {
+    case 'conditional': return shape({ status: statusId, damage: nonnegative })(value);
     case 'attack': case 'damage': return shape({}, { amount: nonnegative, damageBonus: number })(value);
     case 'block': case 'heal': return shape({ amount: nonnegative }, { target: targetSide })(value);
     case 'status': return shape({ status: statusId, duration: positive }, { stacks: positive, value: number, target: targetSide })(value);
@@ -115,7 +118,17 @@ const legacyIntent = shape({ type: intentType }, {
   telegraph: shape({ type: intentType, label: text, icon: text }, { deceptive: boolean }), action: legacyAction,
 });
 
+const campaignRule: Check = value => value === undefined || shape({
+  classId: oneOf('weaver', 'warden', 'cinder'), ascension: v => integer(v) && (v as number) <= 5,
+  configured: boolean, mercy: integer, corruption: integer,
+  seals: v => Array.isArray(v) && v.every(n => [1, 2, 3].includes(n)) && new Set(v).size === v.length,
+  relics: list(oneOf(...relics.map(r => r.id))), usedRelics: list(oneOf(...relics.map(r => r.id))),
+  encounterId: nullable(oneOf(...encounters.map(e => e.id))), bossPhase: boolean, choicePending: boolean,
+  relicOffers: list(oneOf(...relics.map(r => r.id))), ending: nullable(oneOf('dawn', 'throne', 'unwritten')),
+  rareMisses: integer, journal: list(text),
+})(value) && record(value) && Array.isArray(value.relics) && new Set(value.relics).size === value.relics.length;
 const runRules = {
+  campaign: campaignRule,
   player: character, enemy: character, playerName: value => typeof value === 'string' && value.trim() === value && value.length >= 2 && value.length <= 20,
   isPlayerTurn: boolean, round: positive, maxEnergy: positive, currentEnergy: integer, drawCount: positive,
   deck: list(card), hand: list(card), discardPile: list(card), exhaustedPile: list(card), gold: nonnegative,
@@ -137,7 +150,7 @@ const runRules = {
   availableNodes: list(shape({ id: nonempty, type: nodeType })),
 } satisfies Record<keyof RunSnapshot, Check>;
 const previousRunRules = Object.fromEntries(Object.entries(runRules).filter(([key]) =>
-  !['postureComboCount', 'pendingParry', 'playerGuardPostureCost', 'enemyGuardPostureCost'].includes(key))) as Record<string, Check>;
+  !['campaign', 'postureComboCount', 'pendingParry', 'playerGuardPostureCost', 'enemyGuardPostureCost'].includes(key))) as Record<string, Check>;
 const versionTwoRunRules: Record<string, Check> = {
   ...previousRunRules,
   player: versionTwoCharacter, enemy: versionTwoCharacter,
@@ -157,6 +170,7 @@ function fixedValue(value: unknown): number {
 }
 function cleanEffect(value: Record<string, unknown>, fallbackDie?: unknown, upgraded = false): CardEffect {
   const kind = value.kind;
+  if (kind === 'conditional') return { kind, status: value.status as StatusId, damage: value.damage as number };
   if (kind === 'advantage' || kind === 'disadvantage') return {
     kind: 'status', status: kind === 'advantage' ? 'empowered' : 'weakened', duration: 1,
     value: typeof value.value === 'number' ? value.value : 1,
@@ -303,7 +317,7 @@ export function readRunSave(): RunSaveResult {
   try {
     const data: unknown = JSON.parse(cursor);
     if (!record(data) || !positive(data.version)) return { kind: 'invalid', cursor };
-    if (![1, 2, SAVE_VERSION].includes(data.version as number)) return { kind: 'incompatible', cursor };
+    if (![1, 2, 3, SAVE_VERSION].includes(data.version as number)) return { kind: 'incompatible', cursor };
     if (!positive(data.savedAt) || (data.savedAt as number) > 8640000000000000) return { kind: 'invalid', cursor };
     const version = data.version as number;
     const rules = version === 1 ? legacyRunRules : version === 2 ? versionTwoRunRules : runRules;

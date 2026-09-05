@@ -17,7 +17,7 @@ describe('EnemyBoard', () => {
     }));
     render(<EnemyBoard />);
     expect(screen.getByText('İnfaz saldırısı')).toBeInTheDocument();
-    expect(screen.getByText('8 hasar')).toBeInTheDocument();
+    expect(screen.getByText('10 hasar')).toBeInTheDocument();
     expect(screen.getByText('Blok işlemez')).toBeInTheDocument();
     expect(screen.getByText('İnfaz bloklanamaz ve ölümcül.')).toBeInTheDocument();
   });

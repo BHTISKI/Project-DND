@@ -23,11 +23,22 @@ export const EnemyBoard: React.FC = () => {
     <section className={`enemy-board enemy-board--${archetype.visualTheme}`} aria-label={`${enemy.isim} savaş masası`}>
       <div className="enemy-board__rail">
         <div className="enemy-deck" aria-label={`${enemy.isim} kapalı destesi`}>
-          {Array.from({ length: archetype.cardCount }, (_, index) => (
-            <span key={index} className={`enemy-deck__card ${index === archetype.cardCount - 1 ? 'enemy-deck__card--front' : 'enemy-deck__card--back'}`} style={{ '--deck-index': index } as React.CSSProperties} aria-hidden="true">
-              {index === archetype.cardCount - 1 && <b>{archetype.icon}</b>}
-            </span>
-          ))}
+          {Array.from({ length: archetype.cardCount }, (_, index) => {
+            // Sabit sapmalar, elde bırakılmış bir deste hissi verir; her turda kartlar oynamaz.
+            const depth = archetype.cardCount - index - 1;
+            const rotation = [-2.2, 1.1, -.7, 1.7, -1.1, .5][index % 6];
+            const deckStyle = {
+              '--deck-index': index,
+              '--deck-x': `${depth * 2.4}px`,
+              '--deck-y': `${depth * -1.5 + (index % 2 ? .7 : 0)}px`,
+              '--deck-rotate': `${rotation}deg`,
+            } as React.CSSProperties;
+            return (
+              <span key={index} className={`enemy-deck__card ${depth === 0 ? 'enemy-deck__card--front' : 'enemy-deck__card--back'}`} style={deckStyle} aria-hidden="true">
+                {depth === 0 && <b>{archetype.icon}</b>}
+              </span>
+            );
+          })}
           <span className="enemy-deck__count">{archetype.cardCount} KARTLIK DESTE</span>
         </div>
         <div className="enemy-board__identity">

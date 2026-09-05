@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveCard } from '../combatResolver';
+import { refreshEnemyIntent, resolveCard } from '../combatResolver';
 import { chooseArchetype, createEnemy, generateEnemyIntent } from '../enemyArchetypes';
 import { withMockRandom } from '../../testUtils/mockRandom';
 import { makeCard, makeGameState, makePlayer } from '../../testUtils/gameState';
@@ -22,8 +22,8 @@ describe('combatResolver', () => {
   it('creates a scaled enemy', () => {
     const enemy = createEnemy('guardian', 3);
 
-    expect(enemy.mevcutCan).toBe(20);
-    expect(enemy.maksimumCan).toBe(20);
+    expect(enemy.mevcutCan).toBe(36);
+    expect(enemy.maksimumCan).toBe(36);
     expect(enemy.hasarBonusu).toBe(1);
   });
 
@@ -85,5 +85,17 @@ describe('combatResolver', () => {
     const next = resolveCard(state, card.id);
     expect(next.enemy.mevcutCan).toBe(enemy.mevcutCan);
     expect(next.battleLogs.at(-1)).toContain('0 hasar');
+  });
+
+  it('publishes the tactical reason when the enemy changes its plan', () => {
+    const state = makeGameState({
+      gamePhase: 'combat', enemyArchetype: 'goblin', enemyBehavior: 'standard', enemyBlock: 0,
+      enemy: makePlayer({ id: 'enemy', mevcutCan: 15, maksimumCan: 15,
+        currentPosture: 56, maxPosture: 80, postureDamageTaken: 1.15, postureRecoveryRate: 0.8 }),
+      baseEnemyIntent: { type: 'attack', action: { kind: 'attack', damage: 5 } },
+    });
+    const next = refreshEnemyIntent(state);
+    expect(next.enemyIntent?.action).toMatchObject({ kind: 'defend', block: 2 });
+    expect(next.enemyIntent?.warning).toBe('Dengesi kırılmaya yaklaştığı için savunmaya geçti.');
   });
 });

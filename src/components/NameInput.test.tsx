@@ -14,6 +14,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 function saveRun() {
   useGameStore.getState().startNewGame('Selim', null);
+  useGameStore.getState().configureCampaign('weaver', 0);
   const s = useGameStore.getState();
   s.selectNode(s.availableNodes[0].id);
   useGameStore.getState().chooseDraftCard(useGameStore.getState().draftOptions[0].id);
@@ -31,7 +32,9 @@ it('opens a plain name form, validates it and starts using the trimmed name', as
   expect(localStorage.getItem(RUN_SAVE_KEY)).toBeNull();
   await user.type(name, '  Selim  ');
   await user.keyboard('{Enter}');
-  expect(await screen.findByText('BÖLÜM 1')).toBeInTheDocument();
+  expect(await screen.findByText('Geride bıraktığın ses')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: /Hatıra Dokuyucusu/ }));
+  expect(screen.getByText('BÖLÜM 1')).toBeInTheDocument();
   expect(useGameStore.getState().playerName).toBe('Selim');
   expect(screen.getByRole('status')).toHaveTextContent('Kaydedildi');
 });
@@ -100,6 +103,7 @@ it('opens a new-game form after defeat instead of offering to revive the old cha
 
 it('shows save failures, lets the player return to the live run and retry saving', async () => {
   useGameStore.getState().startNewGame('Selim', null);
+  useGameStore.getState().configureCampaign('weaver', 0);
   const user = userEvent.setup();
   render(<App />);
   const fail = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('full'); });

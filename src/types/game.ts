@@ -1,5 +1,6 @@
 // Makara oyun verisinin ortak tipleri.
 import { cardPostureMetadata } from '../mechanics/posture';
+import { expansionCards } from '../content/expansionCards';
 export interface Card {
   id: string
   isim: string
@@ -26,6 +27,7 @@ export interface Card {
 }
 
 export type CardEffect =
+  | { kind: 'conditional'; status: StatusId; damage: number }
   | { kind: "attack"; amount?: number; damageBonus?: number }
   | { kind: "damage"; amount?: number; damageBonus?: number }
   | { kind: "block"; amount: number; target?: "player" | "enemy" }
@@ -37,7 +39,7 @@ export type CardEffect =
   | { kind: "trash"; amount?: number; target?: "player" }
   | { kind: "trade"; trashAmount?: number; drawAmount?: number; target?: "player" }
 
-export type StatusId = "vulnerable" | "weakened" | "poisoned" | "fortified" | "empowered" | "postureExposed"
+export type StatusId = "vulnerable" | "weakened" | "poisoned" | "fortified" | "empowered" | "postureExposed" | 'bleeding' | 'reflection' | 'regeneration' | 'timeLocked'
 
 export interface StatusEffect {
   id: StatusId
@@ -148,4 +150,4 @@ const baseCardDefs: Omit<Card, 'id'>[] = [
   { isim: 'Zincir Darbesi', tip: 'saldırı', manaBedeli: 1, baseHasar: 0, rarity: 'common', theme: 'lightning', tags: ['attack'], finisher: { threshold: 2, damage: 3 }, effects: [{ kind: 'attack', amount: 3 }] },
 ]
 
-export const sampleCardDefs: Omit<Card, 'id'>[] = baseCardDefs.map(card => ({ ...card, ...cardPostureMetadata(card) }));
+export const sampleCardDefs: Omit<Card, 'id'>[] = [...baseCardDefs, ...expansionCards].map(card => ({ ...cardPostureMetadata(card), ...card }));

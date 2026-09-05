@@ -240,7 +240,7 @@ describe('reported map, shop and restart regressions', () => {
       playerDialog: [{ text: 'old', timestamp: Date.now() }], enemyStatuses: [{ id: 'poisoned', stacks: 3, duration: 3 }] });
     s.restartGame();
     const next = useGameStore.getState();
-    expect(next.playerName).toBe('Deneme'); expect(next.player.maksimumCan).toBe(10);
+    expect(next.playerName).toBe('Deneme'); expect(next.player.maksimumCan).toBe(24);
     expect(next.maxEnergy).toBe(3); expect(next.currentEnergy).toBe(3);
     expect(next.playerDialog).toEqual([]); expect(next.enemyStatuses).toEqual([]); expect(next.pendingPlayerSkip).toBe(false);
   });

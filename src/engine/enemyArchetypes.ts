@@ -1,4 +1,4 @@
-import type { Character, EnemyArchetypeId, EnemyIntent } from '../types/game';
+import type { Character, EnemyArchetypeId, EnemyIntent, NodeType } from '../types/game';
 import { initialPosture, withEnemyPosture } from '../mechanics/posture';
 
 export interface EnemyArchetypeConfig {
@@ -16,11 +16,18 @@ export interface EnemyArchetypeConfig {
 }
 
 export const enemyArchetypes: Record<EnemyArchetypeId, EnemyArchetypeConfig> = {
-  goblin: { name: 'Goblin', hp: 7, damageBonus: 1, attackDamage: 4, block: 2, special: 'weakened', weights: [0.65, 0.2, 0.15], icon: 'G', visualTheme: 'goblin', role: 'Fırsatçı yağmacı', cardCount: 5 },
-  guardian: { name: 'Muhafız', hp: 11, damageBonus: 0, attackDamage: 5, block: 4, special: 'heal', weights: [0.3, 0.55, 0.15], icon: '◆', visualTheme: 'guardian', role: 'Siper savaşçısı', cardCount: 6 },
-  mage: { name: 'Büyücü', hp: 8, damageBonus: 2, attackDamage: 3, block: 2, special: 'damage', weights: [0.35, 0.15, 0.5], icon: '✦', visualTheme: 'mage', role: 'Kader dokuyucusu', cardCount: 5 },
-  assassin: { name: 'Gölge Suikastçısı', hp: 6, damageBonus: 2, attackDamage: 5, block: 1, special: 'weakened', weights: [0.5, 0.1, 0.4], icon: '☠', visualTheme: 'assassin', role: 'Zehirli pusucu', cardCount: 4 },
-  knight: { name: 'Kara Şövalye', hp: 14, damageBonus: 1, attackDamage: 6, block: 5, special: 'heal', weights: [0.35, 0.5, 0.15], icon: '♜', visualTheme: 'knight', role: 'Karşılık ustası', cardCount: 7 },
+  goblin: { name: 'Goblin', hp: 15, damageBonus: 1, attackDamage: 4, block: 2, special: 'weakened', weights: [0.65, 0.2, 0.15], icon: 'G', visualTheme: 'goblin', role: 'Fırsatçı yağmacı', cardCount: 5 },
+  guardian: { name: 'Muhafız', hp: 24, damageBonus: 0, attackDamage: 5, block: 4, special: 'heal', weights: [0.3, 0.55, 0.15], icon: '◆', visualTheme: 'guardian', role: 'Siper savaşçısı', cardCount: 6 },
+  mage: { name: 'Büyücü', hp: 18, damageBonus: 2, attackDamage: 3, block: 2, special: 'damage', weights: [0.35, 0.15, 0.5], icon: '✦', visualTheme: 'mage', role: 'Kader dokuyucusu', cardCount: 5 },
+  assassin: { name: 'Gölge Suikastçısı', hp: 14, damageBonus: 2, attackDamage: 5, block: 1, special: 'weakened', weights: [0.5, 0.1, 0.4], icon: '☠', visualTheme: 'assassin', role: 'Zehirli pusucu', cardCount: 4 },
+  knight: { name: 'Kara Şövalye', hp: 28, damageBonus: 1, attackDamage: 6, block: 5, special: 'heal', weights: [0.35, 0.5, 0.15], icon: '♜', visualTheme: 'knight', role: 'Karşılık ustası', cardCount: 7 },
+};
+
+export type CombatEncounter = Extract<NodeType, 'combat' | 'elite' | 'boss'>;
+export const ENCOUNTER_HP_MULTIPLIER: Record<CombatEncounter, number> = {
+  combat: 1,
+  elite: 1.5,
+  boss: 2.5,
 };
 
 export function chooseArchetype(victoryCount: number): EnemyArchetypeId {
@@ -28,10 +35,14 @@ export function chooseArchetype(victoryCount: number): EnemyArchetypeId {
   return (['assassin', 'knight', 'goblin', 'guardian', 'mage'] as EnemyArchetypeId[])[(victoryCount - 5) % 5];
 }
 
-export function createEnemy(archetypeId: EnemyArchetypeId, tier: number): Character {
+export function createEnemy(archetypeId: EnemyArchetypeId, tier: number, encounter: CombatEncounter = 'combat'): Character {
   const archetype = enemyArchetypes[archetypeId];
-  const hp = archetype.hp + tier * (archetypeId === 'guardian' || archetypeId === 'knight' ? 3 : 2);
-  return { id: `enemy-${tier}`, isim: archetype.name, mevcutCan: hp, maksimumCan: hp, hasarBonusu: archetype.damageBonus + Math.floor(tier / 3), ...initialPosture(archetypeId) };
+  const baseHp = archetype.hp + tier * (archetypeId === 'guardian' || archetypeId === 'knight' ? 4 : 3);
+  const hp = Math.ceil(baseHp * ENCOUNTER_HP_MULTIPLIER[encounter]);
+  const encounterBonus = encounter === 'combat' ? 0 : 1;
+  return { id: `enemy-${tier}`, isim: archetype.name, mevcutCan: hp, maksimumCan: hp,
+    hasarBonusu: archetype.damageBonus + Math.floor(tier / 3) + encounterBonus,
+    ...initialPosture(archetypeId, encounter) };
 }
 
 export function generateEnemyIntent(enemy: Character, archetypeId: EnemyArchetypeId, previous?: EnemyIntent | null): { intent: EnemyIntent; value: number; block: number } {
